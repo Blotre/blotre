@@ -1,0 +1,11 @@
+@(skipCurrent: Boolean = true)
+
+@import com.feth.play.module.pa.views.html._
+
+<ul class="providers">
+	@forProviders(skipCurrent) { p =>
+		<li>
+			<a href="@p.getUrl()">@Messages("blotre.auth.provider." + p.getKey())@_providerIcon(p.getKey())</a>
+		</li>
+	}
+</ul>

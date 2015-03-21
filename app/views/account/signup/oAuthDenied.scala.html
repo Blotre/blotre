@@ -1,0 +1,12 @@
+@(providerKey: String)
+
+@main(Messages("playauthenticate.oauth.access.denied.title")) {
+
+	<h1>@Messages("playauthenticate.oauth.access.denied.title")</h1>
+	<p>
+		@Messages("playauthenticate.oauth.access.denied.explanation")<br/>
+	</p>
+	<p>
+        <a href="@routes.Application.login">@Messages("playauthenticate.oauth.access.denied.alternative")</a>.
+	</p>
+}

@@ -1,0 +1,603 @@
+@import url(http://fonts.googleapis.com/css?family=Lato:300,400,700);
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    font-family: 'Lato', sans-serif;
+}
+
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.trans-panel {
+    border: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/**
+    Login Panel
+*/
+.login-panel {
+    min-width: 20rem;
+    padding: 0.2rem 0;
+}
+
+.login-panel h1 {
+    font-size: 2rem;
+    text-align: center;
+    padding-bottom: 1rem;
+}
+
+.login-panel ul {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.login-panel ul li {
+    display: block;
+    width: 100%;
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
+
+}
+
+.login-panel ul li a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    color:inherit;
+    padding: 0.8rem 1rem;
+}
+
+.login-panel ul li a:hover {
+    background: rgba(255, 255, 255, 0.90);
+    text-decoration: none;
+}
+
+.login-panel ul .provider-icon{
+    float: right;
+}
+
+/**
+    Header
+*/
+#header-bar {
+    background: none;
+    border: none;
+}
+
+#brand {
+    position: absolute; /* Hack for Safari being a bastard on first load */
+    line-height: 50px;
+    padding: 0 1.2rem;
+    padding-right: 0;
+    width: 112px;
+}
+#user-nav-header {
+    float: none;
+}
+
+.container-fluid > .container {
+    position: relative;
+}
+
+.user-status {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: block;
+    height: 50px;
+    width: 50px;
+    background: red;
+    z-index: 1;
+}
+
+#header-collapsed {
+    padding-right: 50px;
+}
+
+.navbar-toggle {
+    margin-right: 65px;
+}
+
+/**
+    Body
+*/
+#article-container {
+    position: relative;
+    max-width: 800px;
+}
+
+header + #article-container,
+.status-small-header + #article-container {
+    padding-top: 60px;
+}
+
+
+form .info {
+    display: none;
+}
+
+/**
+*/
+.deadly-diamond {
+    position: relative;
+    font-family: "Helvetica Neue", helvetica, sans-serif;
+    font-weight: 100;
+    font-size: 3.5rem;
+    opacity: 0.80;
+    color: white;
+    width: 16rem;
+    height: 16rem;
+    line-height: 18rem;
+    text-align: center;
+    padding: 0;
+    letter-spacing: 0.1em;
+}
+
+.deadly-diamond span {
+    display: inline-block;
+    line-height: 1.2em;
+}
+
+.deadly-diamond:after {
+    content: " ";
+    display: block;
+
+    position: absolute;
+    top: 0;
+    z-index: -1;
+    background: black;
+    width: 100%;
+    height: 100%;
+    border: 4px solid white;
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+/**
+    Index
+*/
+#index-blurb {
+    float: left;
+    margin-top: 8rem;
+    margin-left: 3rem;
+    text-align: center;
+    z-index: -1;
+}
+
+.index-bg-main,
+.index-bg-over {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+
+    height: 10000%;
+    width: 10000%;
+
+    -webkit-transform-origin: 8rem 8rem;
+    -moz-transform-origin: 8rem 8rem;
+    transform-origin: 8rem 8rem;
+}
+
+.index-bg-over {
+    width: 16rem;
+}
+
+#index-bg-1,
+#index-bg-over-1 {
+    background: #4ad9d9;
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+#index-bg-2,
+#index-bg-over-2 {
+    background: #ffa617;
+    -webkit-transform: rotate(135deg);
+    -moz-transform: rotate(135deg);
+    transform: rotate(135deg);
+}
+
+#index-bg-3,
+#index-bg-over-3 {
+    background: #F2385A;
+    -webkit-transform: rotate(225deg);
+    -moz-transform: rotate(225deg);
+    transform: rotate(225deg);
+}
+
+#index-bg-4,
+#index-bg-over-4 {
+    background: #36B1BF;
+    -webkit-transform: rotate(315deg);
+    -moz-transform: rotate(315deg);
+    transform: rotate(315deg);
+}
+
+#index-bg-over-1 {
+    background: #94e5ba;
+}
+#index-bg-over-2 {
+    background: #ff4810;
+}
+#index-bg-over-3 {
+    background: #EB4D86;
+}
+#index-bg-over-4 {
+    background: #1fe8ec;
+}
+
+
+#article-container.index-container {
+    margin-top: 10px;
+}
+
+
+
+.index-container .row {
+    height : 100%;
+    padding-bottom: 2rem;
+}
+
+.index-container .row .index-example {
+    height: 100%;
+    text-align: center;
+}
+
+.index-example h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    border-bottom: 4px solid white;
+    padding-bottom: 0.15em;
+    margin-bottom: 0.3em;
+}
+
+#index-row-0 {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding-bottom: 3rem;
+}
+
+
+#index-login {
+    float: right;
+    min-width: 20rem;
+    padding: 0.2rem 0;
+}
+
+#index-login h1 {
+    font-size: 2rem;
+    text-align: center;
+    padding-bottom: 1rem;
+}
+
+#index-login ul {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#index-login ul li {
+    display: block;
+    width: 100%;
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
+
+}
+
+#index-login ul li a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    color:inherit;
+    padding: 0.8rem 1rem;
+}
+
+#index-login ul li a:hover {
+    background: rgba(255, 255, 255, 0.90);
+    text-decoration: none;
+}
+
+#index-login ul .provider-icon{
+    float: right;
+}
+
+
+
+#index-header {
+    width: 100%;
+    padding-bottom: 100px;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+}
+
+#index-header .container {
+    padding-top: 60px;
+}
+
+
+
+/**
+    404
+*/
+#not-found-header {
+    height: 500px;
+    overflow: hidden;
+}
+
+#not-found-blurb {
+    margin: 0 auto;
+    margin-top: 15rem;
+    line-height: 16rem;
+    color: black;
+}
+
+#not-found-blurb:after {
+    border: 1px solid black;
+    background: none;
+}
+
+
+#not-found-blurb .diamond-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: none;
+    -webkit-transform-origin: 50% 50%;
+    -moz-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    z-index: -1;
+    -webkit-transform: scale(1.2, 1.2) rotate(25deg);
+}
+
+#not-found-blurb .diamond-bg:after {
+    content: " ";
+    display: block;
+    border: 1px solid black;
+    width: 100%;
+    height: 100%;
+}
+
+#not-found-blurb > .diamond-bg {
+    -webkit-transform: scale(1.2, 1.2) rotate(70deg);
+}
+
+
+/**
+*/
+form .error input {
+    background-color: #F2DEDE;
+    border-color: #EED3D7;
+    color: #B94A48;
+}
+
+form .error .help-inline {
+    color: #B94A48;
+}
+
+.providers {
+    margin: 5px 0;
+    list-style: none;
+}
+
+.providers li {
+    display: inline;
+}
+
+.help-block {
+    margin: -10px 0 10px 0;
+    font-size: 10px;
+    color: #ccc !important;
+}
+
+
+
+
+.status-header {
+    position: relative;
+    height: 300px;
+    z-index: 15;
+}
+
+.status-small-header {
+    height: 60px;
+    width: 100%;
+    position: absolute;
+    top:0;
+    left: 0;
+}
+
+.status-header:before{
+    content: " ";
+    position: absolute;
+    bottom: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    padding-top: 100%;
+    background: inherit;
+}
+
+.status-header-shadow {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
+}
+
+.status-header-peak {
+    top: 0;
+    position: fixed;
+    display: block;
+    height: 65px;
+    width: 100%;
+    z-index: 10;
+}
+
+/**
+*/
+.stream-header {
+    text-align: center;
+}
+
+.status-picker-color-label {
+    display: block;
+    text-align: center;
+    color: #bbb;
+}
+
+.stream-header .stream-data {
+    padding-bottom: 1.6rem;
+}
+.stream-header .stream-title {
+    color: #444;
+    text-align: center;
+    display: inline-block;
+    border-bottom: 2px solid #444;
+    margin-bottom: 0.15em;
+}
+
+/**
+    Stream Controls
+*/
+.stream-controls > * {
+    width: 5rem;
+    height: 5rem;
+    border: 4px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+    border-radius: 100px;
+    background: none;
+    display: inline-block;
+    margin: 0 0.5em;
+    padding: 0;
+    vertical-align: top;
+
+}
+
+.stream-controls > *:active {
+    border-color: #eee;
+}
+
+.stream-controls > *:first-child,
+.stream-controls > *:last-child {
+    vertical-align: bottom;
+    margin-top: 2rem;
+}
+
+/**
+    Status Picker
+*/
+.status-picker-form {
+    width: 100%;
+    height: 100%;
+}
+
+.status-picker-form .sp-replacer {
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 100px;
+    border: none;
+}
+.status-picker-form .sp-dd {
+    display: none;
+}
+
+.status-picker-form .sp-preview {
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+}
+
+
+.stream-path {
+    list-style: none;
+    margin: 0;
+    padding-top: 4px;
+    padding-left: 0;
+    margin-left: 100px;  /* Hack for Safari being a bastard on first load */
+    color: #444;
+}
+
+.stream-path li {
+    float: left;
+    font-size: 1.6rem;
+}
+
+.stream-path li:before {
+    content: "/";
+    padding: 0 0.6rem;
+}
+
+#header-bar .stream-path li a {
+    color: inherit;
+}
+
+
+
+
+
+
+.stream-children {
+    padding-top: 4rem;
+}
+
+.stream-children li {
+    padding: 1rem 0;
+}
+
+.create-child {
+    background: red;
+}
+
+.create-child-expand-button {
+    width: 100%;
+    color: inherit;
+    text-align: center;
+    padding: 10px;
+}
+
+
+.in.collapse + .create-child-expand-button:before {
+    content: "Cancel";
+}
+
+/**
+    Small screen
+*/
+@media only screen and (max-width : 420px) {
+    #index-header {
+        padding-bottom: 20px;
+    }
+
+    #index-login {
+        clear: both;
+        float: none;
+    }
+
+    #index-blurb {
+        margin-top: 6rem;
+        -webkit-transform: translate(50%, 0);
+        -moz-transform: translate(50%, 0);
+        transform: translate(50%, 0);
+    }
+}

@@ -1,0 +1,88 @@
+@(
+    stream: models.Stream,
+    children: scala.collection.immutable.List[models.Stream] = scala.collection.immutable.List(),
+    uriPath: scala.collection.immutable.Map[String, String])
+
+@import play.api.libs.json._
+@import helper._
+@import be.objectify.deadbolt.java.views.html._
+@import be.objectify.deadbolt.core.utils.TemplateUtils._
+
+@extraHead = {
+    <link id="favicon"
+          rel="icon"
+          type="image/png"
+          href="@("/s/" + stream.uri + ".png?no-cache=" + scala.util.Random.nextInt())" />
+}
+
+@navHeader = {
+    <ul class="navbar-nav pull-left stream-path">
+        @for((name, path) <- uriPath) {
+        <li><a href="/s@path">@name</a></li>
+        }
+    </ul>
+}
+
+@articleHeader = {
+    <div class="status status-header" style="background: @stream.status.color" data-bind="style: { background: color }">
+        <div class="status-header-shadow"></div>
+    </div>
+    <a href="/"
+       class="status status-header-peak"
+       style="background: @stream.status.color"
+       data-bind="style: { background: color }"></a>
+}
+
+@main(stream.name, "stream", extraHead = extraHead, articleHeader = articleHeader, navHeader = navHeader) {
+
+    <div class="stream-header">
+        <div class="stream-data">
+            <span class="status-picker-color-label" data-bind="text: color"></span>
+            <a href="@routes.Stream.getStream(stream.uri)"><h1 class="stream-title">@stream.name</h1></a>
+            <div class="stream-updated"
+                 data-bind="text: stream().displayUpdated">@stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")</div>
+
+        </div>
+
+        <nav class="stream-controls @("hidden".when(Application.getLocalUser(session()) == null))">
+            <button class="stream-favorite btn-lg">
+                <span class="glyphicon glyphicon-star"></span>
+            </button>
+            <div class="status-picker-control">
+                @_streamColorControl(stream)
+            </div>
+            <button class="stream-favorite btn-lg">
+                <span class="glyphicon glyphicon-share-alt"></span>
+            </button>
+        </nav>
+    </div>
+
+    @*
+    <ul class="stream-children">
+        <li class="search-children">
+            <div class="input-group">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="button">Go!</button>
+                  </span>
+                <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
+            </div>
+        </li>
+        <li class="create-child">
+            <form class="collapse" id="create-child-form">
+                <input>
+            </form>
+            <a class="glyphicon glyphicon-plus create-child-expand-button"
+               data-toggle="collapse"
+               data-target="#create-child-form"></a>
+        </li>
+        @for(child <- children) {
+            <li>
+            </li>
+        }
+    </ul>
+    *@
+
+    <script>
+        window.initialStreamData = @Html(Json.toJson(stream).toString());
+    </script>
+}

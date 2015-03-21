@@ -1,0 +1,22 @@
+@(
+    stream: models.Stream)
+
+@import helper._
+@import be.objectify.deadbolt.java.views.html._
+@import be.objectify.deadbolt.core.utils.TemplateUtils._
+
+@if(stream != null) {
+    @subjectPresentOr() {
+        @defining(Application.getLocalUser(session())) { user =>
+            @form(action = routes.Stream.postStreamUpdate(stream.uri), 'class -> "status-picker-form") {
+                <input class="status-picker"
+                       name="color"
+                       type="text"
+                       value="@stream.status.color"
+                       data-bind="value: color" />
+            }
+        }
+    } {
+        <div class="status-picker-form"><div class="sp-replacer" data-bind="style: { background: color }" /></div></div>
+    }
+}

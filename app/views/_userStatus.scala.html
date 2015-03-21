@@ -1,0 +1,12 @@
+@()
+
+@import be.objectify.deadbolt.java.views.html._
+@import be.objectify.deadbolt.core.utils.TemplateUtils._
+
+@subjectPresent() {
+    @defining(Application.getLocalUser(session())) { user =>
+        <a class="status user-status"
+           href="@routes.Stream.getStream(user.userName)"
+           data-bind="style: { background: user().color }"></a>
+    }
+}

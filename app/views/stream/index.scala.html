@@ -1,0 +1,31 @@
+@()
+
+@import play.api.libs.json._
+@import helper._
+@import be.objectify.deadbolt.java.views.html._
+@import be.objectify.deadbolt.core.utils.TemplateUtils._
+
+@articleHeader = {
+
+}
+
+@extraScripts = {
+    <script type="text/html" id="stream-search-result-template">
+        <h3 data-bind="text: name"></h3>
+        <p>Credits: <span data-bind="text: credits"></span></p>
+    </script>
+}
+
+@main(Messages("playauthenticate.profile.title"), "profile", articleHeader = articleHeader, extraScripts = extraScripts) {
+
+    <div class="input-group">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button">Go!</button>
+              </span>
+        <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
+    </div>
+
+
+    <ul data-bind="template: { name: 'stream-search-result-template', foreach: seasons, as: 'season' }"></ul>
+
+}
