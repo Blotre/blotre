@@ -4,9 +4,8 @@ import Actors.{StreamSupervisor, StreamActor}
 import akka.actor._
 import akka.contrib.pattern.DistributedPubSubMediator
 import be.objectify.deadbolt.java.actions.SubjectPresent
-import com.feth.play.module.pa.user.AuthUser
 import models.User
-import play.api.libs.iteratee.{Concurrent, Enumerator, Iteratee}
+import play.api.libs.iteratee.{Concurrent, Iteratee}
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.data._
@@ -16,8 +15,8 @@ import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.Play.current
 import scala.collection.immutable._
+import helper._
 import helper.ImageHelper
-
 
 /**
  *
@@ -42,14 +41,6 @@ class ActorListener(channel: Concurrent.Channel[JsValue]) extends Actor {
   }
 }
 
-case class AcceptingExtOrMime(val ext: String, val mimeType: String) {
-  /**
-   * Don't use `request.accepts` to avoid accepting `* / *`.
-   */
-  def unapply(request: RequestHeader): Boolean =
-    request.headers.get("accepts") == Some(mimeType) || request.path.endsWith("." + ext)
-}
-
 /**
  *
  */
@@ -64,8 +55,7 @@ object Stream extends Controller {
       "color" -> nonEmptyText.verifying(pattern("""#[0-9a-fA-f]{6}""".r))
     )(StatusUpdate.apply)(StatusUpdate.unapply))
 
-  val AcceptsPng = AcceptingExtOrMime("png", "image/png")
-
+  val AcceptsPng = PrefersExtOrMime("png", "image/png")
 
   def uriMap(uri: String): Map[String, String] = {
     (uri
@@ -81,7 +71,17 @@ object Stream extends Controller {
    * Displays a list of streams for searching.
    */
   def index = Action { implicit request => JavaContext.withContext {
-    Ok(views.html.stream.index.render())
+    val query = request.getQueryString("query").getOrElse("")
+    val streams = if (query.isEmpty) models.Stream.findByUpdated() else models.Stream.findByQuery(query)
+    request match {
+      case Prefers.Json() =>
+        Ok(Json.obj(
+          "query" -> query,
+          "streams" -> streams
+        ))
+      case _ =>
+        Ok(views.html.stream.index.render())
+    }
   }}
 
   /**
@@ -113,22 +113,6 @@ object Stream extends Controller {
 
     (in, out)
   }
-
-  /**
-   * Create a new stream from a JSON request.
-   */
-  def create = Action(parse.json) { request =>
-    request.body.validate[models.Stream] match {
-      case s: JsSuccess[models.Stream] => {
-        val stream: models.Stream = s.get
-        Ok("xx")
-      }
-      case e: JsError => {
-        Ok(e.toString())
-      }
-    }
-  }
-
   /**
    *
    */

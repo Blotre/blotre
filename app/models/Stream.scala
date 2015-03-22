@@ -9,6 +9,7 @@ import play.api.mvc._
 import play.api.libs.functional.syntax._
 import play.data.validation.Constraints
 import org.mongodb.morphia.query.Query
+import scala.collection.JavaConverters._
 
 @Entity
 @SerialVersionUID(1)
@@ -117,5 +118,28 @@ object Stream extends models.Serializable {
     }
     return None
   }
+
+
+  /**
+   *
+   */
+  def findByQuery(query: String): List[Stream] = {
+    val q = db().limit(20);
+    q.criteria("name")
+      .containsIgnoreCase(query)
+    q.asList().asScala.toList
+  }
+
+  /**
+   *
+   */
+  def findByUpdated(): List[Stream] = {
+    val results: java.util.List[Stream] = db()
+      .order("updated")
+      .limit(20)
+      .asList();
+    results.asScala.toList
+  }
+
 
 }

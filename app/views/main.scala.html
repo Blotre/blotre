@@ -104,13 +104,16 @@
         </div>
 
         @helper.javascriptRouter("jsRoutes")(
-            routes.javascript.Stream.postStreamUpdate
+            routes.javascript.Stream.postStreamUpdate,
+            routes.javascript.Stream.getStream,
+            routes.javascript.Stream.index
         )
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>
                 <script>
                     window.initialUserData = @Html(Json.obj(
-                        "status" -> user.getStatus()
+                        "status" -> user.getStatus(),
+                        "userName" -> user.userName
                     ).toString());
                 </script>
             }
@@ -123,7 +126,6 @@
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))"></script>
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("knockout.js"))"></script>
         <script src="@routes.Assets.at("js/spectrum.js")"></script>
-        <script data-main="@routes.Assets.at("js/main.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
         @extraScripts
     </body>
 </html>

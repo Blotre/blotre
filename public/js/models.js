@@ -36,10 +36,10 @@ var StatusModel = function(color) {
 
 /**
 */
-var StreamModel = function(status, uri, updated) {
+var StreamModel = function(uri, status, updated) {
     var self = this;
-    self.status = ko.observable(status || new StatusModel());
     self.uri = ko.observable(uri);
+    self.status = ko.observable(status || new StatusModel());
     self.updated = ko.observable(updated);
 
     self.color = ko.computed(function() {
@@ -60,10 +60,10 @@ var StreamModel = function(status, uri, updated) {
 
 /**
 */
-var UserModel = function(status) {
+var UserModel = function(username, status) {
     var self = this;
-    self.alerts = ko.observableArray();
-    self.status = ko.observable(status);
+    self.userName = ko.observable(username);
+    self.status = ko.observable(status || new StatusModel(DEFAULT_COLOR));
 
     self.color = ko.computed(function() {
         var status = self.status();

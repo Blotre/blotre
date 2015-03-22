@@ -14,18 +14,21 @@
         <h3 data-bind="text: name"></h3>
         <p>Credits: <span data-bind="text: credits"></span></p>
     </script>
+
+    <script data-main="@routes.Assets.at("js/stream_index.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+
 }
 
 @main(Messages("playauthenticate.profile.title"), "profile", articleHeader = articleHeader, extraScripts = extraScripts) {
 
-    <div class="input-group">
-              <span class="input-group-btn">
-                <button class="btn btn-default" type="button">Go!</button>
-              </span>
+    <div id="stream-search-input" class="input-group">
+        <span class="input-group-btn">
+            <button class="btn btn-default" type="button">Go!</button>
+        </span>
         <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
     </div>
 
 
-    <ul data-bind="template: { name: 'stream-search-result-template', foreach: seasons, as: 'season' }"></ul>
+    <ul data-bind="template: { name: 'stream-search-result-template', foreach: results, as: 'result' }"></ul>
 
 }

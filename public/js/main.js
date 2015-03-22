@@ -1,7 +1,11 @@
 require([
-    "./models"],
+    './models',
+    './stream_manager',
+    './application_model'],
 function(
-    models)
+    models,
+    stream_manager,
+    application_model)
 {
 "use-strict";
 
@@ -9,7 +13,8 @@ function(
 */
 var AppViewModel = function(user, stream) {
     var self = this;
-    self.user = ko.observable(user);
+    application_model.AppViewModel.call(this, user);
+
     self.stream = ko.observable(stream);
 
     self.color = ko.computed(function() {
@@ -24,18 +29,17 @@ var AppViewModel = function(user, stream) {
     };
 };
 
-var loadInitialUserData = function(model) {
-    if (window.initialUserData) {
-        model.user(new models.UserModel(new models.StatusModel(initialUserData.status.color)));
-    }
-};
-
-var loadInitialStreamData = function(model) {
+var initialStream = function() {
     if (window.initialStreamData) {
-        model.setColor(window.initialStreamData.status.color);
-        model.stream().uri(window.initialStreamData.uri);
-        model.stream().updated(new Date(window.initialStreamData.updated));
+        return new models.StreamModel(
+            window.initialStreamData.uri,
+            new models.StatusModel(window.initialStreamData.status.color),
+            new Date(window.initialStreamData.updated));
     }
+    return new models.StreamModel(
+        '',
+        new models.StatusModel(models.DEFAULT_COLOR),
+        new Date(0));
 };
 
 /**
@@ -51,74 +55,13 @@ var updateFavicon = function(color) {
     link.href = canvas.toDataURL('image/png');
 };
 
-/**
-*/
-var StreamManager = function() {
-    var self = this;
-    self.streams = { };
-
-    var processStatusUpdate = function(msg) {
-        var path = msg.stream.uri;
-        var current = self.streams[path];
-        if (current) {
-            var color = msg.stream.status.color;
-            current.model.setColor(color);
-            current.model.updated(new Date(msg.stream.updated));
-            current.listeners.forEach(function(x) {
-                x(msg.stream);
-            });
-        }
-    };
-
-    var processMessage = function(msg) {
-        switch (msg.type) {
-        case "StatusUpdate":
-            processStatusUpdate(msg);
-        }
-    };
-
-    self.socket = new WebSocket("ws://localhost:9000/ws");
-    self.ready = false;
-    self.socket.onopen = function(e) {
-        Object.keys(self.streams).forEach(function(path) {
-            self.socket.send(JSON.stringify({
-                "type": "Subscribe",
-                "value": path
-            }));
-        });
-    };
-
-    self.socket.onmessage = function(event) {
-        var data = JSON.parse(event.data);
-        if (data)
-            processMessage(data);
-    }
-};
-StreamManager.prototype.subscribe = function(path, callback) {
-    var current = this.streams[path];
-
-    if (current) {
-        current.listeners.push(callback);
-    } else {
-        this.streams[path] = current = { model: new models.StreamModel(null, path), listeners: [callback] };
-        if (this.ready) {
-            this.socket.send(JSON.stringify({
-                "type": "Subscribe",
-                "value": path
-            }));
-        }
-    }
-};
 
 /**
 */
 $(function(){
     var model = new AppViewModel(
-        new models.UserModel(),
-        new models.StreamModel(new models.StatusModel(models.DEFAULT_COLOR)));
-
-    loadInitialUserData(model);
-    loadInitialStreamData(model);
+        application_model.initialUser(),
+        initialStream());
 
     var updateStatus = function(color) {
         var stream = model.stream();
@@ -173,25 +116,20 @@ $(function(){
             updateStatus(color);
         });
 
-    ko.applyBindings(model);
 
     model.color.subscribe(function(color) {
-
         updateFavicon(color);
     });
 
-    var manager = new StreamManager();
 
-    manager.subscribe(model.stream().uri(), function(stream) {
+    model.manager.subscribe(model.stream().uri(), function(stream) {
         model.setColor(stream.status.color);
         model.stream().updated(new Date(stream.updated));
 
-         statusPicker.spectrum("set", stream.status.color);
+        statusPicker.spectrum("set", stream.status.color);
     });
 
-    manager.subscribe(model.stream().uri(), function(stream) {
-        model.user().status(new models.StatusModel(stream.status.color));
-    });
+    ko.applyBindings(model);
 });
 
 });
