@@ -6,7 +6,8 @@
 @import be.objectify.deadbolt.core.utils.TemplateUtils._
 
 @articleHeader = {
-
+<div class="status status-header status-small-header"
+     style="background: #EB4D86;"></div>
 }
 
 @extraScripts = {
@@ -26,14 +27,15 @@
 @main(Messages("playauthenticate.profile.title"), "profile", articleHeader = articleHeader, extraScripts = extraScripts) {
 
     <h1>Find Color</h1>
-    <div id="stream-search-input" class="input-group">
-        <span class="input-group-btn">
-            <button class="btn btn-default" type="button">Go!</button>
-        </span>
-        <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
-    </div>
+    <div class="stream-search">
+        <div id="stream-search-input" class="input-group">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button">Go!</button>
+            </span>
+            <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
+        </div>
+        <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"</p>
 
-
-    <ul data-bind="template: { name: 'stream-search-result-template', foreach: results, as: 'result' }"></ul>
-
+        <ul id="stream-search-results" data-bind="template: { name: 'stream-search-result-template', foreach: results }"></ul>
+    <div>
 }

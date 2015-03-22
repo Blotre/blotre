@@ -7,6 +7,7 @@
     @defining(Application.getLocalUser(session())) { user =>
         <a class="status user-status"
            href="@routes.Stream.getStream(user.userName)"
+           style="background:@user.getStatus().color"
            data-bind="style: { background: user().color }"></a>
     }
 }

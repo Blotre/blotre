@@ -3,8 +3,6 @@ package models
 import be.objectify.deadbolt.core.models.Permission
 import be.objectify.deadbolt.core.models.Role
 import be.objectify.deadbolt.core.models.Subject
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.feth.play.module.pa.providers.password.UsernamePasswordAuthUser
 import com.feth.play.module.pa.user._
 import helper.datasources.MorphiaObject
@@ -227,6 +225,7 @@ object User extends models.Serializable {
   implicit val userWrites = new Writes[User] {
     def writes(x: User): JsValue = {
       Json.obj(
+        "id" -> x.id,
         "userName" -> x.userName,
         "status" -> x.getStatus()
       )

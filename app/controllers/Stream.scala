@@ -157,13 +157,15 @@ object Stream extends Controller {
   /**
    *
    */
-  private def canUpdateStreamStatus(uri: String, poster: User): Option[models.Stream] = {
-    val stream = models.Stream.findByUri(uri)
+  def canUpdateStreamStatus(stream: models.Stream, poster: User): Option[models.Stream] = {
     if (poster != null && stream != null)
       if (stream.ownerId == poster.id)
         return Some(stream);
     return None;
   }
+
+  def canUpdateStreamStatus(uri: String, poster: User): Option[models.Stream] =
+    canUpdateStreamStatus(models.Stream.findByUri(uri), poster)
 
   /**
    *

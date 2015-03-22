@@ -48,7 +48,7 @@
 
         </div>
 
-        <nav class="stream-controls @("hidden".when(Application.getLocalUser(session()) == null))">
+        <nav class="stream-controls @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
             <button class="stream-favorite btn-lg">
                 <span class="glyphicon glyphicon-star"></span>
             </button>
