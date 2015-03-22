@@ -144,7 +144,7 @@ object Stream extends Controller {
    * Update an existing stream.
    */
   @SubjectPresent
-  def postStreamUpdate (uri: String) = Action { implicit request => {
+  def postStreamUpdate(uri: String) = Action { implicit request => {
     val localUser: User = Application.getLocalUser(request)
     statusForm.bindFromRequest().fold(
       formWithErrors => BadRequest(""),
@@ -155,7 +155,7 @@ object Stream extends Controller {
   }}
 
   /**
-   *
+   * Can a user edit a given stream?
    */
   def canUpdateStreamStatus(stream: models.Stream, poster: User): Option[models.Stream] = {
     if (poster != null && stream != null)

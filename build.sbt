@@ -23,6 +23,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-contrib" % "2.3.4"
 )
 
+libraryDependencies += filters
+
 resolvers ++= Seq(
   "Apache" at "http://repo1.maven.org/maven2/",
   "jBCrypt Repository" at "http://repo1.maven.org/maven2/org/",

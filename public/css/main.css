@@ -23,6 +23,21 @@ ul {
 }
 
 /**
+   Navbar overrides
+*/
+.navbar .dropdown-menu {
+    border: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.navbar-default .navbar-nav > .open > a,
+.navbar-default .navbar-nav > .open > a:hover,
+.navbar-default .navbar-nav > .open > a:focus {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/**
     Login Panel
 */
 .login-panel {
