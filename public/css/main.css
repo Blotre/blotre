@@ -554,6 +554,13 @@ form .error .help-inline {
 
 
 
+/**
+    Stream index page
+*/
+.stream-search-result {
+    border-left-width: 10px;
+    border-left-style: solid;
+}
 
 
 
@@ -580,6 +587,8 @@ form .error .help-inline {
 .in.collapse + .create-child-expand-button:before {
     content: "Cancel";
 }
+
+
 
 /**
     Small screen

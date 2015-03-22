@@ -30,16 +30,7 @@ var AppViewModel = function(user, stream) {
 };
 
 var initialStream = function() {
-    if (window.initialStreamData) {
-        return new models.StreamModel(
-            window.initialStreamData.uri,
-            new models.StatusModel(window.initialStreamData.status.color),
-            new Date(window.initialStreamData.updated));
-    }
-    return new models.StreamModel(
-        '',
-        new models.StatusModel(models.DEFAULT_COLOR),
-        new Date(0));
+    return models.StreamModel.fromJson(window.initialStreamData);
 };
 
 /**

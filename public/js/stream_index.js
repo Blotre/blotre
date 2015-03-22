@@ -20,14 +20,12 @@ var StreamIndexViewModel = function(user, results) {
     self.query = ko.observableArray('');
 };
 
-
 /**
 */
 $(function(){
     var model = new StreamIndexViewModel(
         application_model.initialUser(),
         []);
-
 
     var updateSearchResultsForQuery = function(query) {
          $.ajax({
@@ -38,7 +36,8 @@ $(function(){
                 accept: "application/json"
             }
         }).done(function(result) {
-            console.log(result);
+            if (result.streams)
+                model.results(result.streams.map(models.StreamModel.fromJson));
         });
     };
 
@@ -53,8 +52,10 @@ $(function(){
             updateSearchResults();
     });
 
+    // Get initial set of results
+    updateSearchResults();
 
-   ko.applyBindings(model);
+    ko.applyBindings(model);
 });
 
 });

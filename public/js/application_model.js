@@ -24,17 +24,11 @@ var AppViewModel = function(user, page) {
 
     self.user().userName.subscribe(function(userName) {
         self.manager.unsubscribe(userName);
-    }, null, "beforeChange")
+    }, null, "beforeChange");
 };
 
 var initialUser = function() {
-    if (window.initialUserData) {
-        return new models.UserModel(
-            initialUserData.userName,
-            new models.StatusModel(initialUserData.status.color));
-    }
-
-    return new models.UserModel('', new models.StatusModel(models.DEFAULT_COLOR));
+    return models.UserModel.fromJson(window.initialUserData);
 };
 
 return {

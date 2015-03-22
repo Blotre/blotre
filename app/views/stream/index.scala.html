@@ -11,8 +11,11 @@
 
 @extraScripts = {
     <script type="text/html" id="stream-search-result-template">
-        <h3 data-bind="text: name"></h3>
-        <p>Credits: <span data-bind="text: credits"></span></p>
+        <li class="stream-search-result" data-bind="style: { 'border-color': color }">
+            <a data-bind="attr: { href: url }">
+                <h2 data-bind="text: name"></h2>
+            </a>
+        </li>
     </script>
 
     <script data-main="@routes.Assets.at("js/stream_index.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
@@ -21,6 +24,7 @@
 
 @main(Messages("playauthenticate.profile.title"), "profile", articleHeader = articleHeader, extraScripts = extraScripts) {
 
+    <h1>Find Color</h1>
     <div id="stream-search-input" class="input-group">
         <span class="input-group-btn">
             <button class="btn btn-default" type="button">Go!</button>

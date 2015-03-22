@@ -52,7 +52,7 @@ StreamManager.prototype.subscribe = function(path, callback) {
     if (current) {
         current.listeners.push(callback);
     } else {
-        this.streams[path] = current = { model: new models.StreamModel(path, null), listeners: [callback] };
+        this.streams[path] = current = { model: new models.StreamModel(path, path, null), listeners: [callback] };
         if (this.ready) {
             this.socket.send(JSON.stringify({
                 "type": "Subscribe",

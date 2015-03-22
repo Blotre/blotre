@@ -34,13 +34,26 @@ var StatusModel = function(color) {
    self.color = ko.observable(color);
 };
 
+StatusModel.empty = function() {
+    return new StatusModel(DEFAULT_COLOR);
+};
+
+StatusModel.fromJson = function(data) {
+    return new StatusModel(data && data.color);
+};
+
 /**
 */
-var StreamModel = function(uri, status, updated) {
+var StreamModel = function(name, uri, status, updated) {
     var self = this;
-    self.uri = ko.observable(uri);
-    self.status = ko.observable(status || new StatusModel());
+    self.name = ko.observable(name || '');
+    self.uri = ko.observable(uri || '');
+    self.status = ko.observable(status || StatusModel.empty());
     self.updated = ko.observable(updated);
+
+    self.url = ko.computed(function() {
+        return jsRoutes.controllers.Stream.getStream(self.uri()).url;
+    });
 
     self.color = ko.computed(function() {
         var status = self.status();
@@ -48,7 +61,7 @@ var StreamModel = function(uri, status, updated) {
     });
 
     self.setColor = function(color) {
-        var status = self.status() || new StatusModel();
+        var status = self.status() || StatusModel.empty();
         status.color(color);
         self.status(status);
     };
@@ -58,12 +71,20 @@ var StreamModel = function(uri, status, updated) {
     });
 };
 
+StreamModel.fromJson = function(data) {
+    return new StreamModel(
+        data && data.name,
+        data && data.uri,
+        StatusModel.fromJson(data && data.status),
+        new Date(data && data.updated));
+};
+
 /**
 */
-var UserModel = function(username, status) {
+var UserModel = function(userName , status) {
     var self = this;
-    self.userName = ko.observable(username);
-    self.status = ko.observable(status || new StatusModel(DEFAULT_COLOR));
+    self.userName = ko.observable(userName || '');
+    self.status = ko.observable(status || StatusModel.empty());
 
     self.color = ko.computed(function() {
         var status = self.status();
@@ -71,6 +92,11 @@ var UserModel = function(username, status) {
     });
 };
 
+UserModel.fromJson = function(data) {
+    return new UserModel(
+        data && data.userName,
+        StatusModel.fromJson(data && data.status));
+};
 
 return {
     DEFAULT_COLOR: DEFAULT_COLOR,
