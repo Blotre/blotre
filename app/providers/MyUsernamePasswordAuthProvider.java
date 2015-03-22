@@ -123,7 +123,7 @@ public class MyUsernamePasswordAuthProvider
 	protected com.feth.play.module.pa.providers.password.UsernamePasswordAuthProvider.SignupResult signupUser(final MyUsernamePasswordAuthUser user) {
 		final User u = User.findByUsernamePasswordIdentity(user);
 		if (u != null) {
-			if (u.emailValidated) {
+			if (u.emailValidated()) {
 				// This user exists, has its email validated and is active
 				return SignupResult.USER_EXISTS;
 			} else {
@@ -149,10 +149,10 @@ public class MyUsernamePasswordAuthProvider
 		if (u == null) {
 			return LoginResult.NOT_FOUND;
 		} else {
-			if (!u.emailValidated) {
+			if (!u.emailValidated()) {
 				return LoginResult.USER_UNVERIFIED;
 			} else {
-				for (final LinkedAccount acc : u.linkedAccounts) {
+				for (final LinkedAccount acc : u.linkedAccounts()) {
 					if (getKey().equals(acc.providerKey)) {
 						if (authUser.checkPassword(acc.providerUserId,
 								authUser.getPassword())) {
@@ -315,10 +315,10 @@ public class MyUsernamePasswordAuthProvider
 
 		final String html = getEmailTemplate(
 				"views.html.account.email.verify_email", langCode, url, token,
-				user.name, user.email);
+				user.name(), user.email());
 		final String text = getEmailTemplate(
 				"views.txt.account.email.verify_email", langCode, url, token,
-				user.name, user.email);
+				user.name(), user.email());
 
 		return new Body(text, html);
 	}
@@ -334,6 +334,6 @@ public class MyUsernamePasswordAuthProvider
 	}
 
 	private String getEmailName(final User user) {
-		return getEmailName(user.email, user.name);
+		return getEmailName(user.email(), user.name());
 	}
 }

@@ -63,7 +63,7 @@ public class Signup extends Controller {
 		if (ta == null) {
 			return badRequest(no_token_or_invalid.render());
 		}
-		final String email = ta.targetUser.email;
+		final String email = ta.targetUser.email();
 		User.verify(ta.targetUser);
 		flash(ApplicationConstants.FLASH_MESSAGE_KEY,
 				Messages.get("playauthenticate.verify_email.success", email));

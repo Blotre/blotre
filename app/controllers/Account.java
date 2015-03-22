@@ -54,13 +54,13 @@ public class Account extends Controller {
 	public static Result verifyEmail() {
 		com.feth.play.module.pa.controllers.Authenticate.noCache(response());
 		final User user = Application.getLocalUser(session());
-		if (user.emailValidated) {
+		if (user.emailValidated()) {
 			flash(ApplicationConstants.FLASH_MESSAGE_KEY,
 					Messages.get("playauthenticate.verify_email.error.already_validated"));
-		} else if (user.email != null && !user.email.trim().isEmpty()) {
+		} else if (user.email() != null && !user.email().trim().isEmpty()) {
 			flash(ApplicationConstants.FLASH_MESSAGE_KEY, Messages.get(
 					"playauthenticate.verify_email.message.instructions_sent",
-					user.email));
+					user.email()));
             MyUsernamePasswordAuthProvider provider = MyUsernamePasswordAuthProvider.getProvider();
 			if (provider != null) {
                 provider.sendVerifyEmailMailingAfterSignup(user, ctx());
@@ -68,7 +68,7 @@ public class Account extends Controller {
 		} else {
 			flash(ApplicationConstants.FLASH_MESSAGE_KEY, Messages.get(
 					"playauthenticate.verify_email.error.set_email_first",
-					user.email));
+					user.email()));
 		}
 		return redirect(routes.Account.account());
 	}
@@ -175,7 +175,7 @@ public class Account extends Controller {
         final User localUser = Application.getLocalUser(session());
 
         // Only allow setting user name once
-        if (localUser.userNameSelected)
+        if (localUser.userNameSelected())
             return redirect(routes.Application.index());
 
         return ok(views.html.account.selectUserName.render(SELECT_USER_NAME_FORM));
@@ -186,7 +186,7 @@ public class Account extends Controller {
         final User localUser = Application.getLocalUser(session());
 
         // Only allow setting user name once
-        if (localUser.userNameSelected)
+        if (localUser.userNameSelected())
             return redirect(routes.Application.index());
 
         Form<UserNameSelect> formData = Form.form(UserNameSelect.class).bindFromRequest();
@@ -202,21 +202,9 @@ public class Account extends Controller {
         }
 
 
-        Key<Stream> homeStream = Stream.createStreamWithName(requestedUserName, requestedUserName, localUser.id);
+        Key<Stream> homeStream = Stream.createStreamWithName(requestedUserName, requestedUserName, localUser.id());
 
         User.setUserName(localUser, requestedUserName);
         return redirect(routes.Application.index());
-    }
-
-    @SubjectPresent
-    public static Result alerts() {
-        final User localUser = Application.getLocalUser(session());
-
-        LinkedList<String> alerts = new LinkedList<>();
-
-        if (!localUser.userNameSelected)
-            alerts.addLast("asfsa");
-
-        return ok(Json.toJson(alerts));
     }
 }

@@ -111,10 +111,7 @@
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>
                 <script>
-                    window.initialUserData = @Html(Json.obj(
-                        "status" -> user.getStatus(),
-                        "userName" -> user.userName
-                    ).toString());
+                    window.initialUserData = @Html(Json.toJson(user).toString());
                 </script>
             }
         }
