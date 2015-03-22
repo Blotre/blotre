@@ -41,7 +41,7 @@
 
     <div class="stream-header">
         <div class="stream-data">
-            <span class="status-picker-color-label" data-bind="text: color"></span>
+            <span class="color-label" data-bind="text: color"></span>
             <a href="@routes.Stream.getStream(stream.uri)"><h1 class="stream-title">@stream.name</h1></a>
             <div class="stream-updated"
                  data-bind="text: stream().displayUpdated">@stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")</div>

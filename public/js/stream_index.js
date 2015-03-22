@@ -36,8 +36,10 @@ $(function(){
                 accept: "application/json"
             }
         }).done(function(result) {
-            if (result.streams)
+            if (result.streams) {
+                model.query(result.query);
                 model.results(result.streams.map(models.StreamModel.fromJson));
+            }
         });
     };
 

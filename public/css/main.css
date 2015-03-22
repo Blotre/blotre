@@ -457,10 +457,13 @@ form .error .help-inline {
     text-align: center;
 }
 
-.status-picker-color-label {
+.color-label {
     display: block;
-    text-align: center;
     color: #bbb;
+}
+
+.stream-header .color-label {
+    text-align: center;
 }
 
 .stream-header .stream-data {
@@ -558,8 +561,30 @@ form .error .help-inline {
     Stream index page
 */
 .stream-search-result {
-    border-left-width: 10px;
+    position: relative;
+    border-left-width: 20px;
     border-left-style: solid;
+    padding: 2rem;
+    padding-left: 4rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.stream-search-result a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.stream-search-result .color-label {
+    position: absolute;
+    top: 50%;
+    left: 0.4rem;
+    width: 1px;
+    word-break: break-all;
+    line-height: 0.9em;
+    -webkit-transform: translateY(-50%);
+    -moz-transform: translateY(-50%);
+    transform: translateY(-50%);
 }
 
 
