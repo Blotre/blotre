@@ -6,6 +6,9 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala, PlayJava)
 
 scalaVersion := "2.11.1"
 
+val scalikejdbcVersion = "2.2.+"
+val scalikejdbcPlayVersion = "2.3.+"
+
 libraryDependencies ++= Seq(
   "be.objectify"  %% "deadbolt-java"     % "2.3.0-RC1",
   "com.feth"      %% "play-authenticate" % "0.6.5-SNAPSHOT",
@@ -20,7 +23,11 @@ libraryDependencies ++= Seq(
   "org.webjars" %% "webjars-play" % "2.3.0",
   "org.webjars" % "bootstrap" % "3.2.0",
   "org.webjars" % "knockout" % "3.3.0",
-  "com.typesafe.akka" %% "akka-contrib" % "2.3.4"
+  "com.typesafe.akka" %% "akka-contrib" % "2.3.4",
+  "org.scalikejdbc"      %% "scalikejdbc"                     % scalikejdbcVersion,
+  "org.scalikejdbc"      %% "scalikejdbc-config"              % scalikejdbcVersion,
+  "org.scalikejdbc"      %% "scalikejdbc-play-plugin"         % scalikejdbcPlayVersion,
+  "org.scalikejdbc"      %% "scalikejdbc-play-fixture-plugin" % scalikejdbcPlayVersion
 )
 
 libraryDependencies += filters
@@ -34,3 +41,8 @@ resolvers ++= Seq(
   "play-authenticate (release)" at "http://joscha.github.io/play-authenticate/repo/releases/",
   "play-authenticate (snapshot)" at "http://joscha.github.io/play-authenticate/repo/snapshots/"
 )
+
+initialCommands := """
+    import scalikejdbc._, config._
+    implicit val autoSession = AutoSession
+"""

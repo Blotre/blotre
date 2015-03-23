@@ -15,14 +15,13 @@ import play.filters.csrf._
 import scala.concurrent.Future
 
 object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
-
     override def onHandlerNotFound(request: RequestHeader) =
       Future.successful(NotFound(views.html.notFound.render(request.uri)))
 
     override def onStart(app: Application) {
         Logger.info("Application started!")
-        MongoDB.connect()
-        Logger.info("Connected to Database!")
+        setupDatabase()
+
         PlayAuthenticate.setResolver(new Resolver() {
 
             override def login(): Call = return routes.Application.login()
@@ -36,10 +35,10 @@ object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
                         .authenticate(provider)
             }
 
-            override def askMerge(): play.mvc.Call =
+            override def askMerge(): Call =
               routes.Account.askMerge()
 
-            override def askLink(): play.mvc.Call =
+            override def askLink(): Call =
               routes.Account.askLink()
 
             override def onException(e: AuthException): play.mvc.Call = {
@@ -57,12 +56,16 @@ object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
         MongoDB.disconnect()
     }
 
-    private def initialData() {
-        if (MorphiaObject.datastore.createQuery(classOf[SecurityRole]).countAll() == 0) {
+  private def setupDatabase(): Unit = {
+    scalikejdbc.config.DBs.setupAll()
+    models.DBInitializer.run()
+    Logger.info("Connected to Database!")
+  }
+
+    private def initialData() = scalikejdbc.DB localTx { implicit session =>
+        if (SecurityRole.allRoles.isEmpty) {
             for (roleName <- List(controllers.ApplicationConstants.USER_ROLE)) {
-                val role = new SecurityRole()
-                role.roleName = roleName
-                MorphiaObject.datastore.save[SecurityRole](role)
+              new SecurityRole(0, roleName).save()
             }
         }
     }

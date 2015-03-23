@@ -202,11 +202,11 @@ object User extends models.Serializable {
     MorphiaObject.datastore.save[User](u)
   }
 
-  def findByEmail(email: String): User = getEmailUserFind(email).get
+  def findByEmail(email: String): User =
+    getEmailUserFind(email).get
 
-  private def getEmailUserFind(email: String): Query[User] = {
+  private def getEmailUserFind(email: String): Query[User] =
     getDb.filter("active", true).filter("email", email)
-  }
 
   def verify(unverified: User) {
     unverified.emailValidated = true
