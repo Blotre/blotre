@@ -155,7 +155,7 @@ object User extends models.Serializable {
 
   def create(authUser: AuthUser): User = {
     val user = new User()
-    user.roles = Collections.singletonList(SecurityRole.findByRoleName(controllers.ApplicationConstants.USER_ROLE))
+    user.roles = Collections.singletonList(SecurityRole.findByRoleName(controllers.ApplicationConstants.USER_ROLE).get)
     user.active = true
     user.lastLogin = new Date()
     user.linkedAccounts = Collections.singletonList(LinkedAccount.create(authUser))

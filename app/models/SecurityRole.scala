@@ -7,8 +7,8 @@ import org.joda.time.DateTime
 @SerialVersionUID(1L)
 case class SecurityRole(
   id: Long,
-  roleName: String) extends Role {
-
+  roleName: String) extends Role
+{
   override def getName: String = roleName
 
   def save()(implicit session: DBSession = SecurityRole.autoSession): SecurityRole =
@@ -18,8 +18,8 @@ case class SecurityRole(
     SecurityRole.destroy(id)(session)
 }
 
-object SecurityRole extends SQLSyntaxSupport[SecurityRole] {
-
+object SecurityRole extends SQLSyntaxSupport[SecurityRole]
+{
   def apply(c: SyntaxProvider[SecurityRole])(rs: WrappedResultSet): SecurityRole =
     apply(c.resultName)(rs)
 
@@ -32,7 +32,6 @@ object SecurityRole extends SQLSyntaxSupport[SecurityRole] {
     List()
 
   val r = SecurityRole.syntax("r")
-
 
   def findByRoleName(roleName: String)(implicit session: DBSession = autoSession): Option[SecurityRole] = withSQL {
     select
