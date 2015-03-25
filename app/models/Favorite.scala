@@ -1,68 +1,58 @@
 package models
 
 import java.util.Date
-import helper.datasources.MorphiaObject
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
 import play.api.libs.json._
-import play.api.libs.functional.syntax._
 import play.data.validation.Constraints
-import org.mongodb.morphia.query.Query
-import scala.collection.JavaConverters._
+import play.api.libs.functional.syntax._
 
-@Entity
-@SerialVersionUID(1)
-class Favorite {
-  var streamId: ObjectId = _
 
-  var ownerId: ObjectId = _
+@SerialVersionUID(1L)
+class Favorite(
+  @Constraints.Required
+  @Constraints.MaxLength(7)
+  @Constraints.MinLength(7)
+  @Constraints.Pattern("#[0-9a-fA-F]{6}")
+  var color: String,
 
   @Constraints.Required
-  var created: Date = _
+  @Constraints.Max(100)
+  @Constraints.Min(0)
+  var priority: Int,
+
+  @Constraints.Required
+  var created: Date,
+
+  @Constraints.Required
+  var posterId:ObjectId)
+{
+  def this() = this("#000000", 0, new Date(), null)
 }
 
 object Favorite extends models.Serializable {
-  def apply(id: ObjectId, created: Date, stream: ObjectId, owner: ObjectId): Favorite = {
-    var s: Favorite = new Favorite();
-    s.id = id;
-    s.created = created;
-    s.streamId = stream;
-    s.ownerId = owner;
-    return s;
-  }
 
-  implicit val streamReads: Reads[Favorite] = (
-    (JsPath \ "id").read[ObjectId] and
+  def apply(color: String, priority: Int, created: Date, posterId: ObjectId): Favorite =
+    new Favorite(color, priority, created, posterId)
+
+  def defaultFavorite(poster: ObjectId): Favorite =
+    apply("#aaaaaa", 0, new Date(), poster)
+
+  implicit val FavoriteReads: Reads[Favorite] =
+    ((JsPath \ "color").read[String] and
+      (JsPath \ "priority").read[Int] and
       (JsPath \ "created").read[Date] and
-      (JsPath \ "stream").read[ObjectId] and
-      (JsPath \ "owner").read[ObjectId]
-    )(Favorite.apply _)
+      (JsPath \ "poster").read[ObjectId]
+      )(Favorite.apply _)
 
-  implicit val streamWrites = new Writes[Favorite] {
+  implicit val FavoriteWrites = new Writes[Favorite] {
     def writes(x: Favorite): JsValue = {
       Json.obj(
-        "id" -> x.id,
+        "color" -> x.color,
+        "priority" -> x.priority,
         "created" -> x.created,
-        "owner" -> x.ownerId,
-        "stream," -> x.streamId
+        "poster" -> x.posterId
       )
     }
   }
-
-  private def db(): Query[Favorite] =
-    MorphiaObject.datastore.createQuery((classOf[Favorite]))
-
-  /**
-   *
-   */
-  def findForUser(user: User, limit: Int = 20, offset: Int = 0): List[Favorite] =
-    db()
-      .filter("ownerId =", user.id)
-      .order("updated")
-      .offset(offset)
-      .limit(limit)
-      .asList()
-      .asScala.toList
-
-
 }

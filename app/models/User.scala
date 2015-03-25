@@ -6,19 +6,25 @@ import be.objectify.deadbolt.core.models.Subject
 import com.feth.play.module.pa.providers.password.UsernamePasswordAuthUser
 import com.feth.play.module.pa.user._
 import helper.datasources.MorphiaObject
-import models.TokenAction.Kind
+import models.TokenAction.Type
+import org.bson.types.ObjectId
+import org.mongodb.morphia.annotations.Embedded
+import org.mongodb.morphia.annotations.Entity
+import org.mongodb.morphia.annotations.Id
+import org.mongodb.morphia.query.Query
 import play.api.libs.json.{Json, JsValue, Writes}
 import play.data.format.Formats
 import play.data.validation.Constraints
 import java.util._
 import scala.collection.JavaConversions._
-import scalikejdbc._
-import org.joda.time.DateTime
+
 
 @SerialVersionUID(1L)
-class User extends Subject
-{
-  var id: Long = _
+@Entity
+class User extends Subject {
+
+  @Id
+  var id: ObjectId = _
 
   @Constraints.Email
   var email: String = _
@@ -29,26 +35,38 @@ class User extends Subject
 
   var lastName: String = _
 
-  @Constraints.Pattern("[a-z0-9_$]+")
+  @Constraints.Pattern("[a-z]+")
   @Constraints.MinLength(3)
   @Constraints.MaxLength(60)
   var userName: String = _
 
-  var created: DateTime = _
-
-  var lastLogin: DateTime = _
+  @Formats.DateTime(pattern = "yyyy-MM-dd HH:mm:ss")
+  var lastLogin: Date = _
 
   var active: Boolean = _
 
   var emailValidated: Boolean = _
 
+  var userNameSelected: Boolean = _
+
+  @Embedded
+  var roles: List[SecurityRole] = new ArrayList[SecurityRole]()
+
+  @Embedded
+  var linkedAccounts: List[LinkedAccount] = new ArrayList[LinkedAccount]()
+
+  @Embedded
+  var permissions: List[UserPermission] = new ArrayList[UserPermission]()
+
   override def getIdentifier(): String = id.toString
 
-  override def getPermissions(): List[_ <: Permission] = List()
+  override def getRoles(): List[_ <: Role] = roles
+
+  override def getPermissions(): List[_ <: Permission] = permissions
+
+  def getUserPermissions(): List[UserPermission] = permissions
 
   def getLinkedAccounts(): List[LinkedAccount] = linkedAccounts
-
-  def userNameSelected() = !this.userName.isEmpty;
 
   def merge(otherUser: User) {
     for (acc <- otherUser.linkedAccounts) {
@@ -91,25 +109,21 @@ class User extends Subject
     val userStream = Stream.findByUri(this.userName)
     userStream.status
   }
-
-  def save()(implicit session: DBSession = User.autoSession): User =
-    User.save(this)(session)
-
-  def destroy()(implicit session: DBSession = User.autoSession): Unit =
-    User.destroy(id)(session)
 }
 
-object User extends SQLSyntaxSupport[User]
-{
+
+object User extends models.Serializable {
+
+  private def getDb(): Query[User] = {
+    MorphiaObject.datastore.createQuery((classOf[User]))
+  }
+
   def getUsers(): List[User] =
     getDb.filter("active =", true).asList()
 
   def existsByAuthUserIdentity(identity: AuthUserIdentity): Boolean = {
     var exp: Query[User] = null
-    exp = if (identity.isInstanceOf[UsernamePasswordAuthUser])
-      getUsernamePasswordAuthUserFind(identity.asInstanceOf[UsernamePasswordAuthUser])
-    else
-      getAuthUserFind(identity)
+    exp = if (identity.isInstanceOf[UsernamePasswordAuthUser]) getUsernamePasswordAuthUserFind(identity.asInstanceOf[UsernamePasswordAuthUser]) else getAuthUserFind(identity)
     exp.countAll() > 0
   }
 
@@ -141,7 +155,7 @@ object User extends SQLSyntaxSupport[User]
 
   def create(authUser: AuthUser): User = {
     val user = new User()
-    user.roles = Collections.singletonList(SecurityRole.findByRoleName(controllers.ApplicationConstants.USER_ROLE).get)
+    user.roles = Collections.singletonList(SecurityRole.findByRoleName(controllers.ApplicationConstants.USER_ROLE))
     user.active = true
     user.lastLogin = new Date()
     user.linkedAccounts = Collections.singletonList(LinkedAccount.create(authUser))
@@ -172,28 +186,32 @@ object User extends SQLSyntaxSupport[User]
     user
   }
 
-  def mergeAuthUsers(oldUser: AuthUser, newUser: AuthUser) =
+  def mergeAuthUsers(oldUser: AuthUser, newUser: AuthUser) {
     User.findByAuthUserIdentity(oldUser).merge(User.findByAuthUserIdentity(newUser))
+  }
 
   def addLinkedAccount(oldUser: AuthUser, newUser: AuthUser) {
     val u = User.findByAuthUserIdentity(oldUser)
     u.linkedAccounts.add(LinkedAccount.create(newUser))
-    u.save()
+    MorphiaObject.datastore.save[User](u)
   }
 
   def setLastLoginDate(knownUser: AuthUser) {
     val u = User.findByAuthUserIdentity(knownUser)
-    u.lastLogin = new DateTime()
-    u.save()
+    u.lastLogin = new Date()
+    MorphiaObject.datastore.save[User](u)
   }
 
-  def findByEmail(email: String): User =
-    getDb.filter("active", true).filter("email", email).get
+  def findByEmail(email: String): User = getEmailUserFind(email).get
+
+  private def getEmailUserFind(email: String): Query[User] = {
+    getDb.filter("active", true).filter("email", email)
+  }
 
   def verify(unverified: User) {
     unverified.emailValidated = true
-    unverified.save()
-    TokenAction.deleteByUser(unverified, Kind.EMAIL_VERIFICATION)
+    MorphiaObject.datastore.save[User](unverified)
+    TokenAction.deleteByUser(unverified, Type.EMAIL_VERIFICATION)
   }
 
   def setUserName(currentUser: User, requestedUserName: String) {
@@ -213,22 +231,4 @@ object User extends SQLSyntaxSupport[User]
       )
     }
   }
-
-  def save(x: TokenAction)(implicit session: DBSession = autoSession): TokenAction = {
-    withSQL {
-      update(TokenAction)
-        .set(column.token -> x.token)
-        .set(column.targetedUserId -> x.targetedUserId)
-        .set(column.kind -> x.kind)
-        .set(column.created -> x.created)
-        .set(column.expires -> x.expires)
-        .where.eq(column.id, x.id)
-    }.update.apply()
-    x
-  }
-
-  def destroy(id: Long)(implicit session: DBSession = autoSession): Unit = withSQL {
-    delete.from(TokenAction)
-      .where.eq(column.id, id)
-  }.update.apply()
 }
