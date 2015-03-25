@@ -13,15 +13,12 @@ import scala.collection.JavaConverters._
 @Entity
 @SerialVersionUID(1)
 class Favorite {
-  @Id
-  var id: ObjectId = _
-
-  @Constraints.Required
-  var created: Date = _
-
   var streamId: ObjectId = _
 
   var ownerId: ObjectId = _
+
+  @Constraints.Required
+  var created: Date = _
 }
 
 object Favorite extends models.Serializable {
