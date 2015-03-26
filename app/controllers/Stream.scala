@@ -1,6 +1,6 @@
 package controllers
 
-import Actors.{StreamSupervisor, StreamActor}
+import Actors.{StreamSupervisor}
 import akka.actor._
 import akka.contrib.pattern.DistributedPubSubMediator
 import be.objectify.deadbolt.java.actions.SubjectPresent
@@ -17,29 +17,6 @@ import play.api.Play.current
 import scala.collection.immutable._
 import helper._
 import helper.ImageHelper
-
-/**
- *
- */
-object ActorListener {
-  def props(channel: Concurrent.Channel[JsValue]): Props = Props(new ActorListener(channel))
-}
-
-class ActorListener(channel: Concurrent.Channel[JsValue]) extends Actor {
-  import DistributedPubSubMediator.{ Subscribe, SubscribeAck }
-
-  def receive = {
-    case StreamActor.StatusUpdate(uri, status) =>
-      channel.push(Json.obj(
-        "type" -> "StatusUpdate",
-        "stream"-> Json.obj(
-          "uri" -> uri,
-          "updated" -> status.created,
-          "status" -> status)))
-
-    case SubscribeAck(Subscribe(uri, None, `self`)) =>
-  }
-}
 
 /**
  *
@@ -84,35 +61,6 @@ object Stream extends Controller {
     }
   }}
 
-  /**
-   *
-   */
-  def stream = WebSocket.using[JsValue] { implicit request =>
-    val (out, channel) = Concurrent.broadcast[JsValue]
-
-    val ws = Akka.system.actorOf(ActorListener.props(channel))
-
-    val in = Iteratee.foreach[JsValue] { msg =>
-      (msg \ "type").as[String] match {
-        case "Subscribe" =>
-          val target: String = (msg \ "value").as[String]
-          val current = models.Stream.findByUri(target)
-          if (current != null) {
-            StreamSupervisor.subscribe(target, ws)
-            // notify of current status
-            ws ! StreamActor.StatusUpdate(target, current.status)
-          }
-        case "Unsubscribe" =>
-          val target = (msg \ "value").as[String]
-          StreamSupervisor.subscribe(target, ws)
-
-        case _ =>
-      }
-    } map { _ =>
-    }
-
-    (in, out)
-  }
   /**
    *
    */

@@ -16,15 +16,9 @@ var AppViewModel = function(user, page) {
 
     self.manager = new stream_manager.StreamManager();
 
-    self.user().userName.subscribe(function(userName) {
-        self.manager.subscribe(userName, function(stream) {
-            model.user().status(new models.StatusModel(stream.status.color));
-        });
+    self.manager.subscribe(user.userName(), function(stream) {
+        self.user().status(new models.StatusModel(stream.status.color));
     });
-
-    self.user().userName.subscribe(function(userName) {
-        self.manager.unsubscribe(userName);
-    }, null, "beforeChange");
 };
 
 var initialUser = function() {

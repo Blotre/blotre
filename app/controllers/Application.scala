@@ -27,14 +27,14 @@ object Application extends Controller {
   def getLocalUser(user: AuthUser): User =
     User.findByAuthUserIdentity(user)
 
-  def getLocalUser(session: play.mvc.Http.Session): User = {
+  def getLocalUser(session: play.mvc.Http.Session): User =
     getLocalUser(PlayAuthenticate.getUser(session))
-  }
 
-  def getLocalUser(request: Request[_]): User = {
-    val javaContext = play.core.j.JavaHelpers.createJavaContext(request);
-    return getLocalUser(javaContext.session());
-  }
+  def getLocalUser(request: Request[_]): User =
+    getLocalUser(JavaHelpers.createJavaContext(request).session())
+
+  def getLocalUser(request: RequestHeader): User =
+    getLocalUser(JavaHelpers.createJavaContext(request).session())
 
   /**
    * Index page.

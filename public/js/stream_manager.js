@@ -32,12 +32,10 @@ var StreamManager = function() {
     self.socket = new WebSocket("ws://localhost:9000/ws");
     self.ready = false;
     self.socket.onopen = function(e) {
-        Object.keys(self.streams).forEach(function(path) {
-            self.socket.send(JSON.stringify({
-                "type": "Subscribe",
-                "value": path
-            }));
-        });
+        self.socket.send(JSON.stringify({
+            "type": "Subscribe",
+            "to": Object.keys(self.streams)
+        }));
     };
 
     self.socket.onmessage = function(event) {
@@ -46,6 +44,7 @@ var StreamManager = function() {
             processMessage(data);
     }
 };
+
 StreamManager.prototype.subscribe = function(path, callback) {
     var current = this.streams[path];
 
@@ -56,7 +55,7 @@ StreamManager.prototype.subscribe = function(path, callback) {
         if (this.ready) {
             this.socket.send(JSON.stringify({
                 "type": "Subscribe",
-                "value": path
+                "to": [path]
             }));
         }
     }
