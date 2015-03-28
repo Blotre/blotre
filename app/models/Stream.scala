@@ -105,7 +105,7 @@ object Stream extends models.Serializable {
    * Lookup a stream by id.
    */
   def findById(id: ObjectId): Option[Stream] =
-    Some(db()
+    Option(db()
       .filter("id = ", id)
       .get())
 
@@ -113,7 +113,7 @@ object Stream extends models.Serializable {
    * Lookup a stream using its uri.
    */
   def findByUri(uri: String): Option[Stream] =
-    Some(db()
+    Option(db()
       .filter("uri = ", uri)
       .get())
 
@@ -141,7 +141,7 @@ object Stream extends models.Serializable {
    * Lookup a stream by its parent.
    */
   def findByParent(parent: Stream, childName: String): Option[Stream] =
-    Some(childDb()
+    Option(childDb()
       .filter("parentId =", parent.id)
       .filter("childName =", childName)
       .get()) flatMap (entry => findById(entry.childId))
@@ -218,9 +218,9 @@ object Stream extends models.Serializable {
    */
   def getChildrenOf(parent: Stream) =
     childDb()
-    .filter("parentId =", parent.id)
-    .asList()
-    .asScala.toList
-    .map(x => findById(x.childId).get)
+      .filter("parentId =", parent.id)
+      .asList()
+      .asScala.toList
+      .map(x => findById(x.childId).get)
 
 }

@@ -46,6 +46,24 @@ var updateFavicon = function(color) {
     link.href = canvas.toDataURL('image/png');
 };
 
+var enableFavoriteButton = function() {
+    $('.stream-favorite')
+        .prop("disabled", false);
+};
+
+var disableFavoriteButton = function() {
+    $('.stream-favorite')
+        .prop("disabled", true)
+        .off('click');
+};
+
+var toggleFavoriteButton = function(stream, user) {
+    if (!stream || !user) {
+        disableFavoriteButton();
+    } else {
+        enableFavoriteButton()
+    }
+};
 
 /**
 */
@@ -107,11 +125,11 @@ $(function(){
             updateStatus(color);
         });
 
-
-    model.color.subscribe(function(color) {
-        updateFavicon(color);
+    model.stream.subscribe(function(x) {
+        toggleFavoriteButton(x, model.user());
     });
 
+    model.color.subscribe(updateFavicon);
 
     model.manager.subscribe(model.stream().uri(), function(stream) {
         model.setColor(stream.status.color);
@@ -121,6 +139,7 @@ $(function(){
     });
 
     ko.applyBindings(model);
+    toggleFavoriteButton();
 });
 
 });

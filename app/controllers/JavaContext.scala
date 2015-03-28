@@ -10,8 +10,7 @@ object JavaContext {
     try {
       Http.Context.current.set(JavaHelpers.createJavaContext(header))
       block
-    }
-    finally {
+    } finally {
       Http.Context.current.remove()
     }
   }

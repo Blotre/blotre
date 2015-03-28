@@ -14,6 +14,11 @@ import play.api.libs.functional.syntax._
 case class GetCollection(uri: String)
 case class GetCollectionResponse(actor: ActorRef)
 
+/**
+ * Manages collection actors.
+ *
+ * Each collection in the system is represented by an actor.
+ */
 class CollectionSupervisor extends Actor
 {
   def receive = {
@@ -27,25 +32,6 @@ class CollectionSupervisor extends Actor
   }
 }
 
-/**
- *
- */
 object CollectionSupervisor
 {
-  lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
-
-  def subscribe(subscriber: ActorRef, path: String): Unit =
-    mediator ! DistributedPubSubMediator.Subscribe(path, subscriber)
-
-  def subscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
-    paths.foreach { x => subscribe(subscriber, x) }
-
-  def unsubscribe(subscriber: ActorRef, path: String): Unit =
-    mediator ! DistributedPubSubMediator.Unsubscribe(path, subscriber)
-
-  def unsubscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
-    paths.foreach { x => unsubscribe(subscriber, x) }
-
-  def updateStatus(path: String, status: models.Status) =
-    mediator ! DistributedPubSubMediator.Publish(path, StatusUpdate(path, status))
 }

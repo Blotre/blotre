@@ -2,7 +2,7 @@ import com.feth.play.module.pa.PlayAuthenticate
 import com.feth.play.module.pa.PlayAuthenticate.Resolver
 import com.feth.play.module.pa.exceptions.AccessDeniedException
 import com.feth.play.module.pa.exceptions.AuthException
-import controllers.routes
+import controllers.{JavaContext, routes}
 import helper.datasources.MongoDB
 import helper.datasources.MorphiaObject
 import models.SecurityRole
@@ -16,8 +16,12 @@ import scala.concurrent.Future
 
 object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
 
-    override def onHandlerNotFound(request: RequestHeader) =
-      Future.successful(NotFound(views.html.notFound.render(request.uri)))
+    override def onHandlerNotFound(request: RequestHeader) = {
+        implicit val h = request
+        JavaContext.withContext {
+            Future.successful(NotFound(views.html.notFound.render(request.uri)))
+        }
+    }
 
     override def onStart(app: Application) {
         Logger.info("Application started!")

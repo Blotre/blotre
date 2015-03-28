@@ -509,7 +509,11 @@ form .error .help-inline {
 
 }
 
-.stream-controls > *:active {
+.stream-controls > *:disabled {
+    color: #aaa;
+}
+
+.stream-controls > *:active:not([disabled]) {
     border-color: #eee;
 }
 

@@ -15,7 +15,8 @@ import play.api.libs.functional.syntax._
  */
 case class StatusUpdate(uri: String, status: models.Status)
 
-object StatusUpdate {
+object StatusUpdate
+{
   implicit val statusWrites = new Writes[StatusUpdate] {
     def writes(x: StatusUpdate): JsValue =
       Json.obj(
@@ -28,7 +29,7 @@ object StatusUpdate {
 }
 
 /**
- *
+ * Manages the main stream status change event bus.
  */
 object StreamSupervisor {
   lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
