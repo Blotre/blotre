@@ -103,20 +103,17 @@ class User extends Subject {
     MorphiaObject.datastore.save[User](this)
   }
 
-  def getStatus(): Status = {
-    if (!this.userNameSelected)
-      return new Status()
-    val userStream = Stream.findByUri(this.userName)
-    userStream.status
-  }
+  def getStatus(): Status =
+    Stream.findByUri(this.userName)
+      .map(userStream => userStream.status)
+      .getOrElse(new Status())
 }
 
 
 object User extends models.Serializable {
 
-  private def getDb(): Query[User] = {
+  private def getDb(): Query[User] =
     MorphiaObject.datastore.createQuery((classOf[User]))
-  }
 
   def getUsers(): List[User] =
     getDb.filter("active =", true).asList()

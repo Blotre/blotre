@@ -28,6 +28,8 @@ class Stream {
   @Indexed(unique=true)
   var uri: String = _
 
+  var link: String = _
+
   @Constraints.Required
   var created: Date = _
 
@@ -48,6 +50,8 @@ class Stream {
 }
 
 object Stream extends models.Serializable {
+  val streamNamePattern = """[a-zA-Z0-9_-$]+""".r
+
   def apply(id: ObjectId, name: String, uri: String, created: Date, updated: Date, status: Status,
             owner: ObjectId): Stream = {
     var s: Stream = new Stream();
@@ -94,31 +98,50 @@ object Stream extends models.Serializable {
   /**
    *
    */
-  def findByUri(uri: String) =
-    db()
+  def findByUri(uri: String): Option[Stream] =
+    Some(db()
       .filter("uri = ", uri)
-      .get();
+      .get())
 
   /**
-   *
+   * Create a new stream with a given name
    */
-  def createStreamWithName(name: String, uri: String, ownerId: ObjectId) =
-    MorphiaObject.datastore.save[Stream](
-      Stream(null, name, uri, new Date(), new Date(), Status.defaultStatus(ownerId), ownerId));
-
-  /**
-   *
-   */
-  def updateStreamStatus(uri: String, color: String, poster: User): Option[Stream] = {
-    val current = findByUri(uri)
-    if (canUpdate(poster, current)) {
-      current.status = Status(color, 0, new Date(), poster.id)
-      MorphiaObject.datastore.save[Stream](current)
-      return Some(current)
-    }
-    return None
+  private def createStreamWithName(name: String, uri: String, owner: User): Option[Stream] = {
+    val created = new Date()
+    val s = Stream(null, name, uri, created, created , Status.defaultStatus(owner.id), owner.id)
+    MorphiaObject.datastore.save[Stream](s)
+    Some(s)
   }
 
+  /**
+   * Create a new stream with a given name
+   */
+  def createRootStream(name: String, owner: User): Option[Stream] =
+    createStreamWithName(name, name, owner)
+
+  /**
+   *
+   */
+  def createChildStream(parent: String, child: String,  user: User): Option[models.Stream] =
+    findByParent(parent, child)
+      .orElse(
+        createStreamWithName(child, createChildUri(parent, child), user))
+
+  /**
+   *
+   */
+  def updateStreamStatus(uri: String, color: String, poster: User): Option[Stream] =
+    findByUri(uri).flatMap(current => {
+      if (canUpdate(poster, current)) {
+        val updated = new Date()
+        current.status = Status(color, 0, updated, poster.id)
+        current.updated = updated
+        MorphiaObject.datastore.save[Stream](current)
+        Some(current)
+      } else {
+        None
+      }
+    })
 
   /**
    *
@@ -141,5 +164,9 @@ object Stream extends models.Serializable {
     results.asScala.toList
   }
 
+  def findByParent(parent: String, childName: String): Option[Stream] =
+    findByUri(createChildUri(parent, childName))
 
+  def createChildUri(parent: String, childName: String) =
+    parent + "/" + childName
 }

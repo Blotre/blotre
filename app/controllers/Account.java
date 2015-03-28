@@ -18,6 +18,7 @@ import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import providers.MyUsernamePasswordAuthProvider;
+import scala.Option;
 import views.html.account.link;
 import views.html.account.ask_link;
 import views.html.account.ask_merge;
@@ -195,16 +196,19 @@ public class Account extends Controller {
             return badRequest(views.html.account.selectUserName.render(formData));
         }
         String requestedUserName = formData.get().userName;
-        Stream existing = Stream.findByUri(requestedUserName);
-        if (existing != null) {
+        Option<Stream> existing = Stream.findByUri(requestedUserName);
+        if (existing.isDefined()) {
             flash("error", "User name already taken.");
             return badRequest(views.html.account.selectUserName.render(formData));
         }
 
-
-        Key<Stream> homeStream = Stream.createStreamWithName(requestedUserName, requestedUserName, localUser.id());
-
-        User.setUserName(localUser, requestedUserName);
-        return redirect(routes.Application.index());
+        Option<Stream> rootStream = Stream.createRootStream(requestedUserName, localUser);
+		if (rootStream.isEmpty()) {
+			flash("error", "Selected user name could not be processed.");
+			return badRequest(views.html.account.selectUserName.render(formData));
+		} else {
+			User.setUserName(localUser, requestedUserName);
+			return redirect(routes.Application.index());
+		}
     }
 }

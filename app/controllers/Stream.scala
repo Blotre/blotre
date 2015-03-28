@@ -21,7 +21,8 @@ import helper.ImageHelper
 /**
  *
  */
-object Stream extends Controller {
+object Stream extends Controller
+{
   case class StatusUpdate(val color: String) { }
 
   /**
@@ -66,27 +67,46 @@ object Stream extends Controller {
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
     val path = uri.split('.')(0)
-    val s: models.Stream = models.Stream.findByUri(path)
-    if (s == null) {
-      // TODO: replace with try create page?
-      NotFound(views.html.notFound.render(""));
-    } else {
-      request match {
-        case AcceptsPng() => {
-          val img = ImageHelper.createImage(s.status.color);
-          Ok(ImageHelper.toPng(img))
-            .withHeaders(
-              "Cache-Control" -> "no-cache, no-store, must-revalidate",
-              "Expires" -> "0")
-            .as("image/png")
+    models.Stream.findByUri(path) match {
+      case Some(s) =>
+        request match {
+          case AcceptsPng() => {
+            val img = ImageHelper.createImage(s.status.color);
+            Ok(ImageHelper.toPng(img))
+              .withHeaders(
+                "Cache-Control" -> "no-cache, no-store, must-revalidate",
+                "Expires" -> "0")
+              .as("image/png")
+          }
+          case Accepts.Html() => {
+            val map = uriMap(s.uri)
+            Ok(views.html.stream.stream.render(s, children = List(), uriPath = map))
+          }
         }
-        case Accepts.Html() => {
-          val map = uriMap(s.uri)
-          Ok(views.html.stream.stream.render(s, children = List(), uriPath = map))
-        }
-      }
+      case None =>
+        // TODO: replace with try create page?
+        NotFound(views.html.notFound.render(""));
     }
   }}
+
+  /**
+   *
+   */
+  @SubjectPresent
+  def createChildStream(uri: String) = Action { implicit request =>
+    val user = Application.getLocalUser(request)
+    val link = request.getQueryString("link").getOrElse("")
+    getParentPath(uri) match
+    {
+      case Some((parent, child)) =>
+        models.Stream.createChildStream(parent, child, user)
+        Ok("")
+      case None =>
+        BadRequest("")
+    }
+  }
+
+
 
   /**
    * Update an existing stream.
@@ -113,7 +133,8 @@ object Stream extends Controller {
   }
 
   def canUpdateStreamStatus(uri: String, poster: User): Option[models.Stream] =
-    canUpdateStreamStatus(models.Stream.findByUri(uri), poster)
+    models.Stream.findByUri(uri)
+      .flatMap(x => canUpdateStreamStatus(x, poster))
 
   /**
    *
@@ -127,6 +148,14 @@ object Stream extends Controller {
           case None =>
         }
       }
+  }
+
+  private def getParentPath(uri: String) = {
+    val index = uri.lastIndexOf('/')
+    if (index == -1 || index >= uri.length - 1)
+      None
+    else
+      Some(uri.splitAt(index))
   }
 }
 

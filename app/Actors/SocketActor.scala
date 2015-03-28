@@ -39,12 +39,11 @@ class SocketActor(out: ActorRef) extends Actor {
     if (subscriptions.contains(target) || subscriptions.size >= SUBSCRIPTION_LIMIT)
       return
 
-    val current = models.Stream.findByUri(target)
-    if (current != null) {
+    models.Stream.findByUri(target).map(current => {
       StreamSupervisor.subscribe(self, target)
       // notify of current status
       self ! Actors.StatusUpdate(target, current.status)
-    }
+    })
   }
 
   private def unsubscribe(targets: List[String]) = {
