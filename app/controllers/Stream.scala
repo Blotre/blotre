@@ -80,7 +80,7 @@ object Stream extends Controller
           }
           case Accepts.Html() => {
             val map = uriMap(s.uri)
-            Ok(views.html.stream.stream.render(s, children = List(), uriPath = map))
+            Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = map))
           }
         }
       case None =>
@@ -95,18 +95,18 @@ object Stream extends Controller
   @SubjectPresent
   def createChildStream(uri: String) = Action { implicit request =>
     val user = Application.getLocalUser(request)
-    val link = request.getQueryString("link").getOrElse("")
-    getParentPath(uri) match
-    {
+    getParentPath(uri) match {
       case Some((parent, child)) =>
-        models.Stream.createChildStream(parent, child, user)
-        Ok("")
+        models.Stream.createDescendant(parent, child, user) match {
+          case Some(s) =>
+            Redirect(routes.Stream.getStream(s.uri))
+          case _ =>
+            BadRequest("")
+        }
       case None =>
         BadRequest("")
     }
   }
-
-
 
   /**
    * Update an existing stream.

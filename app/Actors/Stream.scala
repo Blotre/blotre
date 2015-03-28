@@ -33,18 +33,27 @@ object StatusUpdate {
 object StreamSupervisor {
   lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
 
-  def subscribe(subscriber: ActorRef, path: String): Unit =
-    mediator ! DistributedPubSubMediator.Subscribe(ActorHelper.normalizeName(path), subscriber)
+  def subscribe(subscriber: ActorRef, path: String): Unit = {
+    val topic = ActorHelper.normalizeName(path)
+    if (!topic.isEmpty)
+      mediator ! DistributedPubSubMediator.Subscribe(topic, subscriber)
+  }
 
   def subscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
     paths.foreach { x => subscribe(subscriber, x) }
 
-  def unsubscribe(subscriber: ActorRef, path: String): Unit =
-    mediator ! DistributedPubSubMediator.Unsubscribe(ActorHelper.normalizeName(path), subscriber)
+  def unsubscribe(subscriber: ActorRef, path: String): Unit = {
+    val topic = ActorHelper.normalizeName(path)
+    if (!topic.isEmpty)
+      mediator ! DistributedPubSubMediator.Unsubscribe(topic, subscriber)
+  }
 
   def unsubscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
     paths.foreach { x => unsubscribe(subscriber, x) }
 
-  def updateStatus(path: String, status: models.Status) =
-     mediator ! DistributedPubSubMediator.Publish(ActorHelper.normalizeName(path), StatusUpdate(path, status))
+  def updateStatus(path: String, status: models.Status) = {
+    val topic = ActorHelper.normalizeName(path)
+    if (!topic.isEmpty)
+      mediator ! DistributedPubSubMediator.Publish(topic, StatusUpdate(path, status))
+  }
 }
