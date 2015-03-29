@@ -11,24 +11,6 @@ import play.api.libs.json.{Json, JsValue, Writes}
 import play.api.libs.functional.syntax._
 
 /**
- *
- */
-case class StatusUpdate(uri: String, status: models.Status)
-
-object StatusUpdate
-{
-  implicit val statusWrites = new Writes[StatusUpdate] {
-    def writes(x: StatusUpdate): JsValue =
-      Json.obj(
-        "type" -> "StatusUpdate",
-        "stream" -> Json.obj(
-          "uri" -> x.uri,
-          "updated" -> x.status.created,
-          "status" -> x.status))
-  }
-}
-
-/**
  * Manages the main stream status change event bus.
  */
 object StreamSupervisor {

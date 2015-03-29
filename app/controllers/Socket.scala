@@ -8,13 +8,14 @@ import play.api.libs.json._
 /**
  *
  */
-object Socket extends Controller {
+object Socket extends Controller
+{
   /**
    *
    */
   def open = WebSocket.acceptWithActor[JsValue, JsValue] { implicit request => out =>
-    Application.getLocalUser(request)
-    Actors.SocketActor.props(out)
+    val user = Application.getLocalUser(request)
+    Actors.SocketActor.props(user, out)
   }
 }
 

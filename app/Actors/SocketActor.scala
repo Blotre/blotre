@@ -1,16 +1,51 @@
 package Actors
 
 import akka.actor._
-import play.api.libs.json.{Json, JsValue}
+import models.User
+import play.api.libs.json._
+
+/**
+ *
+ */
+case class StatusUpdate(uri: String, status: models.Status)
+
+object StatusUpdate
+{
+  implicit val statusWrites = new Writes[StatusUpdate] {
+    def writes(x: StatusUpdate): JsValue =
+      Json.obj(
+        "type" -> "StatusUpdate",
+        "stream" -> Json.obj(
+          "uri" -> x.uri,
+          "updated" -> x.status.created,
+          "status" -> x.status))
+  }
+}
+
+/**
+ *
+ */
+case class SocketError(error: String, correlation: Int)
+
+object SocketError
+{
+  implicit val statusWrites = new Writes[SocketError] {
+    def writes(x: SocketError): JsValue =
+      Json.obj(
+        "type" -> "Error",
+        "error" -> x.error,
+        "correlation" -> x.correlation)
+  }
+}
 
 /**
  *
  */
 object SocketActor {
-  def props(out: ActorRef): Props = Props(new SocketActor(out))
+  def props(user: User, out: ActorRef): Props = Props(new SocketActor(user, out))
 }
 
-class SocketActor(out: ActorRef) extends Actor {
+class SocketActor(user: User, out: ActorRef) extends Actor {
   val SUBSCRIPTION_LIMIT = 255
 
   var subscriptions = Set[String]()
@@ -19,18 +54,36 @@ class SocketActor(out: ActorRef) extends Actor {
     case msg@StatusUpdate(_, _) =>
       out ! Json.toJson(msg)
 
-    case msg: JsValue => {
-      (msg \ "type").as[String] match {
+    case msg: JsValue =>
+      implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
+      ((__ \ "type").read[String]).reads(msg) map { x => x match {
         case "Subscribe" =>
-          subscribe((msg \ "to").as[List[String]])
+          recieveSubscribeMessage(msg)
 
         case "Unsubscribe" =>
-          unsubscribe((msg \ "to").as[List[String]])
+          recieveUnsubscribeMessage(msg)
 
         case _ =>
+          out ! Json.toJson(SocketError("Unknown type", correlation))
       }
+    } recoverTotal { _ =>
+        out ! Json.toJson(SocketError("Could not process request", correlation))
     }
   }
+
+  private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
+    ((__ \ "to").read[List[String]]).reads(msg)
+      .map(subscribe)
+      .recoverTotal { _ =>
+        out ! Json.toJson(SocketError("Could not process request", correlation))
+    }
+
+  private def recieveUnsubscribeMessage(msg: JsValue)(implicit correlation: Int) =
+    ((__ \ "to").read[List[String]]).reads(msg)
+      .map(unsubscribe)
+      .recoverTotal { _ =>
+        out ! Json.toJson(SocketError("Could not process request", correlation))
+      }
 
   private def subscribe(targets: List[String]): Unit =
     targets.foreach(subscribe)
