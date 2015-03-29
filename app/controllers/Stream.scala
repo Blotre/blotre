@@ -70,7 +70,7 @@ object Stream extends Controller
    *
    *     html - View of the stream.
    *
-   *     json: TODO
+   *     json: Returns json of the stream.
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
     val path = uri.split('.')(0)
@@ -78,11 +78,14 @@ object Stream extends Controller
       case AcceptsPng() =>
         renderStreamStatusPng(path, request)
 
+      case Prefers.Json() =>
+        renderStreamJson(path, request)
+
       case Accepts.Html() =>
         renderStream(path, request)
 
       case _ =>
-        BadRequest("")
+        BadRequest
     }
   }}
 
@@ -91,7 +94,7 @@ object Stream extends Controller
    *
    * Displays a try create page if the stream does not exist but the parent does.
    */
-  def renderStream(uri: String, request: Request[AnyContent]) = {
+  def renderStream(uri: String, request: Request[AnyContent]) =
     models.Stream.findByUri(uri) match {
       case Some(s) =>
         val map = uriMap(s.uri)
@@ -100,28 +103,41 @@ object Stream extends Controller
       case _ =>
         tryCreateDecendant(uri, request)
     }
-  }
+
+  /**
+   * Render a stream as Json.
+   */
+  def renderStreamJson(uri: String, request: Request[AnyContent]): Result =
+    models.Stream.findByUri(uri)
+      .map(s =>
+        renderStreamJson(s, request))
+      .getOrElse(NotFound)
+
+
+  def renderStreamJson(stream: models.Stream, request: Request[AnyContent]): Result =
+    Ok(Json.toJson(stream))
 
   /**
    * Render a stream's current status as a 1x1 PNG image.
    */
-  def renderStreamStatusPng(uri: String, request: Request[AnyContent]) = {
-    models.Stream.findByUri(uri) match {
-      case Some(s) =>
+  def renderStreamStatusPng(uri: String, request: Request[AnyContent]) =
+    models.Stream.findByUri(uri)
+      .map(s => {
         val img = ImageHelper.createImage(s.status.color)
         Ok(ImageHelper.toPng(img))
           .withHeaders(
             "Cache-Control" -> "no-cache, no-store, must-revalidate",
             "Expires" -> "0")
           .as("image/png")
+      })
+      .getOrElse(NotFound)
 
-      case _ =>
-        NotFound("")
-    }
-  }
 
   /**
+   * Checks if child stream can created and displays an create page.
    *
+   * A child stream can only be created if its direct parent exists and
+   * is owned by the current user.
    */
   def tryCreateDecendant(uri: String, request: Request[AnyContent]) = {
     val user = Application.getLocalUser(request)
@@ -135,29 +151,40 @@ object Stream extends Controller
             Ok(views.html.stream.createChild.render(stream, child)))
           .getOrElse(
             NotFound(views.html.notFound.render("")))
+
       case _ =>
         NotFound(views.html.notFound.render(""))
     }
   }
 
   /**
-   *
+   * Perform the stream update operation.
    */
   @SubjectPresent
   def createChildStream(uri: String) = Action { implicit request =>
     val user = Application.getLocalUser(request)
-    getParentPath(uri) match {
-      case Some((parent, child)) =>
-        models.Stream.createDescendant(parent, child, user) match {
-          case Some(s) =>
-            Redirect(routes.Stream.getStream(s.uri))
-          case _ =>
-            BadRequest("")
-        }
-      case None =>
-        BadRequest("")
+    request match {
+      case Prefers.Json() =>
+        createDescendant(uri, user)
+          .map(s =>
+            renderStreamJson(s, request))
+          .getOrElse(BadRequest)
+
+      case Accepts.Html() =>
+        createDescendant(uri, user)
+          .map(s =>
+            Redirect(routes.Stream.getStream(s.uri)))
+          .getOrElse(BadRequest)
+
+      case _ =>
+        BadRequest
     }
   }
+
+  private def createDescendant(uri: String, user: User) =
+    getParentPath(uri) flatMap { s =>
+      models.Stream.createDescendant(s._1, s._2, user)
+    }
 
   /**
    * Update an existing stream.
@@ -166,7 +193,7 @@ object Stream extends Controller
   def postStreamUpdate(uri: String) = Action { implicit request => {
     val localUser: User = Application.getLocalUser(request)
     statusForm.bindFromRequest().fold(
-      formWithErrors => BadRequest(""),
+      formWithErrors => BadRequest,
       userData => {
         updateStreamStatus(uri, userData.color, localUser)
         Ok("")

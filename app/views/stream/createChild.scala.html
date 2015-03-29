@@ -1,0 +1,29 @@
+@(
+    parent: models.Stream,
+    childName: String)
+
+@import play.api.libs.json._
+@import helper._
+@import be.objectify.deadbolt.java.views.html._
+@import be.objectify.deadbolt.core.utils.TemplateUtils._
+
+@articleHeader = {
+<div class="status status-header status-small-header"
+     style="background: #EB4D86;"></div>
+}
+
+@extraScripts = {
+    <script data-main="@routes.Assets.at("js/stream_create_child.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+}
+
+@main(Messages("blotre.stream.tryCreate.title"), "createChild", articleHeader = articleHeader, extraScripts = extraScripts) {
+    <h1>@Messages("blotre.stream.tryCreate.header")</h1>
+    <p>
+        @parent.uri / <b>childName</b>
+    </p>
+    <p>@Messages("blotre.stream.tryCreate.body")</p>
+
+    <button class="btn btn-lg create-child-button">
+       <span class="glyphicon glyphicon-plus"></span>
+    </button>
+}
