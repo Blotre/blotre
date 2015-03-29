@@ -129,6 +129,11 @@ ul {
 #article-container {
     position: relative;
     max-width: 800px;
+}
+
+#article-container > p,
+#article-container > h1,
+#article-container > h2 {
     text-align: center;
 }
 

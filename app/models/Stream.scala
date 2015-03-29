@@ -138,7 +138,7 @@ object Stream extends models.Serializable {
    */
   def findByUpdated(): List[Stream] =
     db()
-      .order("updated")
+      .order("-updated")
       .limit(20)
       .asList()
       .asScala.toList
