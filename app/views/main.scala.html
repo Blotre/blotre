@@ -106,7 +106,8 @@
         @helper.javascriptRouter("jsRoutes")(
             routes.javascript.Stream.postStreamUpdate,
             routes.javascript.Stream.getStream,
-            routes.javascript.Stream.index
+            routes.javascript.Stream.index,
+            routes.javascript.Stream.createChildStream
         )
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>

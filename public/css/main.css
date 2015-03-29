@@ -637,10 +637,6 @@ form .error .help-inline {
     padding: 1rem 0;
 }
 
-.create-child {
-    background: red;
-}
-
 .create-child-expand-button {
     width: 100%;
     color: inherit;
@@ -653,7 +649,15 @@ form .error .help-inline {
     content: "Cancel";
 }
 
-
+/**
+    Try create child page
+*/
+.create-child-button {
+    display: block;
+    width: 100%;
+    background: none;
+    border: 1px solid #ccc;
+}
 
 /**
     Small screen

@@ -63,31 +63,82 @@ object Stream extends Controller
   }}
 
   /**
+   * Lookup a stream.
    *
+   * Supports:
+   *     png - Render 1x1 image of the current status.
+   *
+   *     html - View of the stream.
+   *
+   *     json: TODO
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
     val path = uri.split('.')(0)
-    models.Stream.findByUri(path) match {
-      case Some(s) =>
-        request match {
-          case AcceptsPng() => {
-            val img = ImageHelper.createImage(s.status.color);
-            Ok(ImageHelper.toPng(img))
-              .withHeaders(
-                "Cache-Control" -> "no-cache, no-store, must-revalidate",
-                "Expires" -> "0")
-              .as("image/png")
-          }
-          case Accepts.Html() => {
-            val map = uriMap(s.uri)
-            Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = map))
-          }
-        }
-      case None =>
-        // TODO: replace with try create page?
-        NotFound(views.html.notFound.render(""));
+    request match {
+      case AcceptsPng() =>
+        renderStreamStatusPng(path, request)
+
+      case Accepts.Html() =>
+        renderStream(path, request)
+
+      case _ =>
+        BadRequest("")
     }
   }}
+
+  /**
+   * Render a stream as html.
+   *
+   * Displays a try create page if the stream does not exist but the parent does.
+   */
+  def renderStream(uri: String, request: Request[AnyContent]) = {
+    models.Stream.findByUri(uri) match {
+      case Some(s) =>
+        val map = uriMap(s.uri)
+        Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = map))
+
+      case _ =>
+        tryCreateDecendant(uri, request)
+    }
+  }
+
+  /**
+   * Render a stream's current status as a 1x1 PNG image.
+   */
+  def renderStreamStatusPng(uri: String, request: Request[AnyContent]) = {
+    models.Stream.findByUri(uri) match {
+      case Some(s) =>
+        val img = ImageHelper.createImage(s.status.color)
+        Ok(ImageHelper.toPng(img))
+          .withHeaders(
+            "Cache-Control" -> "no-cache, no-store, must-revalidate",
+            "Expires" -> "0")
+          .as("image/png")
+
+      case _ =>
+        NotFound("")
+    }
+  }
+
+  /**
+   *
+   */
+  def tryCreateDecendant(uri: String, request: Request[AnyContent]) = {
+    val user = Application.getLocalUser(request)
+    getParentPath(uri) match {
+      case Some((parent, child)) =>
+        models.Stream.findByUri(parent)
+          .flatMap({ stream =>
+            models.Stream.asEditable(user, stream)
+          })
+          .map(stream =>
+            Ok(views.html.stream.createChild.render(stream, child)))
+          .getOrElse(
+            NotFound(views.html.notFound.render("")))
+      case _ =>
+        NotFound(views.html.notFound.render(""))
+    }
+  }
 
   /**
    *
@@ -155,7 +206,7 @@ object Stream extends Controller
     if (index == -1 || index >= uri.length - 1)
       None
     else
-      Some(uri.splitAt(index))
+      Some((uri.slice(0, index), uri.slice(index + 1, uri.length)))
   }
 }
 

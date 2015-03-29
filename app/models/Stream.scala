@@ -57,6 +57,9 @@ case class ChildStream(
   childName: String,
   childUri: String,
   created: Date)
+{
+  def this() = this(null, null, null, "", "", new Date(0))
+}
 
 object Stream extends models.Serializable {
   val streamNamePattern = """[a-zA-Z0-9_\-$]+""".r
@@ -98,8 +101,11 @@ object Stream extends models.Serializable {
     parent.uri + "/" + childName
 
 
-  def canUpdate(poster: User, stream: Stream) =
-    stream != null && poster != null && stream.ownerId == poster.id;
+  def asEditable(poster: User, stream: Stream): Option[Stream] =
+    if (stream != null && poster != null && stream.ownerId == poster.id)
+      Some(stream)
+    else
+      None
 
   /**
    * Lookup a stream by id.
@@ -172,17 +178,15 @@ object Stream extends models.Serializable {
    *
    * Returns the existing child if it exists.
    */
-  def createDescendant(parent: Stream, child: String, user: User): Option[models.Stream] = {
-    if (!canUpdate(user, parent))
-      return None
-
-    findByParent(parent, child) orElse {
-      createStreamWithName(child, descendantUri(parent, child), user) map { childStream =>
-        addChild(parent, childStream)
-        childStream
+  def createDescendant(parent: Stream, child: String, user: User): Option[models.Stream] =
+    asEditable(user, parent) flatMap { stream =>
+      findByParent(parent, child) orElse {
+        createStreamWithName(child, descendantUri(parent, child), user) map { childStream =>
+          addChild(parent, childStream)
+          childStream
+        }
       }
     }
-  }
 
   def createDescendant(parentUri: String, childName: String, user: User): Option[models.Stream] =
     findByUri(parentUri) flatMap { parentStream =>
@@ -201,17 +205,15 @@ object Stream extends models.Serializable {
    *
    */
   def updateStreamStatus(uri: String, color: String, poster: User): Option[Stream] =
-    findByUri(uri).flatMap(current => {
-      if (canUpdate(poster, current)) {
+    findByUri(uri) flatMap { current => {
+      asEditable(poster, current) map { current =>
         val updated = new Date()
         current.status = Status(color, 0, updated, poster.id)
         current.updated = updated
         MorphiaObject.datastore.save[Stream](current)
-        Some(current)
-      } else {
-        None
+        current
       }
-    })
+    }}
 
   /**
    * Get all children of a given stream.
