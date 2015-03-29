@@ -129,6 +129,7 @@ ul {
 #article-container {
     position: relative;
     max-width: 800px;
+    text-align: center;
 }
 
 header + #article-container,
@@ -659,6 +660,14 @@ form .error .help-inline {
     border: 1px solid #ccc;
 }
 
+
+.glyphicon-refresh-animate {
+    -webkit-animation: spinWebkit 1s infinite linear;
+    -moz-animation: spin 1s infinite linear;
+    animation: spin 1s infinite linear;
+}
+
+
 /**
     Small screen
 */
@@ -678,4 +687,15 @@ form .error .help-inline {
         -moz-transform: translate(50%, 0);
         transform: translate(50%, 0);
     }
+}
+
+
+@-webkit-keyframes spinWebkit {
+    from { -webkit-transform: rotate(0deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1) rotate(360deg); }
 }
