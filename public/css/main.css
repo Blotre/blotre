@@ -632,8 +632,16 @@ form .error .help-inline {
 
 .stream-search-result h2 {
     font-weight: 300;
+    margin-bottom: 0;
 }
 
+.stream-search-result .stream-uri {
+    color: #aaa;
+}
+
+.stream-search-result .stream-uri:before {
+    content: "/";
+}
 
 .stream-children {
     padding-top: 4rem;
