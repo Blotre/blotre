@@ -31,7 +31,9 @@ class Status(
   def this() = this("#000000", 0, new Date(), null)
 }
 
-object Status extends models.Serializable {
+object Status extends models.Serializable
+{
+  val colorPattern = """#[0-9a-fA-F]{6}""".r
 
   def apply(color: String, priority: Int, created: Date, posterId: ObjectId): Status =
     new Status(color, priority, created, posterId)

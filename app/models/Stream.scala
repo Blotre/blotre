@@ -12,6 +12,43 @@ import org.mongodb.morphia.query.Query
 import scala.collection.JavaConverters._
 import scala.annotation.meta._
 
+/**
+ *
+ */
+@Entity
+@Indexes(Array(new Index(value = "parentId, childId", unique=true)))
+@SerialVersionUID(1)
+case class ChildStream(
+  @(Id @field)
+  id: ObjectId,
+  parentId: ObjectId,
+  childId: ObjectId,
+  childName: String,
+  childUri: String,
+  created: Date)
+{
+  def this() = this(null, null, null, "", "", new Date(0))
+}
+
+object ChildStream extends models.Serializable
+{
+  implicit val streamWrites = new Writes[ChildStream] {
+    def writes(x: ChildStream): JsValue = {
+      Json.obj(
+        "id" -> x.id,
+        "parentId" -> x.parentId,
+        "childId" -> x.childId,
+        "childName" -> x.childName,
+        "childUri" -> x.childUri,
+        "created" -> x.created
+      )
+    }
+  }
+}
+
+/**
+ *
+ */
 @Entity
 @SerialVersionUID(1)
 case class Stream(
@@ -47,21 +84,9 @@ case class Stream(
   def getChildren() = Stream.getChildrenOf(this)
 }
 
-@Entity
-@SerialVersionUID(1)
-case class ChildStream(
-  @(Id @field)
-  id: ObjectId,
-  parentId: ObjectId,
-  childId: ObjectId,
-  childName: String,
-  childUri: String,
-  created: Date)
-{
-  def this() = this(null, null, null, "", "", new Date(0))
-}
 
-object Stream extends models.Serializable {
+object Stream extends models.Serializable
+{
   val streamNamePattern = """[a-zA-Z0-9_\-$]+""".r
 
   implicit val streamReads: Reads[Stream] = (
@@ -115,6 +140,9 @@ object Stream extends models.Serializable {
       .filter("id = ", id)
       .get())
 
+  def findById(id: String): Option[Stream] =
+    findById(new ObjectId(id))
+
   /**
    * Lookup a stream using its uri.
    */
@@ -160,9 +188,7 @@ object Stream extends models.Serializable {
   private def createStreamWithName(name: String, uri: String, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      val s = Stream(null, name, uri, created, created, Status.defaultStatus(owner.id), owner.id)
-      MorphiaObject.datastore.save[Stream](s)
-      Some(s)
+      save(Stream(null, name, uri, created, created, Status.defaultStatus(owner.id), owner.id))
     }
 
   /**
@@ -196,33 +222,67 @@ object Stream extends models.Serializable {
   /**
    * Registers a new child for a given stream.
    */
-  private def addChild(parent: Stream, child: Stream) = {
-    val entry = ChildStream(null, parent.id, child.id, child.name, child.uri, new Date())
-    MorphiaObject.datastore.save[ChildStream](entry)
-  }
+  private def addChild(parent: Stream, child: Stream) =
+    save(ChildStream(null, parent.id, child.id, child.name, child.uri, new Date()))
 
   /**
    *
    */
-  def updateStreamStatus(uri: String, color: String, poster: User): Option[Stream] =
-    findByUri(uri) flatMap { current => {
-      asEditable(poster, current) map { current =>
+  def updateStreamStatus(stream: Stream, color: String, poster: User): Option[Stream] = {
+    if (color.matches(Status.colorPattern.toString())) {
+      asEditable(poster, stream) flatMap { current =>
         val updated = new Date()
         current.status = Status(color, 0, updated, poster.id)
         current.updated = updated
-        MorphiaObject.datastore.save[Stream](current)
-        current
+        save(current)
       }
-    }}
+    } else {
+      None
+    }
+  }
+
+  def updateStreamStatus(uri: String, color: String, poster: User): Option[Stream] =
+    findByUri(uri) flatMap { current =>
+      updateStreamStatus(current, color, poster)
+    }
+
+  /**
+   * Get data about the children of a given stream.
+   */
+  def getChildrenData(parent: Stream) =
+    childDb()
+      .filter("parentId =", parent.id)
+      .asList()
+      .asScala.toList
 
   /**
    * Get all children of a given stream.
    */
   def getChildrenOf(parent: Stream) =
-    childDb()
-      .filter("parentId =", parent.id)
-      .asList()
-      .asScala.toList
+    getChildrenData(parent)
       .map(x => findById(x.childId).get)
+
+  /**
+   * Lookup the child of a stream by the child's id.
+   */
+  def getChildById(parent: Stream, childId: ObjectId) =
+    Option(childDb()
+      .filter("parentId =", parent.id)
+      .filter("childId =", childId)
+      .get)
+
+  /**
+   * Lookup the child of a stream by the child's uri.
+   */
+  def getChildByUri(parent: Stream, childUri: String) =
+    Option(childDb()
+      .filter("parentId =", parent.id)
+      .filter("childUri =", childUri)
+      .get)
+
+  private def save[A](obj: A): Option[A] = {
+    MorphiaObject.datastore.save[A](obj)
+    Some(obj)
+  }
 
 }

@@ -79,8 +79,11 @@ $(function(){
 
         $.ajax({
             type: "POST",
-            url: jsRoutes.controllers.Stream.postStreamUpdate(stream.uri()).url,
-            data: "color=" + color
+            url: jsRoutes.controllers.Stream.apiSetStreamStatus(stream.id()).url,
+            contentType: 'application/json',
+            data: JSON.stringify({
+                color: color
+            })
         });
 
         model.stream().updated(new Date());
@@ -99,20 +102,19 @@ $(function(){
                 localStorageKey: "blotre.stream.statusPicker"
             })
             .on('show.spectrum', function(e, color) {
-                currentColor = color;
-                pickedColor = color;
+                pickedColor = currentColor = color + '';
             })
             .on('move.spectrum change.spectrum', function(e, color) {
-                model.setColor(color);
+                model.setColor(color + '');
             })
             .on('hide.spectrum', function(e, color) {
-                pickedColor = color;
+                pickedColor = color + '';
                 model.setColor(currentColor);
             });
 
         $('.sp-choose')
             .on('click', function() {
-                updateStatus(pickedColor);
+                updateStatus(pickedColor + '');
             });
 
         return statusPicker;

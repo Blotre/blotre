@@ -44,8 +44,9 @@ StatusModel.fromJson = function(data) {
 
 /**
 */
-var StreamModel = function(name, uri, status, updated) {
+var StreamModel = function(id, name, uri, status, updated) {
     var self = this;
+    self.id = ko.observable(id);
     self.name = ko.observable(name || '');
     self.uri = ko.observable(uri || '');
     self.status = ko.observable(status || StatusModel.empty());
@@ -73,6 +74,7 @@ var StreamModel = function(name, uri, status, updated) {
 
 StreamModel.fromJson = function(data) {
     return new StreamModel(
+        data && data.id,
         data && data.name,
         data && data.uri,
         StatusModel.fromJson(data && data.status),

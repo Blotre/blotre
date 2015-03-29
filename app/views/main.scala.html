@@ -104,10 +104,15 @@
         </div>
 
         @helper.javascriptRouter("jsRoutes")(
-            routes.javascript.Stream.postStreamUpdate,
             routes.javascript.Stream.getStream,
             routes.javascript.Stream.index,
-            routes.javascript.Stream.createChildStream
+            routes.javascript.Stream.createChildStream,
+
+            routes.javascript.Stream.apiGetStream,
+            routes.javascript.Stream.apiGetStreamStatus,
+            routes.javascript.Stream.apiSetStreamStatus,
+            routes.javascript.Stream.apiGetChildren,
+            routes.javascript.Stream.apiGetChild
         )
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>

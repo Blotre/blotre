@@ -8,13 +8,13 @@
 @if(stream != null) {
     @subjectPresentOr() {
         @defining(Application.getLocalUser(session())) { user =>
-            @form(action = routes.Stream.postStreamUpdate(stream.uri), 'class -> "status-picker-form") {
+            <div class="status-picker-form">
                 <input class="status-picker hidden"
                        name="color"
                        type="text"
                        value="@stream.status.color"
                        data-bind="value: color" />
-            }
+            </div>
         }
     } {
         <div class="status-picker-form">

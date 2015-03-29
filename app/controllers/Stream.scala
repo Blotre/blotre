@@ -5,6 +5,7 @@ import akka.actor._
 import akka.contrib.pattern.DistributedPubSubMediator
 import be.objectify.deadbolt.java.actions.SubjectPresent
 import models.User
+import org.bson.types.ObjectId
 import play.api.libs.iteratee.{Concurrent, Iteratee}
 import play.api.mvc._
 import play.api.libs.json._
@@ -23,16 +24,6 @@ import helper.ImageHelper
  */
 object Stream extends Controller
 {
-  case class StatusUpdate(val color: String) { }
-
-  /**
-   * Form to update the status of a stream.
-   */
-  val statusForm = Form(
-    mapping(
-      "color" -> nonEmptyText.verifying(pattern("""#[0-9a-fA-f]{6}""".r))
-    )(StatusUpdate.apply)(StatusUpdate.unapply))
-
   val AcceptsPng = PrefersExtOrMime("png", "image/png")
 
   def uriMap(uri: String): Map[String, String] = {
@@ -57,8 +48,12 @@ object Stream extends Controller
           "query" -> query,
           "streams" -> streams
         ))
-      case _ =>
+
+      case Accepts.Html() =>
         Ok(views.html.stream.index.render())
+
+      case _ =>
+        BadRequest
     }
   }}
 
@@ -115,7 +110,7 @@ object Stream extends Controller
 
 
   def renderStreamJson(stream: models.Stream, request: Request[AnyContent]): Result =
-    Ok(Json.toJson(stream))
+    Ok(Json.toJson(stream).as[JsObject] + ("children", Json.toJson(models.Stream.getChildrenData(stream))))
 
   /**
    * Render a stream's current status as a 1x1 PNG image.
@@ -132,6 +127,11 @@ object Stream extends Controller
       })
       .getOrElse(NotFound)
 
+  def setStreamStatus(uri: String) =  Action(parse.json) { request => {
+    models.Stream.findByUri(uri) map { stream =>
+      apiSetStreamStatus(stream, request)
+    } getOrElse(NotFound)
+  }}
 
   /**
    * Checks if child stream can created and displays an create page.
@@ -186,18 +186,87 @@ object Stream extends Controller
       models.Stream.createDescendant(s._1, s._2, user)
     }
 
+  private def getParentPath(uri: String) = {
+    val index = uri.lastIndexOf('/')
+    if (index == -1 || index >= uri.length - 1)
+      None
+    else
+      Some((uri.slice(0, index), uri.slice(index + 1, uri.length)))
+  }
+
   /**
-   * Update an existing stream.
+   *
+   */
+  def apiGetStream(id: String) = Action { implicit request => {
+    models.Stream.findById(id) map { stream =>
+      Ok(Json.toJson(stream))
+    } getOrElse {
+      NotFound
+    }
+  }}
+
+  /**
+   *
+   */
+  def apiGetStreamStatus(id: String) = Action { implicit request => {
+    models.Stream.findById(id) map { stream =>
+      Ok(Json.toJson(stream.status))
+    } getOrElse {
+      NotFound
+    }
+  }}
+
+  /**
+   *
    */
   @SubjectPresent
-  def postStreamUpdate(uri: String) = Action { implicit request => {
-    val localUser: User = Application.getLocalUser(request)
-    statusForm.bindFromRequest().fold(
-      formWithErrors => BadRequest,
-      userData => {
-        updateStreamStatus(uri, userData.color, localUser)
-        Ok("")
-      })
+  def apiSetStreamStatus(id: String): Action[JsValue] = Action(parse.json) { request => {
+    models.Stream.findById(id) map { stream =>
+      apiSetStreamStatus(stream, request)
+    } getOrElse {
+      NotFound
+    }
+  }}
+
+  def apiSetStreamStatus(stream: models.Stream, request: Request[JsValue]): Result = {
+    val user = Application.getLocalUser(request)
+    models.Stream.asEditable(user, stream) map { stream =>
+      ((__ \ "color").read[String]).reads(request.body) map { status =>
+        updateStreamStatus(stream, status, user) map { _ =>
+          Ok("")
+        } getOrElse {
+          BadRequest
+        }
+      } recoverTotal {
+        e => BadRequest
+      }
+    } getOrElse {
+      Unauthorized
+    }
+  }
+
+  /**
+   *
+   */
+  def apiGetChildren(id: String) = Action { implicit request => {
+    models.Stream.findById(id) map { stream =>
+      renderStreamJson(stream, request)
+    } getOrElse {
+      NotFound
+    }
+  }}
+
+  /**
+   *
+   */
+  def apiGetChild(id: String, childId: String) = Action { implicit request => {
+    models.Stream.findById(id) flatMap { stream =>
+      models.Stream.getChildById(stream, new ObjectId(childId))
+    } map { childData =>
+      Ok(Json.toJson(childData))
+    } getOrElse {
+      NotFound
+    }
   }}
 
   /**
@@ -217,23 +286,11 @@ object Stream extends Controller
   /**
    *
    */
-  private def updateStreamStatus(uri: String, color: String, poster: User) = {
-    canUpdateStreamStatus(uri: String, poster)
-      .map { _ =>
-        models.Stream.updateStreamStatus(uri, color, poster) match {
-          case Some(s) =>
-            StreamSupervisor.updateStatus(uri, s.status)
-          case None =>
-        }
-      }
-  }
-
-  private def getParentPath(uri: String) = {
-    val index = uri.lastIndexOf('/')
-    if (index == -1 || index >= uri.length - 1)
-      None
-    else
-      Some((uri.slice(0, index), uri.slice(index + 1, uri.length)))
-  }
+  private def updateStreamStatus(stream: models.Stream, color: String, poster: User) =
+    canUpdateStreamStatus(stream, poster) flatMap { _ =>
+      models.Stream.updateStreamStatus(stream, color, poster)
+    } map { s =>
+      StreamSupervisor.updateStatus(stream.uri, s.status)
+    }
 }
 
