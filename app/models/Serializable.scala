@@ -5,7 +5,8 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 
-class Serializable {
+object Serializable
+{
   implicit val objectIdFormat: Format[ObjectId] = new Format[ObjectId] {
     def reads(json: JsValue) = {
       json match {

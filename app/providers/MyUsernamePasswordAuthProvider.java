@@ -179,7 +179,7 @@ public class MyUsernamePasswordAuthProvider
 
 	@Override
 	protected Call userUnverified(final UsernamePasswordAuthUser authUser) {
-		return routes.Signup.unverified();
+		return routes.Application.index();
 	}
 
 	@Override

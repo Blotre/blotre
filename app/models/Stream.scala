@@ -30,8 +30,10 @@ case class ChildStream(
   def this() = this(null, null, null, "", "", new Date(0))
 }
 
-object ChildStream extends models.Serializable
+object ChildStream
 {
+  import models.Serializable._
+
   implicit val streamWrites = new Writes[ChildStream] {
     def writes(x: ChildStream): JsValue = {
       Json.obj(
@@ -85,8 +87,10 @@ case class Stream(
 }
 
 
-object Stream extends models.Serializable
+object Stream
 {
+  import models.Serializable._
+
   val streamNamePattern = """[a-zA-Z0-9_\-$]+""".r
 
   implicit val streamReads: Reads[Stream] = (
@@ -208,7 +212,7 @@ object Stream extends models.Serializable
     asEditable(user, parent) flatMap { stream =>
       findByParent(parent, child) orElse {
         createStreamWithName(child, descendantUri(parent, child), user) map { childStream =>
-          addChild(parent, childStream)
+          addChild(parent, childStream, user)
           childStream
         }
       }
@@ -222,8 +226,15 @@ object Stream extends models.Serializable
   /**
    * Registers a new child for a given stream.
    */
-  private def addChild(parent: Stream, child: Stream) =
-    save(ChildStream(null, parent.id, child.id, child.name, child.uri, new Date()))
+   def addChild(parent: Stream, child: Stream, user: User): Option[ChildStream] =
+    asEditable(user, parent) flatMap { parent =>
+      save(ChildStream(null, parent.id, child.id, child.name, child.uri, new Date()))
+    }
+
+  def addChild(parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
+    findById(childId) flatMap { child =>
+      addChild(parent, child, user)
+    }
 
   /**
    *

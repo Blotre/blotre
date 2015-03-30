@@ -24,6 +24,8 @@ import helper.ImageHelper
  */
 object Stream extends Controller
 {
+  import models.Serializable._
+
   val AcceptsPng = PrefersExtOrMime("png", "image/png")
 
   def uriMap(uri: String): Map[String, String] = {
@@ -158,7 +160,6 @@ object Stream extends Controller
   }
 
   /**
-   * Perform the stream update operation.
    */
   @SubjectPresent
   def createChildStream(uri: String) = Action { implicit request =>
@@ -223,9 +224,7 @@ object Stream extends Controller
   def apiSetStreamStatus(id: String): Action[JsValue] = Action(parse.json) { request => {
     models.Stream.findById(id) map { stream =>
       apiSetStreamStatus(stream, request)
-    } getOrElse {
-      NotFound
-    }
+    } getOrElse(NotFound)
   }}
 
   def apiSetStreamStatus(stream: models.Stream, request: Request[JsValue]): Result = {
@@ -234,15 +233,11 @@ object Stream extends Controller
       ((__ \ "color").read[String]).reads(request.body) map { status =>
         updateStreamStatus(stream, status, user) map { _ =>
           Ok("")
-        } getOrElse {
-          BadRequest
-        }
+        } getOrElse(BadRequest)
       } recoverTotal {
         e => BadRequest
       }
-    } getOrElse {
-      Unauthorized
-    }
+    } getOrElse(Unauthorized)
   }
 
   /**
@@ -251,9 +246,7 @@ object Stream extends Controller
   def apiGetChildren(id: String) = Action { implicit request => {
     models.Stream.findById(id) map { stream =>
       renderStreamJson(stream, request)
-    } getOrElse {
-      NotFound
-    }
+    } getOrElse(NotFound)
   }}
 
   /**
@@ -264,10 +257,26 @@ object Stream extends Controller
       models.Stream.getChildById(stream, new ObjectId(childId))
     } map { childData =>
       Ok(Json.toJson(childData))
-    } getOrElse {
-      NotFound
-    }
+    } getOrElse(NotFound)
   }}
+
+  /**
+   *
+   */
+  @SubjectPresent
+  def apiCreateChild(id: String) = Action(parse.json) { implicit request =>
+    val user = Application.getLocalUser(request)
+    models.Stream.findById(id) map { parent =>
+      ((__ \ "childId").read[ObjectId]).reads(request.body) map { childId =>
+        models.Stream.addChild(parent, childId, user) map { childData =>
+          Ok(Json.toJson(childData))
+        } getOrElse(BadRequest)
+      } recoverTotal { _ =>
+        BadRequest
+      }
+
+    } getOrElse(NotFound)
+  }
 
   /**
    * Can a user edit a given stream?

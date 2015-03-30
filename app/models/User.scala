@@ -21,8 +21,8 @@ import scala.collection.JavaConversions._
 
 @SerialVersionUID(1L)
 @Entity
-class User extends Subject {
-
+class User extends Subject
+{
   @Id
   var id: ObjectId = _
 
@@ -110,7 +110,9 @@ class User extends Subject {
 }
 
 
-object User extends models.Serializable {
+object User
+{
+  import models.Serializable._
 
   private def getDb(): Query[User] =
     MorphiaObject.datastore.createQuery((classOf[User]))
