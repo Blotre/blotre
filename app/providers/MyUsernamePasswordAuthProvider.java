@@ -210,7 +210,7 @@ public class MyUsernamePasswordAuthProvider
 	@Override
 	protected String onLoginUserNotFound(final Context context) {
 		context.flash()
-				.put(controllers.ApplicationConstants.FLASH_ERROR_KEY,
+				.put(controllers.ApplicationConstants.FLASH_ERROR_KEY(),
 						Messages.get("playauthenticate.password.login.unknown_user_or_pw"));
 		return super.onLoginUserNotFound(context);
 	}
@@ -218,23 +218,7 @@ public class MyUsernamePasswordAuthProvider
 	@Override
 	protected Body getVerifyEmailMailingBody(final String token,
 			final MyUsernamePasswordAuthUser user, final Context ctx) {
-
-		final boolean isSecure = getConfiguration().getBoolean(
-				SETTING_KEY_VERIFICATION_LINK_SECURE);
-		final String url = routes.Signup.verify(token).absoluteURL(
-				ctx.request(), isSecure);
-
-		final Lang lang = Lang.preferred(ctx.request().acceptLanguages());
-		final String langCode = lang.code();
-
-		final String html = getEmailTemplate(
-				"views.html.account.signup.email.verify_email", langCode, url,
-				token, user.getName(), user.getEmail());
-		final String text = getEmailTemplate(
-				"views.txt.account.signup.email.verify_email", langCode, url,
-				token, user.getName(), user.getEmail());
-
-		return new Body(text, html);
+		throw new UnsupportedOperationException();
 	}
 
 	private static String generateToken() {
@@ -254,10 +238,6 @@ public class MyUsernamePasswordAuthProvider
 		return token;
 	}
 
-	protected String getVerifyEmailMailingSubjectAfterSignup(final User user,
-			final Context ctx) {
-		return Messages.get("playauthenticate.password.verify_email.subject");
-	}
 
 	protected String getEmailTemplate(final String template,
 			final String langCode, final String url, final String token,
@@ -300,37 +280,6 @@ public class MyUsernamePasswordAuthProvider
 			}
 		}
 		return ret;
-	}
-
-	protected Body getVerifyEmailMailingBodyAfterSignup(final String token,
-			final User user, final Context ctx) {
-
-		final boolean isSecure = getConfiguration().getBoolean(
-				SETTING_KEY_VERIFICATION_LINK_SECURE);
-		final String url = routes.Signup.verify(token).absoluteURL(
-				ctx.request(), isSecure);
-
-		final Lang lang = Lang.preferred(ctx.request().acceptLanguages());
-		final String langCode = lang.code();
-
-		final String html = getEmailTemplate(
-				"views.html.account.email.verify_email", langCode, url, token,
-				user.name(), user.email());
-		final String text = getEmailTemplate(
-				"views.txt.account.email.verify_email", langCode, url, token,
-				user.name(), user.email());
-
-		return new Body(text, html);
-	}
-
-	public void sendVerifyEmailMailingAfterSignup(final User user,
-			final Context ctx) {
-
-		final String subject = getVerifyEmailMailingSubjectAfterSignup(user,
-				ctx);
-		final String token = generateVerificationRecord(user);
-		final Body body = getVerifyEmailMailingBodyAfterSignup(token, user, ctx);
-		sendMail(subject, body, getEmailName(user));
 	}
 
 	private String getEmailName(final User user) {
