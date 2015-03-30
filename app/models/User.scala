@@ -103,8 +103,11 @@ class User extends Subject
     MorphiaObject.datastore.save[User](this)
   }
 
-  def getStatus(): Status =
+  def rootStream(): Option[Stream] =
     Stream.findByUri(this.userName)
+
+  def getStatus(): Status =
+    rootStream
       .map(userStream => userStream.status)
       .getOrElse(new Status())
 }
@@ -126,7 +129,16 @@ object User
     exp.countAll() > 0
   }
 
-  def findById(id: ObjectId): User = getDb.filter("id =", id).get();
+  /**
+   * Lookup a user by id.
+   */
+  def findById(id: ObjectId): Option[User] =
+    Option(getDb
+      .filter("id =", id)
+      .get())
+
+  def findById(id: String): Option[User] =
+    findById(new ObjectId(id))
 
   private def getAuthUserFind(identity: AuthUserIdentity): Query[User] = {
     getDb.filter("active =", true).filter("linkedAccounts.providerUserId", identity.getId)
@@ -223,10 +235,11 @@ object User
 
   implicit val userWrites = new Writes[User] {
     def writes(x: User): JsValue = {
+      val rootStreamId = x.rootStream.map(x => x.id).getOrElse(new ObjectId())
       Json.obj(
         "id" -> x.id,
         "userName" -> x.userName,
-        "status" -> x.getStatus()
+        "rootStream" -> rootStreamId
       )
     }
   }

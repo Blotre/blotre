@@ -145,7 +145,7 @@ object Account extends Controller {
             .flashing("error" -> "User name already taken.")
         } getOrElse {
           models.Stream.createRootStream(requestedUserName, localUser) map { rootStream =>
-            User.setUserName(localUser, requestedUserName)
+            models.User.setUserName(localUser, requestedUserName)
             Redirect(routes.Application.index())
           } getOrElse {
             BadRequest(views.html.account.selectUserName.render(formData))

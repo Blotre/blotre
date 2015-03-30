@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import be.objectify.deadbolt.java.actions.SubjectPresent
 import be.objectify.deadbolt.java.actions.Group
-import models.User
 import play.Routes
 import play.data.Form
 import play.api.mvc._
@@ -24,16 +23,16 @@ object Application extends Controller {
   /**
    * Get the current logged in user for a session.
    */
-  def getLocalUser(user: AuthUser): User =
-    User.findByAuthUserIdentity(user)
+  def getLocalUser(user: AuthUser): models.User =
+    models.User.findByAuthUserIdentity(user)
 
-  def getLocalUser(session: play.mvc.Http.Session): User =
+  def getLocalUser(session: play.mvc.Http.Session): models.User =
     getLocalUser(PlayAuthenticate.getUser(session))
 
-  def getLocalUser(request: Request[_]): User =
+  def getLocalUser(request: Request[_]): models.User =
     getLocalUser(JavaHelpers.createJavaContext(request).session())
 
-  def getLocalUser(request: RequestHeader): User =
+  def getLocalUser(request: RequestHeader): models.User =
     getLocalUser(JavaHelpers.createJavaContext(request).session())
 
   /**
