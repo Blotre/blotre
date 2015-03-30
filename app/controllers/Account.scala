@@ -16,8 +16,10 @@ import providers.MyUsernamePasswordAuthProvider
 import scala.Option
 import play.data.Form.form
 
-object Account extends Controller
-{
+object Account extends Controller {
+
+  import ControllerHelper._
+
   class Accept {
     @Required
     @NonEmpty
@@ -33,8 +35,7 @@ object Account extends Controller
   private val ACCEPT_FORM = form(classOf[Accept])
 
   @SubjectPresent
-  def link() = Action { implicit request => JavaContext.withContext {
-    //com.feth.play.module.pa.controllers.Authenticate.noCache(response())
+  def link() = NoCacheAction { implicit request => JavaContext.withContext {
     Ok(views.html.account.link.render())
   }}
 
@@ -45,18 +46,16 @@ object Account extends Controller
   }}
 
   @SubjectPresent
-  def askLink() = Action { implicit request => JavaContext.withContext {
-    //com.feth.play.module.pa.controllers.Authenticate.noCache(response())
+  def askLink() = NoCacheAction { implicit request => JavaContext.withContext {
     val u = PlayAuthenticate.getLinkUser(JavaHelpers.createJavaContext(request).session())
     if (u == null)
-       Redirect(routes.Application.index())
+      Redirect(routes.Application.index())
     else
       Ok(views.html.account.ask_link.render(ACCEPT_FORM, u))
   }}
 
   @SubjectPresent
-  def doLink() = Action { implicit request => JavaContext.withContext {
-    //com.feth.play.module.pa.controllers.Authenticate.noCache(response())
+  def doLink() = NoCacheAction { implicit request => JavaContext.withContext {
     val ctx = JavaHelpers.createJavaContext(request)
     val u = PlayAuthenticate.getLinkUser(ctx.session())
     if (u == null) {
@@ -67,19 +66,17 @@ object Account extends Controller
         BadRequest(views.html.account.ask_link.render(filledForm, u))
       } else {
         val link = filledForm.get.accept
-        //if (link) {
-        // flash(ApplicationConstants.FLASH_MESSAGE_KEY, Messages.get("playauthenticate.accounts.link.success"))
-        //}
-        JavaHelpers.createResult(
-          ctx,
-          PlayAuthenticate.link(ctx, link))
+        val result = JavaHelpers.createResult(ctx, PlayAuthenticate.link(ctx, link))
+        if (link)
+          result.flashing(ApplicationConstants.FLASH_MESSAGE_KEY -> Messages.get("playauthenticate.accounts.link.success"))
+        else
+          result
       }
     }
   }}
 
   @SubjectPresent
-  def askMerge() = Action { implicit request => JavaContext.withContext {
-    //com.feth.play.module.pa.controllers.Authenticate.noCache(response())
+  def askMerge() = NoCacheAction { implicit request => JavaContext.withContext {
     val aUser = PlayAuthenticate.getUser(JavaHelpers.createJavaContext(request).session())
     val bUser = PlayAuthenticate.getMergeUser(JavaHelpers.createJavaContext(request).session())
     if (bUser == null)
@@ -89,8 +86,7 @@ object Account extends Controller
   }}
 
   @SubjectPresent
-  def doMerge() = Action { implicit request => JavaContext.withContext {
-    //com.feth.play.module.pa.controllers.Authenticate.noCache(response())
+  def doMerge() = NoCacheAction { implicit request => JavaContext.withContext {
     val ctx = JavaHelpers.createJavaContext(request)
 
     val aUser = PlayAuthenticate.getUser(JavaHelpers.createJavaContext(request).session())
@@ -103,12 +99,12 @@ object Account extends Controller
         BadRequest(views.html.account.ask_merge.render(filledForm, aUser, bUser))
       } else {
         val merge = filledForm.get.accept
-        //if (merge) {
-        // flash(ApplicationConstants.FLASH_MESSAGE_KEY, Messages.get("playauthenticate.accounts.merge.success"))
-        //}
-        JavaHelpers.createResult(
-          ctx,
-          PlayAuthenticate.merge(ctx, merge))
+        val result = JavaHelpers.createResult(ctx, PlayAuthenticate.merge(ctx, merge))
+        if (merge)
+          result
+            .flashing(ApplicationConstants.FLASH_MESSAGE_KEY -> Messages.get("playauthenticate.accounts.merge.success"))
+        else
+          result
       }
     }
   }}
@@ -124,7 +120,7 @@ object Account extends Controller
   private val SELECT_USER_NAME_FORM = form(classOf[UserNameSelect])
 
   @SubjectPresent
-  def selectUserName() = Action { implicit request => JavaContext.withContext {
+  def selectUserName() = NoCacheAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected)
       Redirect(routes.Application.index())
@@ -133,7 +129,7 @@ object Account extends Controller
   }}
 
   @SubjectPresent
-  def setSelectedUserName() = Action { implicit request => JavaContext.withContext {
+  def setSelectedUserName() = NoCacheAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected) {
       Redirect(routes.Application.index())
@@ -152,8 +148,8 @@ object Account extends Controller
             User.setUserName(localUser, requestedUserName)
             Redirect(routes.Application.index())
           } getOrElse {
-              BadRequest(views.html.account.selectUserName.render(formData))
-                .flashing("error" -> "Selected user name could not be processed.")
+            BadRequest(views.html.account.selectUserName.render(formData))
+              .flashing("error" -> "Selected user name could not be processed.")
           }
         }
       }

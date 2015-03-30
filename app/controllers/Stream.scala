@@ -25,6 +25,7 @@ import helper.ImageHelper
 object Stream extends Controller
 {
   import models.Serializable._
+  import ControllerHelper._
 
   val AcceptsPng = PrefersExtOrMime("png", "image/png")
 
@@ -121,10 +122,7 @@ object Stream extends Controller
     models.Stream.findByUri(uri)
       .map(s => {
         val img = ImageHelper.createImage(s.status.color)
-        Ok(ImageHelper.toPng(img))
-          .withHeaders(
-            "Cache-Control" -> "no-cache, no-store, must-revalidate",
-            "Expires" -> "0")
+        noCache(Ok(ImageHelper.toPng(img)))
           .as("image/png")
       })
       .getOrElse(NotFound)
