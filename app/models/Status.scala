@@ -8,8 +8,8 @@ import play.data.validation.Constraints
 import play.api.libs.functional.syntax._
 
 
-@SerialVersionUID(1L)
 @Embedded
+@SerialVersionUID(1L)
 class Status(
   @Constraints.Required
   @Constraints.MaxLength(7)

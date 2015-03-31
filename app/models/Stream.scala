@@ -295,5 +295,4 @@ object Stream
     MorphiaObject.datastore.save[A](obj)
     Some(obj)
   }
-
 }

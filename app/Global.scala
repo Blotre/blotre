@@ -14,7 +14,7 @@ import play.api.mvc.Results._
 import play.filters.csrf._
 import scala.concurrent.Future
 
-object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
+object Global extends /*WithFilters(CSRFFilter()) with*/ GlobalSettings {
 
     override def onHandlerNotFound(request: RequestHeader) = {
         implicit val h = request

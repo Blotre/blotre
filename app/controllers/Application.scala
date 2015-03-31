@@ -18,8 +18,8 @@ import scala.concurrent._
 /**
  * Main application controller.
  */
-object Application extends Controller {
-
+object Application extends Controller
+{
   /**
    * Get the current logged in user for a session.
    */
@@ -58,16 +58,6 @@ object Application extends Controller {
    */
   def login = Action { implicit request => JavaContext.withContext {
     Ok(views.html.login.render(MyUsernamePasswordAuthProvider.LOGIN_FORM))
-  }}
-
-  def doLogin = Action { implicit request => JavaContext.withContext {
-    val filledForm = MyUsernamePasswordAuthProvider.LOGIN_FORM.bindFromRequest()
-    if (filledForm.hasErrors()) {
-      BadRequest(views.html.login.render(filledForm))
-    } else {
-      val ctx = JavaHelpers.createJavaContext(request)
-      JavaHelpers.createResult(ctx, UsernamePasswordAuthProvider.handleLogin(ctx))
-    }
   }}
 
   /**

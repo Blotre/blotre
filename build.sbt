@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   "org.mongodb.morphia" % "morphia" % "0.109",
   "org.mongodb.morphia" % "morphia-logging-slf4j" % "0.109",
   "org.mongodb.morphia" % "morphia-validation" % "0.109",
+  "com.nulab-inc" %% "play2-oauth2-provider" % "0.13.2",
   javaJdbc,
   javaEbean,
   cache,

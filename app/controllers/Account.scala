@@ -3,7 +3,6 @@ package controllers
 import be.objectify.deadbolt.java.actions.SubjectPresent
 import com.feth.play.module.pa.PlayAuthenticate
 import com.feth.play.module.pa.user.AuthUser
-import models.User
 import play.core.j.JavaHelpers
 import play.data.Form
 import play.data.format.Formats.NonEmpty
