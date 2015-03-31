@@ -55,9 +55,13 @@ object Application extends Controller
 
   /**
    * Login page.
+   *
+   * Also supports a hardcoded set of post login redirects.
    */
   def login = Action { implicit request => JavaContext.withContext {
     Ok(views.html.login.render(MyUsernamePasswordAuthProvider.LOGIN_FORM))
+      .withSession(
+        "redirect" -> request.getQueryString("redirect").getOrElse(""))
   }}
 
   /**
@@ -65,7 +69,12 @@ object Application extends Controller
    */
   @SubjectPresent
   def onLogin = Action { implicit request => JavaContext.withContext {
-    Redirect(routes.Application.index())
+    request.session.get("redirect") flatMap { redirect =>
+        if (redirect.startsWith("oauth"))
+          Some(Redirect(routes.OAuth2Controller.authorize()))
+        else
+          None
+    } getOrElse(Redirect(routes.Application.index()))
   }}
 
   def formatTimestamp(t: Long): String = {

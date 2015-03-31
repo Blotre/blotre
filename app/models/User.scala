@@ -138,7 +138,7 @@ object User
       .get())
 
   def findById(id: String): Option[User] =
-    findById(new ObjectId(id))
+    stringToObjectId(id).flatMap(findById)
 
   private def getAuthUserFind(identity: AuthUserIdentity): Query[User] = {
     getDb.filter("active =", true).filter("linkedAccounts.providerUserId", identity.getId)

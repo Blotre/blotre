@@ -9,7 +9,7 @@ import org.bson.types.ObjectId
 class MyDataHandler extends DataHandler[User]
 {
   private def getClientId(authInfo: AuthInfo[User]): Option[ObjectId] =
-    authInfo.clientId.map(x => new ObjectId(x))
+    authInfo.clientId.flatMap(models.Serializable.stringToObjectId)
 
   override def findUser(email: String, password: String): Future[Option[User]] =
     Future.successful(User.findByEmail(email))

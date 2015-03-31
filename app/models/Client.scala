@@ -60,6 +60,8 @@ case class ClientRedirectUri(
 
 object Client
 {
+  import Serializable._
+
   private def save[A](obj: A): Option[A] = {
     MorphiaObject.datastore.save[A](obj)
     Some(obj)
@@ -92,7 +94,7 @@ object Client
       .get)
 
   def findById(id: String): Option[Client] =
-    findById(new ObjectId(id))
+    stringToObjectId(id).flatMap(findById)
 
   /**
    * Ensures that a redirect belongs to a client
@@ -104,8 +106,6 @@ object Client
       .get) map { _ =>
         client
       }
-
-
 }
 
 object Crypto

@@ -145,7 +145,7 @@ object Stream
       .get())
 
   def findById(id: String): Option[Stream] =
-    findById(new ObjectId(id))
+    stringToObjectId(id).flatMap(findById)
 
   /**
    * Lookup a stream using its uri.

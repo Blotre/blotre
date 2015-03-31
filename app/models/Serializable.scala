@@ -7,6 +7,12 @@ import play.api.libs.functional.syntax._
 
 object Serializable
 {
+  def stringToObjectId(id: String): Option[ObjectId] = try {
+    Some(new ObjectId(id))
+  } catch {
+    case _: IllegalArgumentException => None
+  }
+
   implicit val objectIdFormat: Format[ObjectId] = new Format[ObjectId] {
     def reads(json: JsValue) = {
       json match {
