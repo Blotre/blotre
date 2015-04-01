@@ -1,9 +1,9 @@
 package controllers
 
-import be.objectify.deadbolt.java.actions.SubjectPresent
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
+import play.api.mvc.Security.Authenticated
 
 case class CreateClientForm(name: String, uri: String, blurb: String)
 
@@ -15,21 +15,17 @@ object DeveloperController extends Controller
     "blurb" ->  nonEmptyText(3, 255))(CreateClientForm.apply)(CreateClientForm.unapply)
   )
 
-  @SubjectPresent
-  def index() = Action { implicit request => JavaContext.withContext {
+  def index() = AuthenticatedAction { implicit request => JavaContext.withContext {
     val user = Application.getLocalUser(request)
     val clients = models.Client.findForUser(user)
     Ok(views.html.developer.index.render(clients))
   }}
 
-
-  @SubjectPresent
-  def createClient() = Action { implicit request => JavaContext.withContext {
+  def createClient() = AuthenticatedAction { implicit request => JavaContext.withContext {
     Ok(views.html.developer.createClient.render(createClientForm))
   }}
 
-  @SubjectPresent
-  def createClientSubmit() = Action { implicit request => JavaContext.withContext {
+  def createClientSubmit() = AuthenticatedAction { implicit request => JavaContext.withContext {
     val user = Application.getLocalUser(request)
     createClientForm.bindFromRequest.fold(
       formWithErrors =>

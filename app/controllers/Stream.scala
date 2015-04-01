@@ -1,7 +1,6 @@
 package controllers
 
 import Actors.{StreamSupervisor}
-import be.objectify.deadbolt.java.actions.SubjectPresent
 import org.bson.types.ObjectId
 import play.api.mvc._
 import play.api.libs.json._
@@ -150,8 +149,7 @@ object Stream extends Controller
 
   /**
    */
-  @SubjectPresent
-  def createChildStream(uri: String) = Action { implicit request =>
+  def createChildStream(uri: String) = AuthenticatedAction { implicit request =>
     val user = Application.getLocalUser(request)
     request match {
       case Prefers.Json() =>
@@ -209,8 +207,7 @@ object Stream extends Controller
   /**
    *
    */
-  @SubjectPresent
-  def apiSetStreamStatus(id: String): Action[JsValue] = Action(parse.json) { request => {
+  def apiSetStreamStatus(id: String): Action[JsValue] = AuthenticatedAction(parse.json) { request => {
     models.Stream.findById(id) map { stream =>
       apiSetStreamStatus(stream, request)
     } getOrElse(NotFound)
@@ -252,8 +249,7 @@ object Stream extends Controller
   /**
    *
    */
-  @SubjectPresent
-  def apiCreateChild(id: String) = Action(parse.json) { implicit request =>
+  def apiCreateChild(id: String) = AuthenticatedAction(parse.json) { implicit request =>
     val user = Application.getLocalUser(request)
     models.Stream.findById(id) map { parent =>
       ((__ \ "childId").read[ObjectId]).reads(request.body) map { childId =>

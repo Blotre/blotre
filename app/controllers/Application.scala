@@ -2,16 +2,12 @@ package controllers
 
 import java.text.SimpleDateFormat
 import java.util.Date
-import be.objectify.deadbolt.java.actions.SubjectPresent
-import be.objectify.deadbolt.java.actions.Group
 import play.Routes
-import play.data.Form
 import play.api.mvc._
 import play.core.j.JavaHelpers
 
 import providers.MyUsernamePasswordAuthProvider
 import com.feth.play.module.pa.PlayAuthenticate
-import com.feth.play.module.pa.providers.password.UsernamePasswordAuthProvider
 import com.feth.play.module.pa.user.AuthUser
 import scala.concurrent._
 
@@ -67,8 +63,7 @@ object Application extends Controller
   /**
    * Post login handler.
    */
-  @SubjectPresent
-  def onLogin = Action { implicit request => JavaContext.withContext {
+  def onLogin = AuthenticatedAction { implicit request => JavaContext.withContext {
     request.session.get("redirect") flatMap { redirect =>
         if (redirect.startsWith("oauth"))
           Some(Redirect(routes.OAuth2Controller.authorize()))

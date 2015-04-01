@@ -1,6 +1,5 @@
 package controllers
 
-import be.objectify.deadbolt.java.actions.SubjectPresent
 import com.feth.play.module.pa.PlayAuthenticate
 import com.feth.play.module.pa.user.AuthUser
 import play.core.j.JavaHelpers
@@ -11,12 +10,11 @@ import play.data.validation.Constraints.Required
 import play.i18n.Messages
 import play.libs.Json
 import play.api.mvc._
-import providers.MyUsernamePasswordAuthProvider
 import scala.Option
 import play.data.Form.form
 
-object Account extends Controller {
-
+object Account extends Controller
+{
   import ControllerHelper._
 
   class Accept {
@@ -33,28 +31,24 @@ object Account extends Controller {
 
   private val ACCEPT_FORM = form(classOf[Accept])
 
-  @SubjectPresent
-  def link() = NoCacheAction { implicit request => JavaContext.withContext {
+  def link() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     Ok(views.html.account.link.render())
-  }}
+  }}}
 
-  @SubjectPresent
-  def account() = Action { implicit request => JavaContext.withContext {
+  def account() = AuthenticatedAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     Ok(views.html.account.account.render(localUser))
   }}
 
-  @SubjectPresent
-  def askLink() = NoCacheAction { implicit request => JavaContext.withContext {
+  def askLink() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val u = PlayAuthenticate.getLinkUser(JavaHelpers.createJavaContext(request).session())
     if (u == null)
       Redirect(routes.Application.index())
     else
       Ok(views.html.account.ask_link.render(ACCEPT_FORM, u))
-  }}
+  }}}
 
-  @SubjectPresent
-  def doLink() = NoCacheAction { implicit request => JavaContext.withContext {
+  def doLink() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val ctx = JavaHelpers.createJavaContext(request)
     val u = PlayAuthenticate.getLinkUser(ctx.session())
     if (u == null) {
@@ -72,20 +66,18 @@ object Account extends Controller {
           result
       }
     }
-  }}
+  }}}
 
-  @SubjectPresent
-  def askMerge() = NoCacheAction { implicit request => JavaContext.withContext {
+  def askMerge() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val aUser = PlayAuthenticate.getUser(JavaHelpers.createJavaContext(request).session())
     val bUser = PlayAuthenticate.getMergeUser(JavaHelpers.createJavaContext(request).session())
     if (bUser == null)
       Redirect(routes.Application.index())
     else
       Ok(views.html.account.ask_merge.render(ACCEPT_FORM, aUser, bUser))
-  }}
+  }}}
 
-  @SubjectPresent
-  def doMerge() = NoCacheAction { implicit request => JavaContext.withContext {
+  def doMerge() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val ctx = JavaHelpers.createJavaContext(request)
 
     val aUser = PlayAuthenticate.getUser(JavaHelpers.createJavaContext(request).session())
@@ -106,7 +98,7 @@ object Account extends Controller {
           result
       }
     }
-  }}
+  }}}
 
   class UserNameSelect {
     @Required
@@ -118,17 +110,15 @@ object Account extends Controller {
 
   private val SELECT_USER_NAME_FORM = form(classOf[UserNameSelect])
 
-  @SubjectPresent
-  def selectUserName() = NoCacheAction { implicit request => JavaContext.withContext {
+  def selectUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected)
       Redirect(routes.Application.index())
     else
       Ok(views.html.account.selectUserName.render(SELECT_USER_NAME_FORM))
-  }}
+  }}}
 
-  @SubjectPresent
-  def setSelectedUserName() = NoCacheAction { implicit request => JavaContext.withContext {
+  def setSelectedUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected) {
       Redirect(routes.Application.index())
@@ -153,6 +143,6 @@ object Account extends Controller {
         }
       }
     }
-  }}
+  }}}
 }
 
