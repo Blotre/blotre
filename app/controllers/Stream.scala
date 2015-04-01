@@ -1,19 +1,10 @@
 package controllers
 
 import Actors.{StreamSupervisor}
-import akka.actor._
-import akka.contrib.pattern.DistributedPubSubMediator
 import be.objectify.deadbolt.java.actions.SubjectPresent
-import models.User
 import org.bson.types.ObjectId
-import play.api.libs.iteratee.{Concurrent, Iteratee}
 import play.api.mvc._
 import play.api.libs.json._
-import play.api.data._
-import play.api.data.Forms._
-import play.api.data.validation.Constraints._
-import play.api.libs.concurrent.Akka
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.Play.current
 import scala.collection.immutable._
 import helper._
@@ -180,7 +171,7 @@ object Stream extends Controller
     }
   }
 
-  private def createDescendant(uri: String, user: User) =
+  private def createDescendant(uri: String, user: models.User) =
     getParentPath(uri) flatMap { s =>
       models.Stream.createDescendant(s._1, s._2, user)
     }
@@ -279,21 +270,21 @@ object Stream extends Controller
   /**
    * Can a user edit a given stream?
    */
-  def canUpdateStreamStatus(stream: models.Stream, poster: User): Option[models.Stream] = {
+  def canUpdateStreamStatus(stream: models.Stream, poster: models.User): Option[models.Stream] = {
     if (poster != null && stream != null)
       if (stream.ownerId == poster.id)
         return Some(stream);
     return None;
   }
 
-  def canUpdateStreamStatus(uri: String, poster: User): Option[models.Stream] =
+  def canUpdateStreamStatus(uri: String, poster: models.User): Option[models.Stream] =
     models.Stream.findByUri(uri)
       .flatMap(x => canUpdateStreamStatus(x, poster))
 
   /**
    *
    */
-  private def updateStreamStatus(stream: models.Stream, color: String, poster: User) =
+  private def updateStreamStatus(stream: models.Stream, color: String, poster: models.User) =
     canUpdateStreamStatus(stream, poster) flatMap { _ =>
       models.Stream.updateStreamStatus(stream, color, poster)
     } map { s =>

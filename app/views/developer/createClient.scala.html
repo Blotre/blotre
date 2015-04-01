@@ -1,0 +1,24 @@
+@(
+    clientForm: play.api.data.Form[CreateClientForm])
+
+@import helper._
+@import com.feth.play.module.pa.views.html._
+
+@articleHeader = {
+<div class="status status-header status-small-header"
+     style="background: #FF712C;"></div>
+}
+
+
+@main(Messages("playauthenticate.login.title"), "clients", articleHeader = articleHeader) {
+    <h1>Create New Client</h1>
+    @helper.form(action = routes.DeveloperController.createClientSubmit) {
+        @helper.inputText(clientForm("name"))
+
+        @helper.inputText(clientForm("uri"))
+
+        @helper.inputText(clientForm("blurb"))
+
+        <input type="submit" value="Create" />
+    }
+}

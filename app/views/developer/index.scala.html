@@ -1,0 +1,23 @@
+@(
+    clients: scala.collection.immutable.List[models.Client])
+
+@import helper._
+@import com.feth.play.module.pa.views.html._
+
+@articleHeader = {
+<div class="status status-header status-small-header"
+     style="background: #FF712C;"></div>
+}
+
+
+@main(Messages("playauthenticate.login.title"), "clients", articleHeader = articleHeader) {
+    <h1>Developer</h1>
+
+    <h3>Clients</h3>
+    <a href="@routes.DeveloperController.createClient()">Create new client</a>
+    <ul id="clients" class="row">
+        @for(client <- clients) {
+            <li>@client.id</li>
+        }
+    </ul>
+}

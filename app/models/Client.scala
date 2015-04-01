@@ -7,6 +7,7 @@ import org.mongodb.morphia.query.Query
 import play.data.validation.Constraints
 import java.util.Date
 import scala.annotation.meta.field
+import scala.collection.JavaConverters._
 
 /**
  *
@@ -106,6 +107,15 @@ object Client
       .get) map { _ =>
         client
       }
+
+  /**
+   * Lookup all clients for a given user.
+   */
+  def findForUser(user: User): List[Client] =
+    MorphiaObject.datastore.createQuery(classOf[Client])
+      .filter("ownerId = ", user.id)
+      .asList()
+      .asScala.toList
 }
 
 object Crypto
