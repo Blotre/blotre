@@ -17,7 +17,7 @@
     <a href="@routes.DeveloperController.createClient()">Create new client</a>
     <ul id="clients" class="row">
         @for(client <- clients) {
-            <li>@client.id</li>
+            <li><a href="@routes.DeveloperController.getClient(client.id.toString)">@client.name</a></li>
         }
     </ul>
 }

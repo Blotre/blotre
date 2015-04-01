@@ -38,6 +38,9 @@ case class Client(
   var created: Date,
 
   var ownerId: ObjectId)
+{
+  def this() = this(null, "", "", "", "", new Date(0), null)
+}
 
 /**
  *
@@ -57,6 +60,9 @@ case class ClientRedirectUri(
   var uri: String,
 
   var created: Date)
+{
+  def this() = this(null, null, "", new Date(0))
+}
 
 
 object Client
@@ -86,6 +92,11 @@ object Client
       .filter("clientSecret =", clientSecret)
       .get != null)
 
+  def regenerateSecret(client: Client): Option[Client] = {
+    client.clientSecret = Crypto.generateToken
+    save(client)
+  }
+
   /**
    * Get a client by its id.
    */
@@ -96,6 +107,18 @@ object Client
 
   def findById(id: String): Option[Client] =
     stringToObjectId(id).flatMap(findById)
+
+  /**
+   * Get a client by its id and ensure it is owned by a given user.
+   */
+  def findByIdForUser(id: ObjectId, user: User): Option[Client] =
+    Option(MorphiaObject.datastore.createQuery(classOf[Client])
+      .filter("id = ", id)
+      .filter("ownerId = ", user.id)
+      .get)
+
+  def findByIdForUser(id: String, user: User): Option[Client] =
+    stringToObjectId(id).flatMap(x => findByIdForUser(x, user))
 
   /**
    * Ensures that a redirect belongs to a client
