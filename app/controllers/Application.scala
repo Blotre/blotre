@@ -72,7 +72,20 @@ object Application extends Controller
     } getOrElse(Redirect(routes.Application.index()))
   }}
 
-  def formatTimestamp(t: Long): String = {
-    new SimpleDateFormat("yyyy-dd-MM HH:mm:ss").format(new Date(t))
+  /**
+   *
+   */
+  def notFound = Action { implicit request =>
+    NotFound(views.html.notFound.render(""))
   }
+
+  /**
+   *
+   */
+  def unauthorized = Action { implicit request =>
+    Unauthorized(views.html.notFound.render(""))
+  }
+
+  def formatTimestamp(t: Long): String =
+    new SimpleDateFormat("yyyy-dd-MM HH:mm:ss").format(new Date(t))
 }

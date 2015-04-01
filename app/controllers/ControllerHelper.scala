@@ -1,5 +1,6 @@
 package controllers
 
+import play.api.mvc.Security.AuthenticatedBuilder
 import play.api.mvc._
 
 import scala.concurrent.Future
@@ -29,6 +30,32 @@ case class NoCache[A](action: Action[A]) extends Action[A]
 {
   def apply(request: Request[A]): Future[Result] =
     action(request).map(ControllerHelper.noCache)
+
+  lazy val parser = action.parser
+}
+
+case class AuthRequest[A](user: models.User, request: Request[A]) extends WrappedRequest[A](request)
+
+/**
+ *
+ */
+object AuthenticatedAction extends AuthenticatedBuilder(
+  request =>
+    Option(Application.getLocalUser(request)),
+  request =>
+    Results.Unauthorized(views.html.unauthorized.render("")))
+
+/**
+ *
+ */
+case class Authenticated[A](action: Action[A]) extends Action[A]
+{
+  def apply(request: Request[A]): Future[Result] =
+    Option(Application.getLocalUser(request)) map { user =>
+      action(AuthRequest(user, request))
+    } getOrElse {
+      Future.successful(Results.Unauthorized(views.html.unauthorized.render("")))
+    }
 
   lazy val parser = action.parser
 }

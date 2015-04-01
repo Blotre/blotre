@@ -17,7 +17,7 @@ object Stream extends Controller
   import models.Serializable._
   import ControllerHelper._
 
-  val AcceptsPng = PrefersExtOrMime("png", "image/png")
+  val AcceptsPng = Accepting("image/png")
 
   def uriMap(uri: String): Map[String, String] = {
     (uri
@@ -35,18 +35,15 @@ object Stream extends Controller
   def index = Action { implicit request => JavaContext.withContext {
     val query = request.getQueryString("query").getOrElse("")
     val streams = if (query.isEmpty) models.Stream.findByUpdated() else models.Stream.findByQuery(query)
-    request match {
-      case Prefers.Json() =>
+    render {
+      case Accepts.Html() =>
+        Ok(views.html.stream.index.render())
+
+      case Accepts.Json() =>
         Ok(Json.obj(
           "query" -> query,
           "streams" -> streams
         ))
-
-      case Accepts.Html() =>
-        Ok(views.html.stream.index.render())
-
-      case _ =>
-        BadRequest
     }
   }}
 
@@ -61,19 +58,21 @@ object Stream extends Controller
    *     json: Returns json of the stream.
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
-    val path = uri.split('.')(0)
-    request match {
-      case AcceptsPng() =>
-        renderStreamStatusPng(path, request)
+    val pathAndExt = uri.split('.')
+    val path = pathAndExt(0)
+    if (pathAndExt.length == 2 && pathAndExt(1) == "png")
+      renderStreamStatusPng(path, request)
+    else {
+      render {
+        case Accepts.Html() =>
+          renderStream(path, request)
 
-      case Prefers.Json() =>
-        renderStreamJson(path, request)
+        case Accepts.Json() =>
+          renderStreamJson(path, request)
 
-      case Accepts.Html() =>
-        renderStream(path, request)
-
-      case _ =>
-        BadRequest
+        case AcceptsPng() =>
+          renderStreamStatusPng(path, request)
+      }
     }
   }}
 
@@ -151,8 +150,8 @@ object Stream extends Controller
    */
   def createChildStream(uri: String) = AuthenticatedAction { implicit request =>
     val user = Application.getLocalUser(request)
-    request match {
-      case Prefers.Json() =>
+    render {
+      case Accepts.Json() =>
         createDescendant(uri, user)
           .map(s =>
             renderStreamJson(s, request))
@@ -163,9 +162,6 @@ object Stream extends Controller
           .map(s =>
             Redirect(routes.Stream.getStream(s.uri)))
           .getOrElse(BadRequest)
-
-      case _ =>
-        BadRequest
     }
   }
 
