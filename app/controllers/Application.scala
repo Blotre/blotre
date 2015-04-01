@@ -75,16 +75,16 @@ object Application extends Controller
   /**
    *
    */
-  def notFound = Action { implicit request =>
+  def notFound = Action { implicit request => JavaContext.withContext {
     NotFound(views.html.notFound.render(""))
-  }
+  }}
 
   /**
    *
    */
-  def unauthorized = Action { implicit request =>
+  def unauthorized = Action { implicit request => JavaContext.withContext {
     Unauthorized(views.html.notFound.render(""))
-  }
+  }}
 
   def formatTimestamp(t: Long): String =
     new SimpleDateFormat("yyyy-dd-MM HH:mm:ss").format(new Date(t))

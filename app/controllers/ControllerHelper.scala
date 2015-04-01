@@ -42,8 +42,10 @@ case class AuthRequest[A](user: models.User, request: Request[A]) extends Wrappe
 object AuthenticatedAction extends AuthenticatedBuilder(
   request =>
     Option(Application.getLocalUser(request)),
-  request =>
-    Results.Unauthorized(views.html.unauthorized.render("")))
+  implicit request =>
+    JavaContext.withContext {
+      Results.Unauthorized(views.html.unauthorized.render(""))
+    })
 
 /**
  *
@@ -54,7 +56,9 @@ case class Authenticated[A](action: Action[A]) extends Action[A]
     Option(Application.getLocalUser(request)) map { user =>
       action(AuthRequest(user, request))
     } getOrElse {
-      Future.successful(Results.Unauthorized(views.html.unauthorized.render("")))
+      Future.successful(JavaContext.withContext({
+        Results.Unauthorized(views.html.unauthorized.render(""))
+      })(request))
     }
 
   lazy val parser = action.parser

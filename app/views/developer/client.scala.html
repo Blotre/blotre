@@ -1,0 +1,31 @@
+@(
+    client: models.Client)
+
+@import helper._
+@import com.feth.play.module.pa.views.html._
+
+@articleHeader = {
+<div class="status status-header status-small-header"
+     style="background: #FF712C;"></div>
+}
+
+
+@main(client.name, "client", articleHeader = articleHeader) {
+
+<h1>Client</h1>
+
+<ul>
+    <li><b>Name:</b> @client.name</li>
+    <li><b>Uri:</b> @client.uri</li>
+    <li><b>Blurb:</b> @client.blurb</li>
+
+    <li><b>ID:</b> @client.id</li>
+    <li>
+        <b>Secret:</b> @client.clientSecret
+        @helper.form(action = routes.DeveloperController.regenerateSecret(client.id.toString)) {
+            <input type="submit" value="Regenerate Secrete" />
+        }
+    </li>
+</ul>
+
+}
