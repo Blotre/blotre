@@ -1,5 +1,6 @@
 @(
-    client: models.Client)
+    client: models.Client,
+    redirects: scala.collection.immutable.List[models.ClientRedirectUri])
 
 @import helper._
 @import com.feth.play.module.pa.views.html._
@@ -14,6 +15,7 @@
 
 <h1>Client</h1>
 
+<h3>About</h3>
 <ul>
     <li><b>Name:</b> @client.name</li>
     <li><b>Uri:</b> @client.uri</li>
@@ -26,6 +28,15 @@
             <input type="submit" value="Regenerate Secrete" />
         }
     </li>
+</ul>
+
+<h3>Redirects</h3>
+<a href="@routes.DeveloperController.addRedirect(client.id.toString)">Create new redirect</a>
+
+<ul>
+    @for(redirect <- redirects) {
+        <li>@redirect.uri</li>
+    }
 </ul>
 
 }

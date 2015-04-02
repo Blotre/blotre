@@ -220,12 +220,6 @@ object User
     getDb.filter("active", true).filter("email", email)
 
 
-  def verify(unverified: User) {
-    unverified.emailValidated = true
-    MorphiaObject.datastore.save[User](unverified)
-    TokenAction.deleteByUser(unverified, Type.EMAIL_VERIFICATION)
-  }
-
   def setUserName(currentUser: User, requestedUserName: String) {
     if (currentUser.userNameSelected)
       return

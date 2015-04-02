@@ -34,6 +34,9 @@ case class AccessToken(
       Some(this.scope),
       Some(this.expires),
       this.issued)
+
+  def isExpired() =
+    this.expires > (new Date().getTime - this.issued.getTime)
 }
 
 
@@ -59,10 +62,10 @@ object AccessToken
   /**
    *
    */
-  def findToken(clientId: ObjectId, userId: ObjectId): Option[AccessToken] =
+  def findToken(clientId: ObjectId, user: User): Option[AccessToken] =
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("clientId = ", clientId)
-      .filter("userId = ", userId)
+      .filter("userId = ", user.id)
       .get)
 
   /**

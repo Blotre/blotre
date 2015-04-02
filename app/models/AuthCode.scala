@@ -26,6 +26,9 @@ case class AuthCode(
   var expires: Long)
 {
   val scope = "rw"
+
+  def isExpired() =
+    this.expires > (new Date().getTime - this.issued.getTime)
 }
 
 
@@ -38,7 +41,7 @@ object AuthCode
     Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
       .filter("code = ", code)
       .get) flatMap { authCode =>
-        if (authCode.expires > new Date().getTime - authCode.expires) Some(authCode) else None
+        if (authCode.isExpired) Some(authCode) else None
       }
 
 }

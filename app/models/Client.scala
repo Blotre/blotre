@@ -80,11 +80,14 @@ object Client
   private def redirectDb(): Query[ClientRedirectUri] =
     MorphiaObject.datastore.createQuery((classOf[ClientRedirectUri]))
 
-  def createClient(name: String, uri: String, blurb: String, owner: User) =
-    save(new Client(null, name, uri, blurb, Crypto.generateToken, new Date(), owner.id))
+  def normalizeUri(uri: String) =
+    uri.trim.stripSuffix("/")
 
-  def addRedirectUri(client: Client, uri: String, blurb: String, owner: User) =
-    save(new ClientRedirectUri(null, client.id, uri, new Date()))
+  def createClient(name: String, uri: String, blurb: String, owner: User) =
+    save(new Client(null, name, normalizeUri(uri), blurb, Crypto.generateToken, new Date(), owner.id))
+
+  def addRedirectUri(client: Client, uri: String, owner: User) =
+    save(new ClientRedirectUri(null, client.id, normalizeUri(uri), new Date()))
 
   def validate(clientId: String, clientSecret: String): Boolean =
     (clientDb()
@@ -126,10 +129,19 @@ object Client
   def validateRedirect(client: Client, redirectUri: String): Option[Client] =
     Option(MorphiaObject.datastore.createQuery(classOf[ClientRedirectUri])
       .filter("clientId =", client.id)
-      .filter("redirectUri =", redirectUri)
+      .filter("uri =", normalizeUri(redirectUri))
       .get) map { _ =>
         client
       }
+
+  /**
+   * Get all the redirects that belong to a client.
+   */
+  def findRedirectsForClient(client: Client): List[ClientRedirectUri] =
+    MorphiaObject.datastore.createQuery(classOf[ClientRedirectUri])
+      .filter("clientId =", client.id)
+      .asList()
+      .asScala.toList
 
   /**
    * Lookup all clients for a given user.

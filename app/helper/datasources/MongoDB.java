@@ -13,8 +13,8 @@ import play.Play;
 
 import java.net.UnknownHostException;
 
-public final class MongoDB {
-
+public final class MongoDB
+{
     /**
      * Connects to MongoDB based on the configuration settings.
      * <p/>
@@ -30,8 +30,7 @@ public final class MongoDB {
 
         try {
             MorphiaObject.mongo = new MongoClient(mongoURI);
-        }
-        catch(UnknownHostException e) {
+        } catch(UnknownHostException e) {
             Logger.info("Unknown Host");
         }
 
@@ -40,14 +39,15 @@ public final class MongoDB {
             MorphiaObject.datastore = MorphiaObject.morphia.createDatastore(MorphiaObject.mongo, mongoURI.getDatabase());
 
             //Map classes
-
-            MorphiaObject.morphia.map(User.class);
+            MorphiaObject.morphia.map(AccessToken.class);
+            MorphiaObject.morphia.map(AuthCode.class);
+            MorphiaObject.morphia.map(Client.class);
             MorphiaObject.morphia.map(LinkedAccount.class);
             MorphiaObject.morphia.map(SecurityRole.class);
-            MorphiaObject.morphia.map(TokenAction.class);
             MorphiaObject.morphia.map(UserPermission.class);
             MorphiaObject.morphia.map(Stream.class);
             MorphiaObject.morphia.map(Status.class);
+            MorphiaObject.morphia.map(User.class);
 
             MorphiaObject.datastore.ensureIndexes();
             MorphiaObject.datastore.ensureCaps();

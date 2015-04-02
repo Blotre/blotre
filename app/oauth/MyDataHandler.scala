@@ -37,7 +37,7 @@ class MyDataHandler extends DataHandler[User]
 
   override def getStoredAccessToken(authInfo: AuthInfo[User]): Future[Option[scalaoauth2.provider.AccessToken]] =
     Future.successful(getClientId(authInfo) flatMap { clientId =>
-      models.AccessToken.findToken(clientId, authInfo.user.id)
+      models.AccessToken.findToken(clientId, authInfo.user)
     } map { token =>
       token.toScalaOauth2AccessToken()
     })
