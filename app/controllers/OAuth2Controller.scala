@@ -23,7 +23,10 @@ object OAuth2Controller extends Controller with OAuth2Provider
           case None => Ok(views.html.oauth.authorize.render(client))
         }
 
-      } getOrElse(Ok(views.html.oauth.authorize.render(client)))
+      } getOrElse(Redirect(
+        routes.Application.login.absoluteURL(request.secure),
+        Map("redirect" -> List(request.path + "?" + request.rawQueryString)),
+        302))
     } getOrElse(BadRequest)
   }}
 

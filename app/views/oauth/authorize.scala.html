@@ -1,4 +1,5 @@
-@(client: models.Client)
+@(
+    client: models.Client)
 
 
 @import helper._
@@ -9,12 +10,8 @@
          style="background: #FF712C;"></div>
 }
 
+@main(Messages("blotre.authorize.title"), "authorize", articleHeader = articleHeader) {
+  <h1>@Messages("blotre.authorize.pageTitle")</h1>
 
-@main(Messages("playauthenticate.login.title"), "login", articleHeader = articleHeader) {
-    <div id="login" class="row">
-        <div class="login-panel">
-            <h1>@Messages("blotre.index.login.title")</h1>
-            @_providerPartial(skipCurrent=false)
-        </div>
-    </div>
+    @client.name
 }
