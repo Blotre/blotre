@@ -40,6 +40,9 @@ case class Client(
   var ownerId: ObjectId)
 {
   def this() = this(null, "", "", "", "", new Date(0), null)
+
+  def validateCreds(secret: String) =
+    this.clientSecret == secret
 }
 
 /**

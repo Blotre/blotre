@@ -37,7 +37,9 @@ case class NoCache[A](action: Action[A]) extends Action[A]
 case class AuthRequest[A](user: models.User, request: Request[A]) extends WrappedRequest[A](request)
 
 /**
+ * Action that requires a user to be logged in.
  *
+ * Throws up a 401 if no user is logged in.
  */
 object AuthenticatedAction extends AuthenticatedBuilder(
   request =>
@@ -48,7 +50,7 @@ object AuthenticatedAction extends AuthenticatedBuilder(
     })
 
 /**
- *
+ * Authenticate
  */
 case class Authenticated[A](action: Action[A]) extends Action[A]
 {
@@ -63,3 +65,17 @@ case class Authenticated[A](action: Action[A]) extends Action[A]
 
   lazy val parser = action.parser
 }
+
+/**
+ * Action that requires a user to be logged in.
+ *
+ * Redirects to a login page if the user is not logged in.
+ */
+object TryAuthenticateAction extends AuthenticatedBuilder(
+  request =>
+    Option(Application.getLocalUser(request)),
+  implicit request =>
+    Results.Redirect(
+      routes.Application.login.absoluteURL(request.secure),
+      Map("redirect" -> Seq(request.path + "?" + request.rawQueryString)),
+      302))

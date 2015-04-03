@@ -27,13 +27,17 @@ case class AccessToken(
 {
   val scope = "rw"
 
+  def this() = this(null, null, null, "", "", new Date(0), 0)
+
   def isExpired() =
-    this.expires > (new Date().getTime - this.issued.getTime)
+    this.expires < ((new Date().getTime - this.issued.getTime) / 1000)
 }
 
 
 object AccessToken
 {
+  val defaultExpiration = 60L * 60L
+
   /**
    * Update or create the access token for a given client and user.
    */
@@ -50,6 +54,14 @@ object AccessToken
         .set("issued", issued)
         .set("expires", expires),
       true)
+
+  /**
+   *
+   */
+  def refreshAccessToken(client: Client, user: User): Option[AccessToken] = {
+    updateAccessToken(client.id, user.id, Crypto.generateToken, Crypto.generateToken, new Date(), defaultExpiration)
+    findToken(client.id, user)
+  }
 
   /**
    *

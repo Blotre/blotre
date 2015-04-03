@@ -6,8 +6,8 @@ import helper.datasources.MorphiaObject
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations.{Id, Entity}
 import org.mongodb.morphia.query.Query
-
 import scala.annotation.meta.field
+import scala.collection.JavaConverters._
 
 
 @Entity
@@ -29,7 +29,7 @@ case class AuthCode(
   def this() = this(null, null, null, "", new Date(0), 0)
 
   def isExpired() =
-    this.expires > (new Date().getTime - this.issued.getTime)
+    this.expires < ((new Date().getTime - this.issued.getTime) / 1000)
 }
 
 object AuthCode
@@ -60,6 +60,15 @@ object AuthCode
     Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
       .filter("code = ", code)
       .get)
+
+  /**
+   * Find all auth codes for a given user.
+   */
+  def getAuthCodesForUser(user: User): List[AuthCode] =
+    MorphiaObject.datastore.createQuery(classOf[AuthCode])
+      .filter("userId =", user.id)
+      .asList()
+      .asScala.toList
 
   /**
    * Update or create the auth code token for a given client and user.
