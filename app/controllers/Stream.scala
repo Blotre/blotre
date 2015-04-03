@@ -116,9 +116,9 @@ object Stream extends Controller
       })
       .getOrElse(NotFound)
 
-  def setStreamStatus(uri: String) =  Action(parse.json) { request => {
+  def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request => {
     models.Stream.findByUri(uri) map { stream =>
-      apiSetStreamStatus(stream, request)
+      apiSetStreamStatus(stream, request.user, request)
     } getOrElse(NotFound)
   }}
 
@@ -203,14 +203,13 @@ object Stream extends Controller
   /**
    *
    */
-  def apiSetStreamStatus(id: String): Action[JsValue] = AuthenticatedAction(parse.json) { request => {
+  def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { request => {
     models.Stream.findById(id) map { stream =>
-      apiSetStreamStatus(stream, request)
+      apiSetStreamStatus(stream, request.user, request)
     } getOrElse(NotFound)
   }}
 
-  def apiSetStreamStatus(stream: models.Stream, request: Request[JsValue]): Result = {
-    val user = Application.getLocalUser(request)
+  def apiSetStreamStatus(stream: models.Stream, user: models.User, request: Request[JsValue]): Result = {
     models.Stream.asEditable(user, stream) map { stream =>
       ((__ \ "color").read[String]).reads(request.body) map { status =>
         updateStreamStatus(stream, status, user) map { _ =>
@@ -245,7 +244,7 @@ object Stream extends Controller
   /**
    *
    */
-  def apiCreateChild(id: String) = AuthenticatedAction(parse.json) { implicit request =>
+  def apiCreateChild(id: String) = AuthorizedAction(parse.json) { implicit request =>
     val user = Application.getLocalUser(request)
     models.Stream.findById(id) map { parent =>
       ((__ \ "childId").read[ObjectId]).reads(request.body) map { childId =>

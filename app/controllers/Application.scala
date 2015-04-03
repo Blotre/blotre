@@ -32,6 +32,31 @@ object Application extends Controller
     getLocalUser(JavaHelpers.createJavaContext(request).session())
 
   /**
+   * Get the user that is being acted on behalf of.
+   */
+  def getTokenUser(request: RequestHeader): Option[models.User] =
+    getAccessTokenFromRequest(request) flatMap { access_token =>
+      models.AccessToken.findValidByAccessToken(access_token)
+    } flatMap { token =>
+      token.getUser
+    }
+
+  private def getAccessTokenFromRequest(request: RequestHeader): Option[String] =
+    request.getQueryString("access_token")  orElse {
+      request.headers.get("Authorization") flatMap { authorization =>
+        """Bearer (\w+)""".r.findFirstMatchIn(authorization) map { found =>
+          found.group(1)
+        }
+      }
+    }
+
+  /**
+   * Get the acting user.
+   */
+  def getActingUser(request: RequestHeader): Option[models.User] =
+    getTokenUser(request) orElse (Option(Application.getLocalUser(request)))
+
+  /**
    * Index page.
    *
    * Renders hero page for non logged in users or the users's root stream for logged in users.

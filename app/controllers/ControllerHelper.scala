@@ -79,3 +79,14 @@ object TryAuthenticateAction extends AuthenticatedBuilder(
       routes.Application.login.absoluteURL(request.secure),
       Map("redirect" -> Seq(request.path + "?" + request.rawQueryString)),
       302))
+
+
+/**
+ * Action that that requires an active user or client acting on behalf
+ * of a user.
+ */
+object AuthorizedAction extends AuthenticatedBuilder(
+  request =>
+    Application.getActingUser(request),
+  implicit request =>
+    Results.Unauthorized)

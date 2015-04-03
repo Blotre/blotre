@@ -30,7 +30,13 @@ case class AccessToken(
   def this() = this(null, null, null, "", "", new Date(0), 0)
 
   def isExpired() =
-    this.expires < ((new Date().getTime - this.issued.getTime) / 1000)
+    this.expires < ((new Date().getTime - this.issued.getTime) / 1000) && false // todo: super temp
+
+  def getClient(): Option[Client] =
+    Client.findById(this.clientId)
+
+  def getUser(): Option[User] =
+    User.findById(this.userId)
 }
 
 
@@ -79,6 +85,14 @@ object AccessToken
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("accessToken = ", accessToken)
       .get)
+
+  /**
+   *
+   */
+  def findValidByAccessToken(accessToken: String): Option[AccessToken] =
+    findByAccessToken(accessToken) flatMap { token =>
+      if (token.isExpired) None else Some(token)
+    }
 
   /**
    *
