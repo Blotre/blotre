@@ -1,5 +1,6 @@
 @(
-    client: models.Client)
+    client: models.Client,
+    redirect_uri: String)
 
 
 @import helper._
@@ -14,4 +15,11 @@
   <h1>@Messages("blotre.authorize.pageTitle")</h1>
 
     @client.name
+
+    @helper.form(action = routes.OAuth2Controller.onAuthorize) {
+        <input type="hidden" name="client_id" value="@client.id.toString" />
+        <input type="hidden" name="redirect_uri" value="@redirect_uri" />
+        <button type="submit" name="action" value="allow">Allow</button>
+        <button type="submit" name="action" value="deny">Deny</button>
+    }
 }

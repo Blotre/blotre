@@ -13,12 +13,12 @@ object DeveloperController extends Controller
 {
   val createClientForm = Form(mapping(
     "name" -> nonEmptyText(3, 255),
-    "uri" ->  nonEmptyText(3, 255).verifying("Https url", uri => uri.startsWith("https://")),
+    "uri" ->  nonEmptyText(3, 255).verifying("Http(s) url", uri => uri.startsWith("http://") || uri.startsWith("https://")),
     "blurb" ->  nonEmptyText(3, 255)
   )(CreateClientForm.apply)(CreateClientForm.unapply))
 
   val createRedirectForm = Form(mapping(
-    "uri" ->  nonEmptyText(3, 255).verifying("Https url", uri => uri.startsWith("https://"))
+    "uri" ->  nonEmptyText(3, 255).verifying("Http(s) url", uri => uri.startsWith("http://") || uri.startsWith("https://"))
   )(CreateRedirectForm.apply)(CreateRedirectForm.unapply))
 
   def index() = AuthenticatedAction { implicit request => JavaContext.withContext {

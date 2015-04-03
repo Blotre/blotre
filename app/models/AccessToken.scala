@@ -27,14 +27,6 @@ case class AccessToken(
 {
   val scope = "rw"
 
-  def toScalaOauth2AccessToken() =
-    scalaoauth2.provider.AccessToken(
-      this.accessToken,
-      Some(this.refreshToken),
-      Some(this.scope),
-      Some(this.expires),
-      this.issued)
-
   def isExpired() =
     this.expires > (new Date().getTime - this.issued.getTime)
 }
@@ -83,6 +75,4 @@ object AccessToken
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("refreshToken = ", refreshToken)
       .get)
-
-
 }
