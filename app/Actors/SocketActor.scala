@@ -5,7 +5,7 @@ import models.User
 import play.api.libs.json._
 
 /**
- *
+ * Stream status update event.
  */
 case class StatusUpdate(uri: String, status: models.Status)
 
@@ -19,6 +19,29 @@ object StatusUpdate
           "uri" -> x.uri,
           "updated" -> x.status.created,
           "status" -> x.status))
+  }
+}
+
+/**
+ * Stream child added event.
+ */
+case class AddChildEvent(uri: String, childData: models.ChildStream)
+
+object AddChildEvent extends
+{
+  import models.Serializable._
+
+  implicit val addChildWrites = new Writes[AddChildEvent] {
+    def writes(x: AddChildEvent): JsValue =
+      Json.obj(
+        "type" -> "AddChild",
+        "stream" -> Json.obj(
+          "uri" -> x.uri),
+        "child" -> Json.obj(
+          "id" -> x.childData.childId,
+          "uri" -> x.childData.childUri,
+          "added" -> x.childData.created
+        ))
   }
 }
 
@@ -54,6 +77,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     case msg@StatusUpdate(_, _) =>
       out ! Json.toJson(msg)
 
+    case GetCollectionResponse(col) =>
+      out ! Json.obj("x" ->1)
+
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
@@ -62,6 +88,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
 
         case "Unsubscribe" =>
           recieveUnsubscribeMessage(msg)
+
+        case "SubscribeCollection" =>
+          CollectionSupervisor.supervisor ! GetCollection("mb1")
+
+
+        case "UnsubscribeCollection" =>
+          //recieveUnsubscribeMessage(msg)
 
         case _ =>
           out ! Json.toJson(SocketError("Unknown type", correlation))

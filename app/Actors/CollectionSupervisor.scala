@@ -34,4 +34,7 @@ class CollectionSupervisor extends Actor
 
 object CollectionSupervisor
 {
+  def props(): Props = Props(new CollectionSupervisor())
+
+  lazy val supervisor = Akka.system.actorOf(props())
 }

@@ -61,7 +61,6 @@
         </nav>
     </div>
 
-    @*
     <ul class="stream-children">
         <li class="search-children">
             <div class="input-group">
@@ -80,11 +79,10 @@
                data-target="#create-child-form"></a>
         </li>
         @for(child <- children) {
-            <li>
+            <li>@child.status.color
             </li>
         }
     </ul>
-    *@
 
     <script>
         window.initialStreamData = @Html(Json.toJson(stream).toString());

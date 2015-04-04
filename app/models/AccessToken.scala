@@ -30,7 +30,7 @@ case class AccessToken(
   def this() = this(null, null, null, "", "", new Date(0), 0)
 
   def isExpired() =
-    this.expires < ((new Date().getTime - this.issued.getTime) / 1000) && false // todo: super temp
+    this.expires < ((new Date().getTime - this.issued.getTime) / 1000)
 
   def getClient(): Option[Client] =
     Client.findById(this.clientId)

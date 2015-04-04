@@ -29,16 +29,18 @@ var StreamManager = function() {
         }
     };
 
-    self.socket = new WebSocket("ws://localhost:9000/ws");
+    self.socket = new WebSocket("ws://localhost:9000/v1/ws");
     self.ready = false;
     self.socket.onopen = function(e) {
         self.socket.send(JSON.stringify({
             "type": "Subscribe",
             "to": Object.keys(self.streams)
         }));
+        //self.socket.set()
     };
 
     self.socket.onmessage = function(event) {
+        console.log(event);
         var data = JSON.parse(event.data);
         if (data)
             processMessage(data);

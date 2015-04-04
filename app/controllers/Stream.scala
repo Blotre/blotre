@@ -147,6 +147,7 @@ object Stream extends Controller
   }
 
   /**
+   * TODO: add name validation.
    */
   def createChildStream(uri: String) = AuthenticatedAction { implicit request =>
     val user = Application.getLocalUser(request)
@@ -165,10 +166,20 @@ object Stream extends Controller
     }
   }
 
-  private def createDescendant(uri: String, user: models.User) =
-    getParentPath(uri) flatMap { s =>
-      models.Stream.createDescendant(s._1, s._2, user)
+  private def createDescendant(uri: String, user: models.User): Option[models.Stream] = {
+    getParentPath(uri) flatMap { paths =>
+      models.Stream.findByUri(paths._1) flatMap { parent =>
+        createDescendant(parent, paths._2, user)
+      }
     }
+  }
+
+  private def createDescendant(parent: models.Stream, name: String, user: models.User): Option[models.Stream] = {
+    models.Stream.createDescendant(parent.uri, name, user) map { newChild =>
+      addChild(parent, newChild, user)
+      newChild
+    }
+  }
 
   private def getParentPath(uri: String) = {
     val index = uri.lastIndexOf('/')
@@ -248,9 +259,11 @@ object Stream extends Controller
     val user = Application.getLocalUser(request)
     models.Stream.findById(id) map { parent =>
       ((__ \ "childId").read[ObjectId]).reads(request.body) map { childId =>
-        models.Stream.addChild(parent, childId, user) map { childData =>
-          Ok(Json.toJson(childData))
-        } getOrElse(BadRequest)
+        models.Stream.findById(childId) map { child =>
+          addChild(parent, child, user) map { childData =>
+            Ok(Json.toJson(childData))
+          } getOrElse (BadRequest)
+        } getOrElse(NotFound)
       } recoverTotal { _ =>
         BadRequest
       }
@@ -280,6 +293,13 @@ object Stream extends Controller
       models.Stream.updateStreamStatus(stream, color, poster)
     } map { s =>
       StreamSupervisor.updateStatus(stream.uri, s.status)
+    }
+
+
+  private def addChild(parent: models.Stream, child: models.Stream, user: models.User): Option[models.ChildStream] =
+    models.Stream.addChild(parent, child.id, user) map { newChildData =>
+      StreamSupervisor.addChild(parent.uri, newChildData)
+      newChildData
     }
 }
 

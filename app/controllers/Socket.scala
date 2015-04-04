@@ -14,7 +14,7 @@ object Socket extends Controller
    *
    */
   def open = WebSocket.acceptWithActor[JsValue, JsValue] { implicit request => out =>
-    val user = Application.getLocalUser(request)
+    val user = Application.getActingUser(request).getOrElse(null)
     Actors.SocketActor.props(user, out)
   }
 }

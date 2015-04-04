@@ -13,30 +13,38 @@ import play.api.libs.functional.syntax._
 /**
  * Manages the main stream status change event bus.
  */
-object StreamSupervisor {
+object StreamSupervisor
+{
   lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
 
-  def subscribe(subscriber: ActorRef, path: String): Unit = {
-    val topic = ActorHelper.normalizeName(path)
-    if (!topic.isEmpty)
-      mediator ! DistributedPubSubMediator.Subscribe(topic, subscriber)
+  private def getStreamTopic(path: String): Option[String] = {
+    val normalizePath = ActorHelper.normalizeName(path)
+    if (normalizePath.isEmpty) None else Some(normalizePath)
   }
+
+  def subscribe(subscriber: ActorRef, path: String): Unit =
+    getStreamTopic(path) map { topic =>
+      mediator ! DistributedPubSubMediator.Subscribe(topic, subscriber)
+    }
 
   def subscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
     paths.foreach { x => subscribe(subscriber, x) }
 
-  def unsubscribe(subscriber: ActorRef, path: String): Unit = {
-    val topic = ActorHelper.normalizeName(path)
-    if (!topic.isEmpty)
+  def unsubscribe(subscriber: ActorRef, path: String): Unit =
+    getStreamTopic(path) map { topic =>
       mediator ! DistributedPubSubMediator.Unsubscribe(topic, subscriber)
   }
 
   def unsubscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
     paths.foreach { x => unsubscribe(subscriber, x) }
 
-  def updateStatus(path: String, status: models.Status) = {
-    val topic = ActorHelper.normalizeName(path)
-    if (!topic.isEmpty)
+  def updateStatus(path: String, status: models.Status) =
+    getStreamTopic(path) map { topic =>
       mediator ! DistributedPubSubMediator.Publish(topic, StatusUpdate(path, status))
+  }
+
+  def addChild(path: String, childData: models.ChildStream) =
+    getStreamTopic(path) map { topic =>
+      mediator ! DistributedPubSubMediator.Publish(topic, AddChildEvent(path, childData))
   }
 }

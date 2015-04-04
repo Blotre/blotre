@@ -81,9 +81,11 @@ case class Stream(
 {
   def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null)
 
-  def getOwner() = User.findById(this.ownerId)
+  def getOwner() =
+    User.findById(this.ownerId)
 
-  def getChildren() = Stream.getChildrenOf(this)
+  def getChildren() =
+    Stream.getChildrenOf(this)
 }
 
 
@@ -211,10 +213,7 @@ object Stream
   def createDescendant(parent: Stream, child: String, user: User): Option[models.Stream] =
     asEditable(user, parent) flatMap { stream =>
       findByParent(parent, child) orElse {
-        createStreamWithName(child, descendantUri(parent, child), user) map { childStream =>
-          addChild(parent, childStream, user)
-          childStream
-        }
+        createStreamWithName(child, descendantUri(parent, child), user)
       }
     }
 
@@ -269,7 +268,7 @@ object Stream
   /**
    * Get all children of a given stream.
    */
-  def getChildrenOf(parent: Stream) =
+  def getChildrenOf(parent: Stream): List[Stream] =
     getChildrenData(parent)
       .map(x => findById(x.childId).get)
 
