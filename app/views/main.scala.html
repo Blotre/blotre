@@ -1,7 +1,6 @@
 @(
     title: String,
     nav: String = "",
-    containerClass: String = "",
     extraHead: Html = Html(""),
     navHeader: Html = Html(""),
     articleHeader: Html = Html(""),
@@ -77,7 +76,7 @@
 
         @articleHeader
 
-        <div id="article-container" class="container @containerClass">
+        <div id="article-container" class="container @(nav + "-container")">
             @if(flash.contains(ApplicationConstants.FLASH_ERROR_KEY)) {
                 <div class="alert alert-danger" role="alert">
                     <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">

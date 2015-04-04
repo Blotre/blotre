@@ -157,6 +157,7 @@ blotre.notFound.title=404
 blotre.unauthorized.title=401
 
 # Index
+blotre.index.title=Blot're
 blotre.index.login.title=Sign up or login
 
 # Providers

@@ -3,6 +3,33 @@
 */
 
 .authorize-overview {
-    font-size: 1.6rem;
+    font-size: 1.3em;
     margin-bottom: 0;
+}
+
+.authorize-description {
+    font-size: 0.9em;
+}
+
+
+.authorize-allow-form button {
+    margin: 4px;
+}
+
+
+/**
+    Small screen
+*/
+@media only screen and (max-width : 420px) {
+    .authorize-container .row {
+        display: block;
+        text-align: center;
+    }
+
+    .authorize-client-info,
+    .authorize-allow-form {
+        display: block;
+        width: 100%;
+        float: none;
+    }
 }

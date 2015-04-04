@@ -17,15 +17,15 @@
     <p class="authorize-overview">@Messages("blotre.authorize.overview", client.name)</p>
     <p class="authorize-description">@Messages("blotre.authorize.description")</p>
 
-    <div class="row">
-        <div class="client-info col-md-8">
+    <div class="row display-table">
+        <div class="authorize-client-info col-xs-8">
             <h3>Application</h3>
             <p><b>Name: </b>@client.name</p>
             <p><b>Link: </b><a href="@client.uri">@client.uri</a></p>
             <p><b>About: </b>@client.blurb</p>
         </div>
 
-        @helper.form(action = routes.OAuth2Controller.onAuthorize, 'class -> "col-md-4") {
+        @helper.form(action = routes.OAuth2Controller.onAuthorize, 'class -> "authorize-allow-form col-xs-4 display-cell") {
             <input type="hidden" name="client_id" value="@client.id.toString" />
             <input type="hidden" name="redirect_uri" value="@redirect_uri" />
             <button class="btn btn-lg btn-success" type="submit" name="action" value="allow">
