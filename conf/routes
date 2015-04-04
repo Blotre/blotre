@@ -1,0 +1,77 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET     /                           controllers.Application.index()
+
+# Streams
+GET     /s                          controllers.Stream.index()
+GET     /s/*path                    controllers.Stream.getStream(path)
+POST    /s/*path                    controllers.Stream.setStreamStatus(path)
+PUT     /s/*path                    controllers.Stream.createChildStream(path)
+
+# WebSocket
+GET     /v1/ws                          controllers.Socket.open()
+
+# OAuth
+GET     /v1/oauth2/authorize              controllers.OAuth2Controller.authorize(response_type: String, client_id: String, redirect_uri: String)
+POST    /v1/oauth2/authorize              controllers.OAuth2Controller.onAuthorize
+POST    /v1/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String)
+
+
+# Stream Api
+GET     /v1/api/stream/:id                   controllers.Stream.apiGetStream(id)
+GET     /v1/api/stream/:id/status            controllers.Stream.apiGetStreamStatus(id)
+POST    /v1/api/stream/:id/status            controllers.Stream.apiSetStreamStatus(id)
+GET     /v1/api/stream/:id/children          controllers.Stream.apiGetChildren(id)
+GET     /v1/api/stream/:id/children/:child   controllers.Stream.apiGetChild(id, child)
+
+# User Api
+GET     /v1/api/user/:id                   controllers.User.apiGetUser(id)
+
+# Login and Logout
+GET     /login                      controllers.Application.login()
+GET     /onlogin                    controllers.Application.onLogin()
+
+GET     /logout                     com.feth.play.module.pa.controllers.Authenticate.logout()
+GET     /authenticate/:provider     com.feth.play.module.pa.controllers.Authenticate.authenticate(provider: String)
+
+# Account
+GET     /authenticate/:provider/denied     controllers.Signup.oAuthDenied(provider: String)
+
+GET     /account/exists            controllers.Signup.exists()
+
+GET     /accounts/add               controllers.Account.link()
+
+GET     /account/link              controllers.Account.askLink()
+POST    /account/link              controllers.Account.doLink()
+
+GET     /account/merge             controllers.Account.askMerge()
+POST    /account/merge             controllers.Account.doMerge()
+
+GET     /account/selectUserName            controllers.Account.selectUserName()
+POST    /account/selectUserName            controllers.Account.setSelectedUserName()
+
+GET    /account                   controllers.Account.account()
+
+# Developer
+GET     /account/developer            controllers.DeveloperController.index()
+
+GET     /account/developer/createClient         controllers.DeveloperController.createClient()
+POST    /account/developer/createClient         controllers.DeveloperController.createClientSubmit()
+GET    /account/developer/client/:id           controllers.DeveloperController.getClient(id)
+POST    /account/developer/client/:id/regenerateSecret           controllers.DeveloperController.regenerateSecret(id)
+
+GET    /account/developer/client/:id/addRedirect           controllers.DeveloperController.addRedirect(id)
+POST    /account/developer/client/:id/addRedirect           controllers.DeveloperController.addRedirectSubmit(id)
+
+
+# Shared pages
+GET     /404                           controllers.Application.notFound()
+GET     /401                           controllers.Application.unauthorized()
+
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET     /webjars/*file              controllers.WebJarAssets.at(file)
