@@ -38,50 +38,6 @@ ul {
 }
 
 /**
-    Login Panel
-*/
-.login-panel {
-    min-width: 20rem;
-    padding: 0.2rem 0;
-}
-
-.login-panel h1 {
-    font-size: 2rem;
-    text-align: center;
-    padding-bottom: 1rem;
-}
-
-.login-panel ul {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-.login-panel ul li {
-    display: block;
-    width: 100%;
-    border-top: 1px solid rgba(0, 0, 0, 0.15);
-
-}
-
-.login-panel ul li a {
-    display: block;
-    width: 100%;
-    height: 100%;
-    color:inherit;
-    padding: 0.8rem 1rem;
-}
-
-.login-panel ul li a:hover {
-    background: rgba(255, 255, 255, 0.90);
-    text-decoration: none;
-}
-
-.login-panel ul .provider-icon{
-    float: right;
-}
-
-/**
     Header
 */
 #header-bar {
@@ -111,7 +67,7 @@ ul {
     display: block;
     height: 50px;
     width: 50px;
-    background: red;
+    background: transparent; /* updated once found */
     z-index: 1;
 }
 
@@ -187,11 +143,14 @@ form .info {
 
 @import "common";
 @import "index";
+@import "login";
 @import "404";
+@import "account/link_account";
 @import "authorize";
-@import "stream/statusPicker";
-@import "stream/tryCreateChild";
 @import "stream/index";
+@import "stream/statusPicker";
+@import "stream/streamPage";
+@import "stream/tryCreateChild";
 
 
 
@@ -233,9 +192,10 @@ form .error .help-inline {
 }
 
 .status-small-header {
+    display: block;
     height: 60px;
     width: 100%;
-    position: absolute;
+    position: fixed;
     top:0;
     left: 0;
 }
@@ -261,11 +221,6 @@ form .error .help-inline {
 }
 
 .status-header-peak {
-    top: 0;
-    position: fixed;
-    display: block;
-    height: 65px;
-    width: 100%;
     z-index: 10;
 }
 

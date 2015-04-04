@@ -3,15 +3,14 @@
 
 @import com.feth.play.module.pa.views.html._
 
-@main(Messages("playauthenticate.link.account.title")) {
+@main(Messages("blotre.account.link.title"), "link-account") {
     
-    <h1>@Messages("playauthenticate.link.account.title")</h1>
-    
-    <ul>
-        @forProviders(true) { p =>
-            <li>
-                <a href="@p.getUrl()">@Messages("blotre.auth.provider." + p.getKey())@_providerIcon(p.getKey())</a>
-            </li>
-        }
-    </ul>
+    <h1>@Messages("blotre.account.link.title")</h1>
+    <p>@Messages("blotre.account.link.description")<p>
+
+    <div class="row">
+        <div class="login-panel link-account-panel">
+            @_providerPartial(false)
+        </div>
+    </div>
 }

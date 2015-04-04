@@ -3,25 +3,13 @@
 @import helper._
 @import com.feth.play.module.pa.views.html._
 
-@extraHead = {
-    <style>
-        #login {
-            text-align: center;
-        }
-
-        #login .login-panel {
-            display: inline-block;
-        }
-    </style>
-}
-
 @articleHeader = {
     <div class="status status-header status-small-header"
          style="background: #FF712C;"></div>
 }
 
 
-@main(Messages("playauthenticate.login.title"), "login", articleHeader = articleHeader, extraHead = extraHead) {
+@main(Messages("playauthenticate.login.title"), "login", articleHeader = articleHeader) {
     <div id="login" class="row">
         <div class="login-panel">
             <h1>@Messages("blotre.index.login.title")</h1>

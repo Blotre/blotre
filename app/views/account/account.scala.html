@@ -9,11 +9,6 @@
     Your name is @localUser.name and your email address is @if(!localUser.email) {<em>&lt;unknown&gt;</em>.} else {
     	@localUser.email.
 	    <i>
-	    @* @if(!localUser.emailValidated && localUser.email) {
-	      (<a href="@routes.Account.verifyEmail">unverified - click to verify</a>)
-	    } else {
-	      (verified)
-	    }</i> *@
     }
     <br />
         @if(localUser.firstName && localUser.lastName) {
