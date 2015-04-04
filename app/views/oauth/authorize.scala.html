@@ -14,22 +14,25 @@
 @main(Messages("blotre.authorize.title"), "authorize", articleHeader = articleHeader) {
     <h1>@Messages("blotre.authorize.pageTitle")</h1>
 
-    <p>@Messages("blotre.authorize.overview", client.name)</p>
-    <p>@Messages("blotre.authorize.description")</p>
+    <p class="authorize-overview">@Messages("blotre.authorize.overview", client.name)</p>
+    <p class="authorize-description">@Messages("blotre.authorize.description")</p>
 
-    <div class="client-info">
-        <p><b>Name: </b>@client.name</p>
-        <p><b>Link: </b><a href="@client.uri">@client.uri</a></p>
-        <p><b>About: </b>@client.blurb</p>
+    <div class="row">
+        <div class="client-info col-md-8">
+            <h3>Application</h3>
+            <p><b>Name: </b>@client.name</p>
+            <p><b>Link: </b><a href="@client.uri">@client.uri</a></p>
+            <p><b>About: </b>@client.blurb</p>
+        </div>
+
+        @helper.form(action = routes.OAuth2Controller.onAuthorize, 'class -> "col-md-4") {
+            <input type="hidden" name="client_id" value="@client.id.toString" />
+            <input type="hidden" name="redirect_uri" value="@redirect_uri" />
+            <button class="btn btn-lg btn-success" type="submit" name="action" value="allow">
+                <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Allow</button>
+            <button class="btn btn-lg btn-danger" type="submit" name="action" value="deny">
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deny
+            </button>
+        }
     </div>
-
-    @helper.form(action = routes.OAuth2Controller.onAuthorize) {
-        <input type="hidden" name="client_id" value="@client.id.toString" />
-        <input type="hidden" name="redirect_uri" value="@redirect_uri" />
-        <button class="btn btn-lg btn-success" type="submit" name="action" value="allow">
-            <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Allow</button>
-        <button class="btn btn-lg btn-danger" type="submit" name="action" value="deny">
-            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deny
-        </button>
-    }
 }

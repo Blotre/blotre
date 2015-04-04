@@ -1,0 +1,47 @@
+/**
+    404 Not Found page
+*/
+
+#not-found-header {
+    height: 500px;
+    overflow: hidden;
+}
+
+#not-found-blurb {
+    margin: 0 auto;
+    margin-top: 15rem;
+    line-height: 16rem;
+    color: black;
+}
+
+#not-found-blurb:after {
+    border: 1px solid black;
+    background: none;
+}
+
+
+#not-found-blurb .diamond-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: none;
+    -webkit-transform-origin: 50% 50%;
+    -moz-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    z-index: -1;
+    -webkit-transform: scale(1.2, 1.2) rotate(25deg);
+}
+
+#not-found-blurb .diamond-bg:after {
+    content: " ";
+    display: block;
+    border: 1px solid black;
+    width: 100%;
+    height: 100%;
+}
+
+#not-found-blurb > .diamond-bg {
+    -webkit-transform: scale(1.2, 1.2) rotate(70deg);
+}
