@@ -1,36 +1,25 @@
 package controllers
 
 import com.feth.play.module.pa.PlayAuthenticate
-import com.feth.play.module.pa.user.AuthUser
-import play.core.j.JavaHelpers
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
+import play.core.j.JavaHelpers
 import play.i18n.Messages
-import play.libs.Json
-import scala.Option
-import play.data.Form.form
+
 
 case class UserNameSelectForm(userName: String)
 
+case class AcceptForm(accept: Boolean)
 
 object Account extends Controller
 {
   import ControllerHelper._
 
-  class Accept {
-  //  @Required
-   // @NonEmpty
-    var accept: java.lang.Boolean = _
+  private val acceptForm = Form(mapping(
+    "accept" -> boolean
+  )(AcceptForm.apply)(AcceptForm.unapply))
 
-    def getAccept(): java.lang.Boolean = accept
-
-    def setAccept(accept: java.lang.Boolean) {
-      this.accept = accept
-    }
-  }
-
-  private val ACCEPT_FORM = form(classOf[Accept])
 
   def link() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     Ok(views.html.account.link.render(request.user))
@@ -46,7 +35,7 @@ object Account extends Controller
     if (u == null)
       Redirect(routes.Application.index())
     else
-      Ok(views.html.account.ask_link.render(ACCEPT_FORM, u))
+      Ok(views.html.account.ask_link.render(acceptForm, u))
   }}}
 
   def doLink() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
@@ -55,17 +44,18 @@ object Account extends Controller
     if (u == null) {
       Redirect(routes.Application.index())
     } else {
-      val filledForm = ACCEPT_FORM.bindFromRequest()
-      if (filledForm.hasErrors()) {
-        BadRequest(views.html.account.ask_link.render(filledForm, u))
-      } else {
-        val link = filledForm.get.accept
-        val result = JavaHelpers.createResult(ctx, PlayAuthenticate.link(ctx, link))
-        if (link)
-          result.flashing(ApplicationConstants.FLASH_MESSAGE_KEY -> Messages.get("playauthenticate.accounts.link.success"))
-        else
-          result
-      }
+      acceptForm.bindFromRequest().fold(
+        formWithErrors =>
+          BadRequest(views.html.account.ask_link.render(formWithErrors, u)),
+
+        values => {
+          val link = values.accept
+          val result = JavaHelpers.createResult(ctx, PlayAuthenticate.link(ctx, link))
+          if (link)
+            result.flashing(ApplicationConstants.FLASH_MESSAGE_KEY -> Messages.get("playauthenticate.accounts.link.success"))
+          else
+            result
+        })
     }
   }}}
 
@@ -75,7 +65,7 @@ object Account extends Controller
     if (bUser == null)
       Redirect(routes.Application.index())
     else
-      Ok(views.html.account.ask_merge.render(ACCEPT_FORM, aUser, bUser))
+      Ok(views.html.account.ask_merge.render(acceptForm, aUser, bUser))
   }}}
 
   def doMerge() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
@@ -86,21 +76,22 @@ object Account extends Controller
     if (bUser == null) {
       Redirect(routes.Application.index())
     } else {
-      val filledForm = ACCEPT_FORM.bindFromRequest()
-      if (filledForm.hasErrors()) {
-        BadRequest(views.html.account.ask_merge.render(filledForm, aUser, bUser))
-      } else {
-        val merge = filledForm.get.accept
+      acceptForm.bindFromRequest().fold(
+        formWithErrors =>
+          BadRequest(views.html.account.ask_merge.render(formWithErrors, aUser, bUser)),
+
+      values => {
+        val merge = values.accept
         val result = JavaHelpers.createResult(ctx, PlayAuthenticate.merge(ctx, merge))
         if (merge)
           result
             .flashing(ApplicationConstants.FLASH_MESSAGE_KEY -> Messages.get("playauthenticate.accounts.merge.success"))
         else
           result
-      }
+      })
     }
   }}}
-  
+
   val userNameSelectForm = Form(mapping(
     "userName" ->  nonEmptyText(3, 100)
       .verifying("Sorry, your user name may only contain letters and numbers", name => name.matches(models.User.userNamePattern.toString))
