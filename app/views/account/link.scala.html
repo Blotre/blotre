@@ -1,10 +1,17 @@
-    
+@(
+    user: models.User)
+
+@import com.feth.play.module.pa.views.html._
+
 @main(Messages("playauthenticate.link.account.title")) {
     
     <h1>@Messages("playauthenticate.link.account.title")</h1>
     
-    <p>
-	@_providerPartial()
-    <br/>
-    </p>
+    <ul>
+        @forProviders(true) { p =>
+            <li>
+                <a href="@p.getUrl()">@Messages("blotre.auth.provider." + p.getKey())@_providerIcon(p.getKey())</a>
+            </li>
+        }
+    </ul>
 }

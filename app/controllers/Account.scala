@@ -3,23 +3,24 @@ package controllers
 import com.feth.play.module.pa.PlayAuthenticate
 import com.feth.play.module.pa.user.AuthUser
 import play.core.j.JavaHelpers
-import play.data.Form
-import play.data.format.Formats.NonEmpty
-import play.data.validation.Constraints
-import play.data.validation.Constraints.Required
+import play.api.data.Form
+import play.api.data.Forms._
+import play.api.mvc._
 import play.i18n.Messages
 import play.libs.Json
-import play.api.mvc._
 import scala.Option
 import play.data.Form.form
+
+case class UserNameSelectForm(userName: String)
+
 
 object Account extends Controller
 {
   import ControllerHelper._
 
   class Accept {
-    @Required
-    @NonEmpty
+  //  @Required
+   // @NonEmpty
     var accept: java.lang.Boolean = _
 
     def getAccept(): java.lang.Boolean = accept
@@ -32,7 +33,7 @@ object Account extends Controller
   private val ACCEPT_FORM = form(classOf[Accept])
 
   def link() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
-    Ok(views.html.account.link.render())
+    Ok(views.html.account.link.render(request.user))
   }}}
 
   def account() = AuthenticatedAction { implicit request => JavaContext.withContext {
@@ -99,23 +100,19 @@ object Account extends Controller
       }
     }
   }}}
-
-  class UserNameSelect {
-    @Required
-    @Constraints.Pattern(value = "[a-z0-9\\-_$]+", message = "User name may only contain letters and numbers")
-    @Constraints.MinLength(3)
-    @Constraints.MaxLength(100)
-    var userName: String = _
-  }
-
-  private val SELECT_USER_NAME_FORM = form(classOf[UserNameSelect])
+  
+  val userNameSelectForm = Form(mapping(
+    "userName" ->  nonEmptyText(3, 100)
+      .verifying("Sorry, your user name may only contain letters and numbers", name => name.matches(models.User.userNamePattern.toString))
+      .verifying("Sorry, that name is already taken", name => models.Stream.findByUri(name).isEmpty)
+  )(UserNameSelectForm.apply)(UserNameSelectForm.unapply))
 
   def selectUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected)
       Redirect(routes.Application.index())
     else
-      Ok(views.html.account.selectUserName.render(SELECT_USER_NAME_FORM))
+      Ok(views.html.account.selectUserName.render(userNameSelectForm))
   }}}
 
   def setSelectedUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
@@ -123,25 +120,21 @@ object Account extends Controller
     if (localUser.userNameSelected) {
       Redirect(routes.Application.index())
     } else {
-      val formData = Form.form(classOf[UserNameSelect]).bindFromRequest()
-      if (formData.hasErrors()) {
-        BadRequest(views.html.account.selectUserName.render(formData))
-          .flashing("error" -> "Please correct errors.")
-      } else {
-        val requestedUserName = formData.get.userName
-        models.Stream.findByUri(requestedUserName) map { existing =>
-          BadRequest(views.html.account.selectUserName.render(formData))
-            .flashing("error" -> "User name already taken.")
+     userNameSelectForm.bindFromRequest().fold(
+       formWithErrors =>
+        BadRequest(views.html.account.selectUserName.render(formWithErrors))
+          .flashing("error" -> "Please correct errors."),
+
+      values => {
+        val requestedUserName = values.userName
+        models.Stream.createRootStream(requestedUserName, localUser) map { rootStream =>
+          models.User.setUserName(localUser, requestedUserName)
+          Redirect(routes.Application.index())
         } getOrElse {
-          models.Stream.createRootStream(requestedUserName, localUser) map { rootStream =>
-            models.User.setUserName(localUser, requestedUserName)
-            Redirect(routes.Application.index())
-          } getOrElse {
-            BadRequest(views.html.account.selectUserName.render(formData))
-              .flashing("error" -> "Selected user name could not be processed.")
-          }
+          BadRequest(views.html.account.selectUserName.render(userNameSelectForm))
+            .flashing("error" -> "Could not process request.")
         }
-      }
+      })
     }
   }}}
 }

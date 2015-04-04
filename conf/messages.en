@@ -165,6 +165,8 @@ blotre.auth.provider.google=Google
 blotre.auth.provider.twitter=Twitter
 
 # Account
+blotre.account.title=Account
+blotre.account.pageTitle=Your Account
 blotre.account.selectUserNameTitle=Select Your User Name
 blotre.account.selectUserNameDescription=Your user name will also be your root stream name.
 

@@ -15,8 +15,8 @@ import org.mongodb.morphia.query.Query
 import play.api.libs.json.{Json, JsValue, Writes}
 import play.data.format.Formats
 import play.data.validation.Constraints
-import java.util._
-import scala.collection.JavaConversions._
+import java.util.Date
+import scala.collection.JavaConverters._
 
 
 @SerialVersionUID(1L)
@@ -50,65 +50,46 @@ class User extends Subject
   var userNameSelected: Boolean = _
 
   @Embedded
-  var roles: List[SecurityRole] = new ArrayList[SecurityRole]()
+  var roles: java.util.List[SecurityRole] = new java.util.ArrayList[SecurityRole]()
 
   @Embedded
-  var linkedAccounts: List[LinkedAccount] = new ArrayList[LinkedAccount]()
+  var linkedAccounts: java.util.List[LinkedAccount] = new java.util.ArrayList[LinkedAccount]()
 
   @Embedded
-  var permissions: List[UserPermission] = new ArrayList[UserPermission]()
+  var permissions: java.util.List[UserPermission] = new java.util.ArrayList[UserPermission]()
 
   override def getIdentifier(): String = id.toString
 
-  override def getRoles(): List[_ <: Role] = roles
+  override def getRoles(): java.util.List[_ <: Role] = roles
 
-  override def getPermissions(): List[_ <: Permission] = permissions
+  override def getPermissions(): java.util.List[_ <: Permission] = permissions
 
-  def getUserPermissions(): List[UserPermission] = permissions
+  def getUserPermissions(): java.util.List[UserPermission] = permissions
 
-  def getLinkedAccounts(): List[LinkedAccount] = linkedAccounts
+  def getLinkedAccounts(): java.util.List[LinkedAccount] = linkedAccounts
 
-  def merge(otherUser: User) {
-    for (acc <- otherUser.linkedAccounts) {
-      this.linkedAccounts.add(LinkedAccount.create(acc))
-    }
+  def merge(otherUser: User) = {
+    this.linkedAccounts.addAll(otherUser.linkedAccounts)
     otherUser.active = false
     MorphiaObject.datastore.save[User](otherUser)
     MorphiaObject.datastore.save[User](this)
   }
 
-  def getProviders(): Set[String] = {
-    val providerKeys = new HashSet[String](linkedAccounts.size)
-    for (acc <- linkedAccounts) {
-      providerKeys.add(acc.providerKey)
-    }
-    providerKeys
-  }
+  /**
+   * Get keys of all provides linked to this user.
+   */
+  def getProviders(): Set[String] =
+    linkedAccounts.asScala.map(_.providerKey).toSet
 
-  def getAccountByProvider(providerKey: String): LinkedAccount = {
+  def getAccountByProvider(providerKey: String): LinkedAccount =
     LinkedAccount.findByProviderKey(this, providerKey)
-  }
-
-  def changePassword(authUser: UsernamePasswordAuthUser, create: Boolean) {
-    var a = this.getAccountByProvider(authUser.getProvider)
-    if (a == null) {
-      if (create) {
-        a = LinkedAccount.create(authUser)
-      } else {
-        throw new RuntimeException("Account not enabled for password usage")
-      }
-    }
-    a.providerUserId = authUser.getHashedPassword
-    this.linkedAccounts.add(a)
-    MorphiaObject.datastore.save[User](this)
-  }
 
   def rootStream(): Option[Stream] =
     Stream.findByUri(this.userName)
 
   def getStatus(): Status =
     rootStream
-      .map(userStream => userStream.status)
+      .map(_.status)
       .getOrElse(new Status())
 }
 
@@ -117,11 +98,13 @@ object User
 {
   import models.Serializable._
 
+  val userNamePattern = Stream.streamNamePattern
+
   private def getDb(): Query[User] =
     MorphiaObject.datastore.createQuery((classOf[User]))
 
   def getUsers(): List[User] =
-    getDb.filter("active =", true).asList()
+    getDb.filter("active =", true).asList().asScala.toList
 
   def existsByAuthUserIdentity(identity: AuthUserIdentity): Boolean = {
     var exp: Query[User] = null
@@ -145,31 +128,29 @@ object User
       .filter("linkedAccounts.providerKey", identity.getProvider)
   }
 
-  def findByAuthUserIdentity(identity: AuthUserIdentity): User = {
-    if (identity == null) {
-      return null
+  def findByAuthUserIdentity(identity: AuthUserIdentity): Option[User] =
+    if (identity == null)
+      None
+    else {
+      if (identity.isInstanceOf[UsernamePasswordAuthUser]) {
+        findByUsernamePasswordIdentity(identity.asInstanceOf[UsernamePasswordAuthUser])
+      } else {
+        Option(getAuthUserFind(identity).get)
+      }
     }
-    if (identity.isInstanceOf[UsernamePasswordAuthUser]) {
-      findByUsernamePasswordIdentity(identity.asInstanceOf[UsernamePasswordAuthUser])
-    } else {
-      getAuthUserFind(identity).get
-    }
-  }
 
-  def findByUsernamePasswordIdentity(identity: UsernamePasswordAuthUser): User = {
-    getUsernamePasswordAuthUserFind(identity).get
-  }
+  def findByUsernamePasswordIdentity(identity: UsernamePasswordAuthUser): Option[User] =
+    Option(getUsernamePasswordAuthUserFind(identity).get)
 
-  private def getUsernamePasswordAuthUserFind(identity: UsernamePasswordAuthUser): Query[User] = {
+  private def getUsernamePasswordAuthUserFind(identity: UsernamePasswordAuthUser): Query[User] =
     getEmailUserFind(identity.getEmail).filter("linkedAccounts.providerKey", identity.getProvider)
-  }
 
   def create(authUser: AuthUser): User = {
     val user = new User()
-    user.roles = Collections.singletonList(SecurityRole.findByRoleName(controllers.ApplicationConstants.USER_ROLE))
+    user.roles = java.util.Collections.singletonList(SecurityRole.findByRoleName(controllers.ApplicationConstants.USER_ROLE))
     user.active = true
     user.lastLogin = new Date()
-    user.linkedAccounts = Collections.singletonList(LinkedAccount.create(authUser))
+    user.linkedAccounts = java.util.Collections.singletonList(LinkedAccount.create(authUser))
     if (authUser.isInstanceOf[EmailIdentity]) {
       val identity = authUser.asInstanceOf[EmailIdentity]
       user.email = identity.getEmail
@@ -197,21 +178,24 @@ object User
     user
   }
 
-  def mergeAuthUsers(oldUser: AuthUser, newUser: AuthUser) {
-    User.findByAuthUserIdentity(oldUser).merge(User.findByAuthUserIdentity(newUser))
-  }
+  def mergeAuthUsers(oldUser: AuthUser, newUser: AuthUser) =
+    User.findByAuthUserIdentity(oldUser) flatMap { oldUser =>
+      User.findByAuthUserIdentity(newUser) map { newUser =>
+        oldUser.merge(newUser)
+      }
+    }
 
-  def addLinkedAccount(oldUser: AuthUser, newUser: AuthUser) {
-    val u = User.findByAuthUserIdentity(oldUser)
-    u.linkedAccounts.add(LinkedAccount.create(newUser))
-    MorphiaObject.datastore.save[User](u)
-  }
+  def addLinkedAccount(oldUser: AuthUser, newUser: AuthUser) =
+    User.findByAuthUserIdentity(oldUser) map { u =>
+      u.linkedAccounts.add(LinkedAccount.create(newUser))
+      MorphiaObject.datastore.save[User](u)
+    }
 
-  def setLastLoginDate(knownUser: AuthUser) {
-    val u = User.findByAuthUserIdentity(knownUser)
-    u.lastLogin = new Date()
-    MorphiaObject.datastore.save[User](u)
-  }
+  def setLastLoginDate(knownUser: AuthUser) =
+    User.findByAuthUserIdentity(knownUser) map { u =>
+      u.lastLogin = new Date()
+      MorphiaObject.datastore.save[User](u)
+    }
 
   def findByEmail(email: String): Option[User] =
     Option(getEmailUserFind(email).get)

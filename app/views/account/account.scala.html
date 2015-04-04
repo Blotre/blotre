@@ -2,9 +2,9 @@
 
 @import com.feth.play.module.pa.views.html._
 
-@main(Messages("playauthenticate.profile.title"), "account") {
+@main(Messages("blotre.account.pageTitle"), "account") {
 
-    <h1>@Messages("playauthenticate.profile.title")</h1>
+    <h1>@Messages("blotre.account.pageTitle")</h1>
     <p>
     Your name is @localUser.name and your email address is @if(!localUser.email) {<em>&lt;unknown&gt;</em>.} else {
     	@localUser.email.

@@ -20,7 +20,7 @@ object Application extends Controller
    * Get the current logged in user for a session.
    */
   def getLocalUser(user: AuthUser): models.User =
-    models.User.findByAuthUserIdentity(user)
+    models.User.findByAuthUserIdentity(user).getOrElse(null)
 
   def getLocalUser(session: play.mvc.Http.Session): models.User =
     getLocalUser(PlayAuthenticate.getUser(session))
@@ -42,7 +42,7 @@ object Application extends Controller
     }
 
   private def getAccessTokenFromRequest(request: RequestHeader): Option[String] =
-    request.getQueryString("access_token")  orElse {
+    request.getQueryString("access_token") orElse {
       request.headers.get("Authorization") flatMap { authorization =>
         """Bearer (\w+)""".r.findFirstMatchIn(authorization) map { found =>
           found.group(1)
