@@ -16,62 +16,6 @@ ul {
     margin: 0;
 }
 
-/**
-   Navbar overrides
-*/
-.navbar .dropdown-menu {
-    border: none;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
-    background: rgba(255, 255, 255, 0.95);
-}
-
-.navbar-default .navbar-nav > .open > a,
-.navbar-default .navbar-nav > .open > a:hover,
-.navbar-default .navbar-nav > .open > a:focus {
-    background: rgba(0, 0, 0, 0.15);
-}
-
-/**
-    Header
-*/
-#header-bar {
-    background: none;
-    border: none;
-}
-
-#brand {
-    position: absolute; /* Hack for Safari being a bastard on first load */
-    line-height: 50px;
-    padding: 0 1.2rem;
-    padding-right: 0;
-    width: 112px;
-}
-#user-nav-header {
-    float: none;
-}
-
-.container-fluid > .container {
-    position: relative;
-}
-
-.user-status {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: block;
-    height: 50px;
-    width: 50px;
-    background: transparent; /* updated once found */
-    z-index: 1;
-}
-
-#header-collapsed {
-    padding-right: 50px;
-}
-
-.navbar-toggle {
-    margin-right: 65px;
-}
 
 /**
     Body
@@ -139,6 +83,7 @@ form .info {
 @import "index";
 @import "login";
 @import "404";
+@import "header_bar";
 @import "account/link_account";
 @import "authorize";
 @import "stream/index";

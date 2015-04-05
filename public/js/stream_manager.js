@@ -29,7 +29,7 @@ var StreamManager = function() {
         }
     };
 
-    self.socket = new WebSocket("ws://localhost:9000/v1/ws");
+    self.socket = new WebSocket("ws://localhost:9000/v0/ws");
     self.ready = false;
     self.socket.onopen = function(e) {
         self.socket.send(JSON.stringify({
