@@ -12,23 +12,24 @@ POST    /s/*path                    controllers.Stream.setStreamStatus(path)
 PUT     /s/*path                    controllers.Stream.createChildStream(path)
 
 # WebSocket
-GET     /v1/ws                          controllers.Socket.open()
+GET     /v0/ws                          controllers.Socket.open()
 
 # OAuth
-GET     /v1/oauth2/authorize              controllers.OAuth2Controller.authorize(response_type: String, client_id: String, redirect_uri: String)
-POST    /v1/oauth2/authorize              controllers.OAuth2Controller.onAuthorize
-POST    /v1/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String)
+GET     /v0/oauth2/authorize              controllers.OAuth2Controller.authorize(response_type: String, client_id: String, redirect_uri: String)
+POST    /v0/oauth2/authorize              controllers.OAuth2Controller.onAuthorize
+POST    /v0/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String)
 
 
 # Stream Api
-GET     /v1/api/stream/:id                   controllers.Stream.apiGetStream(id)
-GET     /v1/api/stream/:id/status            controllers.Stream.apiGetStreamStatus(id)
-POST    /v1/api/stream/:id/status            controllers.Stream.apiSetStreamStatus(id)
-GET     /v1/api/stream/:id/children          controllers.Stream.apiGetChildren(id)
-GET     /v1/api/stream/:id/children/:child   controllers.Stream.apiGetChild(id, child)
+GET     /v0/api/stream/:id                   controllers.Stream.apiGetStream(id)
+GET     /v0/api/stream/:id/status            controllers.Stream.apiGetStreamStatus(id)
+POST    /v0/api/stream/:id/status            controllers.Stream.apiSetStreamStatus(id)
+GET     /v0/api/stream/:id/children          controllers.Stream.apiGetChildren(id)
+GET     /v0/api/stream/:id/children/:child   controllers.Stream.apiGetChild(id, child)
+DELETE  /v0/api/stream/:id/children/:child   controllers.Stream.apiDeleteChild(id, child)
 
 # User Api
-GET     /v1/api/user/:id                   controllers.User.apiGetUser(id)
+GET     /v0/api/user/:id                   controllers.User.apiGetUser(id)
 
 # Login and Logout
 GET     /login                      controllers.Application.login()

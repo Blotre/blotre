@@ -6,7 +6,6 @@ import play.api.mvc._
 import play.api.libs.json._
 import play.api.Play.current
 import scala.collection.immutable._
-import helper._
 import helper.ImageHelper
 
 /**
@@ -243,27 +242,54 @@ object Stream extends Controller
    */
   def apiGetChildren(id: String) = Action { implicit request => {
     models.Stream.findById(id) map { stream =>
-      Ok(Json.toJson(stream.getChildren()))
+      val children = stream.getChildData().map(_.childId)
+      Ok(Json.toJson(children.map(childId => models.Stream.findById(childId))))
     } getOrElse(NotFound)
   }}
 
   /**
-   *
+   * Get a child of this stream.
    */
-  def apiGetChild(id: String, childId: String) = Action { implicit request => {
-    models.Stream.findById(id) flatMap { stream =>
-      models.Stream.getChildById(stream, new ObjectId(childId))
-    } map { childData =>
-      Ok(Json.toJson(childData))
-    } getOrElse(NotFound)
+  def apiGetChild(parentId: String, childId: String) = Action { implicit request => {
+    (for {
+      parent <- stringToObjectId(parentId);
+      child <- stringToObjectId(childId);
+      childData <- models.Stream.getChildById(parent, child);
+      child <- models.Stream.findById(childData.id)
+    } yield Ok(Json.toJson(child))) getOrElse(NotFound)
   }}
+
+
+  /**
+   * Remove a linked child stream.
+   *
+   * Does not delete the target stream and cannot be used to delete hierarchical children.
+   */
+  def apiDeleteChild(parentId: String, childId: String) = AuthorizedAction { implicit request => {
+    val user = request.user
+    (for {
+      parentId <- stringToObjectId(parentId);
+      childId <- stringToObjectId(childId);
+      parent <- models.Stream.findById(parentId);
+      childData <- models.Stream.getChildById(parentId, childId)
+    } yield (
+        if (canUpdateStreamStatus(parent, user).isDefined) {
+          if (childData.hierarchical)
+            UnprocessableEntity
+          else {
+            models.Stream.removeChild(parent, childData.childId)
+            Ok("")
+          }
+        } else Unauthorized)) getOrElse(NotFound)
+  }}
+
 
   /**
    *
    */
-  def apiCreateChild(id: String) = AuthorizedAction(parse.json) { implicit request =>
+  def apiCreateChild(parentId: String) = AuthorizedAction(parse.json) { implicit request =>
     val user = Application.getLocalUser(request)
-    models.Stream.findById(id) map { parent =>
+    models.Stream.findById(parentId) map { parent =>
       ((__ \ "childId").read[ObjectId]).reads(request.body) map { childId =>
         models.Stream.findById(childId) map { child =>
           addChild(parent, child, user) map { childData =>

@@ -60,10 +60,17 @@ var disableFavoriteButton = function() {
 };
 
 var toggleFavoriteButton = function(stream, user) {
-    if (!stream || !user) {
-        disableFavoriteButton();
-    } else {
-        enableFavoriteButton()
+    disableFavoriteButton();
+
+    if (stream && user) {
+       $.ajax({
+          type: "GET",
+          url: jsRoutes.controllers.Stream.apiGetChild(stream.id()).url,
+          contentType: 'application/json',
+          data: JSON.stringify({
+              color: color
+          })
+      });
     }
 };
 

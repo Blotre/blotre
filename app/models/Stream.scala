@@ -21,13 +21,14 @@ import scala.annotation.meta._
 case class ChildStream(
   @(Id @field)
   id: ObjectId,
+  hierarchical: Boolean,
   parentId: ObjectId,
   childId: ObjectId,
   childName: String,
   childUri: String,
   created: Date)
 {
-  def this() = this(null, null, null, "", "", new Date(0))
+  def this() = this(null, false, null, null, "", "", new Date(0))
 }
 
 object ChildStream
@@ -83,6 +84,9 @@ case class Stream(
 
   def getOwner() =
     User.findById(this.ownerId)
+
+  def getChildData() =
+    Stream.getChildrenData(this)
 
   def getChildren() =
     Stream.getChildrenOf(this)
@@ -231,13 +235,22 @@ object Stream
    */
    def addChild(parent: Stream, child: Stream, user: User): Option[ChildStream] =
     asEditable(user, parent) flatMap { parent =>
-      save(ChildStream(null, parent.id, child.id, child.name, child.uri, new Date()))
+      save(ChildStream(null, true, parent.id, child.id, child.name, child.uri, new Date()))
     }
 
   def addChild(parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
     findById(childId) flatMap { child =>
       addChild(parent, child, user)
     }
+
+  /**
+   * Remove an existing child.
+   */
+  def removeChild(parent: Stream, child: ObjectId) =
+    MorphiaObject.datastore.delete(
+      childDb()
+        .filter("parentId =", parent.id)
+        .filter("childId =", child))
 
   /**
    *
@@ -279,9 +292,9 @@ object Stream
   /**
    * Lookup the child of a stream by the child's id.
    */
-  def getChildById(parent: Stream, childId: ObjectId) =
+  def getChildById(parentId: ObjectId, childId: ObjectId): Option[ChildStream] =
     Option(childDb()
-      .filter("parentId =", parent.id)
+      .filter("parentId =", parentId)
       .filter("childId =", childId)
       .get)
 

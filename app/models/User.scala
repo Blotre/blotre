@@ -49,6 +49,8 @@ class User extends Subject
 
   var userNameSelected: Boolean = _
 
+  var rootStreamId: ObjectId = _
+
   @Embedded
   var roles: java.util.List[SecurityRole] = new java.util.ArrayList[SecurityRole]()
 

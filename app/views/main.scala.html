@@ -112,7 +112,9 @@
             routes.javascript.Stream.apiGetStreamStatus,
             routes.javascript.Stream.apiSetStreamStatus,
             routes.javascript.Stream.apiGetChildren,
-            routes.javascript.Stream.apiGetChild
+            routes.javascript.Stream.apiGetChild,
+            routes.javascript.Stream.apiDeleteChild
+
         )
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>
