@@ -58,7 +58,7 @@ case class Stream(
   var id: ObjectId,
 
   @Constraints.Required
-  @Constraints.MaxLength(255)
+  @Constraints.MaxLength(64)
   @Constraints.MinLength(1)
   var name: String,
 
@@ -94,6 +94,10 @@ object Stream
   import models.Serializable._
 
   val streamNamePattern = """[a-zA-Z0-9_\-$]+""".r
+
+  def isValidStreamName(name: String) =
+    !name.isEmpty && name.length < 64 && name.matches(streamNamePattern.toString)
+
 
   implicit val streamReads: Reads[Stream] = (
     (JsPath \ "id").read[ObjectId] and

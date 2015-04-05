@@ -102,7 +102,7 @@ object Stream extends Controller
 
 
   def renderStreamJson(stream: models.Stream, request: Request[AnyContent]): Result =
-    Ok(Json.toJson(stream).as[JsObject] + ("children", Json.toJson(models.Stream.getChildrenData(stream))))
+    Ok(Json.toJson(stream).as[JsObject])
 
   /**
    * Render a stream's current status as a 1x1 PNG image.
@@ -185,8 +185,14 @@ object Stream extends Controller
     val index = uri.lastIndexOf('/')
     if (index == -1 || index >= uri.length - 1)
       None
-    else
-      Some((uri.slice(0, index), uri.slice(index + 1, uri.length)))
+    else {
+      val parent = uri.slice(0, index)
+      val child = uri.slice(index + 1, uri.length)
+      if (models.Stream.isValidStreamName(child))
+        Some((parent, child))
+      else
+        None
+    }
   }
 
   /**
@@ -237,7 +243,7 @@ object Stream extends Controller
    */
   def apiGetChildren(id: String) = Action { implicit request => {
     models.Stream.findById(id) map { stream =>
-      renderStreamJson(stream, request)
+      Ok(Json.toJson(stream.getChildren()))
     } getOrElse(NotFound)
   }}
 

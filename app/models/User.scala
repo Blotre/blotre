@@ -37,7 +37,7 @@ class User extends Subject
 
   @Constraints.Pattern("[a-z]+")
   @Constraints.MinLength(3)
-  @Constraints.MaxLength(60)
+  @Constraints.MaxLength(64)
   var userName: String = _
 
   @Formats.DateTime(pattern = "yyyy-MM-dd HH:mm:ss")

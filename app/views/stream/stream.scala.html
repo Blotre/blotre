@@ -34,6 +34,7 @@
 }
 
 @extraScripts = {
+    @_childTemplate()
     <script data-main="@routes.Assets.at("js/main.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
 }
 
@@ -61,28 +62,25 @@
         </nav>
     </div>
 
-    <ul class="stream-children">
-        <li class="search-children">
-            <div class="input-group">
-                  <span class="input-group-btn">
-                    <button class="btn btn-default" type="button">Go!</button>
-                  </span>
-                <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
-            </div>
-        </li>
-        <li class="create-child">
-            <form class="collapse" id="create-child-form">
-                <input>
+    <div class="stream-children">
+        <div class="input-group search-children">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button">Go!</button>
+              </span>
+            <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
+        </div>
+
+        <div class="create-child">
+            <form class="collapse" id="create-child-form" >
+                <input type="text" />
             </form>
             <a class="glyphicon glyphicon-plus create-child-expand-button"
                data-toggle="collapse"
                data-target="#create-child-form"></a>
-        </li>
-        @for(child <- children) {
-            <li>@child.status.color
-            </li>
-        }
-    </ul>
+        </div>
+
+        <ul id="stream-children" data-bind="template: { name: 'stream-search-result-template', foreach: children }"></ul>
+    </div>
 
     <script>
         window.initialStreamData = @Html(Json.toJson(stream).toString());

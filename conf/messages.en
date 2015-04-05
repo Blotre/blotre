@@ -175,6 +175,7 @@ blotre.account.link.title=Link Account
 blotre.account.link.description=Linking allows you to login using multiple providers.
 
 # Stream
+blotre.stream.index.title=Blot're
 blotre.stream.tryCreate.title=Create
 blotre.stream.tryCreate.header=Not Found
 blotre.stream.tryCreate.body=Does not exist. Would you like to create it?

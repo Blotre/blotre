@@ -17,6 +17,8 @@ var AppViewModel = function(user, stream) {
 
     self.stream = ko.observable(stream);
 
+    self.children = ko.observableArray();
+
     self.color = ko.computed(function() {
         var stream = self.stream();
         return (stream ? stream.color() : models.DEFAULT_COLOR);
@@ -126,6 +128,14 @@ $(function(){
             var color = $(this).children('.status-picker').val();
             updateStatus(color);
         });
+
+    $.ajax({
+        type: "GET",
+        url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url
+    }).then(function(children) {
+        model.children((children || []).map(models.StreamModel.fromJson));
+    });
+
 
     model.stream.subscribe(function(x) {
         toggleFavoriteButton(x, model.user());
