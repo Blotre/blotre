@@ -67,9 +67,9 @@
                                href="@routes.Application.login()"
                                class="navbar-right btn btn-default navbar-btn @("disabled".when(nav == "login"))">@Messages("playauthenticate.navigation.login")</a>
                         }
-                        @helper.form(action = routes.Stream.index, 'role -> "search", 'class -> "navbar-form navbar-right") {
+                        @helper.form(action = routes.Stream.index, 'id -> "navbar-search", 'role -> "search", 'class -> "navbar-form navbar-right") {
                             <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Search" name="search-term">
+                                <input type="text" class="form-control" placeholder="Search" name="query">
                                 <div class="input-group-btn">
                                     <button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-search"></i></button>
                                 </div>

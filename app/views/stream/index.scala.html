@@ -20,16 +20,22 @@
 
     <h1>Find Color</h1>
     <div class="stream-search">
-        @helper.form(action = routes.Stream.index, 'id -> "stream-search-input", 'role -> "search") {
+        @helper.form(action = routes.Stream.index, 'id -> "stream-search-form", 'role -> "search") {
             <div class="input-group">
                 <span class="input-group-btn">
-                    <button class="btn btn-default" type="button">Go!</button>
+                    <button class="btn btn-default" type="submit">Go!</button>
                 </span>
                 <input name="search-term" type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
             </div>
         }
         <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"</p>
+        <div class="list-header list-loading">
+            <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+        </div>
 
-        <ul id="stream-search-results" data-bind="template: { name: 'stream-search-result-template', foreach: results }"></ul>
+        <ul class="stream-children" id="stream-search-results">
+            <li class="no-results hidden">No results found.</li>
+            <!-- ko template: { name: 'stream-search-result-template', foreach: results } --><!-- /ko -->
+        </ul>
     <div>
 }

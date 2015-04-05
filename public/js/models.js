@@ -1,6 +1,6 @@
 define([], function() {
 
-var DEFAULT_COLOR = '#777777'
+var DEFAULT_COLOR = '#777777';
 
 var slice = Function.prototype.call.bind(Array.prototype.slice);
 

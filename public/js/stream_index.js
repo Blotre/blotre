@@ -1,11 +1,13 @@
 require([
     './models',
     './stream_manager',
-    './application_model'],
+    './application_model',
+    './shared'],
 function(
     models,
     stream_manager,
-    application_model)
+    application_model,
+    shared)
 {
 "use-strict";
 
@@ -20,6 +22,39 @@ var StreamIndexViewModel = function(user, results) {
     self.query = ko.observableArray('');
 };
 
+
+var updateSearchResultsForQuery = function(model, query) {
+    $('.list-loading').removeClass('hidden');
+    $('.no-results').addClass('hidden');
+    $.ajax({
+        type: "GET",
+        url: jsRoutes.controllers.Stream.index().url,
+        data: "query=" + query,
+        headers: {
+            accept: "application/json"
+        },
+        error: function() {
+            $('.list-loading').addClass('hidden');
+        }
+    }).done(function(result) {
+        $('.list-loading').addClass('hidden');
+        if (result.streams) {
+            if (result.streams.length)
+                $('.no-results').addClass('hidden');
+            else
+                $('.no-results').removeClass('hidden');
+
+            model.query(result.query);
+            model.results(result.streams.map(models.StreamModel.fromJson));
+        }
+    });
+};
+
+var updateSearchResults = function(model) {
+    var query = $('#stream-search-form input').val();
+    return updateSearchResultsForQuery(model, query);
+};
+
 /**
 */
 $(function(){
@@ -27,35 +62,21 @@ $(function(){
         application_model.initialUser(),
         []);
 
-    var updateSearchResultsForQuery = function(query) {
-         $.ajax({
-            type: "GET",
-            url: jsRoutes.controllers.Stream.index().url,
-            data: "query=" + query,
-            headers: {
-                accept: "application/json"
-            }
-        }).done(function(result) {
-            if (result.streams) {
-                model.query(result.query);
-                model.results(result.streams.map(models.StreamModel.fromJson));
-            }
-        });
-    };
+    $('#stream-search-form button').on('click', function(e) {
+        e.preventDefault();
+        updateSearchResults(model);
+    });
 
-    var updateSearchResults = function() {
-        var query = $('#stream-search-input input').val();
-        return updateSearchResultsForQuery(query);
-    };
-
-    $('#stream-search-input button').on('click', updateSearchResults)
-    $('#stream-search-input input').keypress(function(e) {
-        if (e && e.keyCode === 13)
-            updateSearchResults();
+    $('#stream-search-form input').keypress(function(e) {
+        if (e.keyCode === 13) {
+            updateSearchResults(model);
+            e.preventDefault();
+        }
     });
 
     // Get initial set of results
-    updateSearchResults();
+    var query = shared.getQueryString()['query'];
+    updateSearchResultsForQuery(model, (query || ''));
 
     ko.applyBindings(model);
 });
