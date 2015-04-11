@@ -133,13 +133,18 @@ object Stream
   private def childDb(): Query[ChildStream] =
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
 
+  private def normalizeUri(uri: String) =
+    uri.toLowerCase
+
   /**
    * Given a parent Stream and a child name, get the URI of the child.
    */
   def descendantUri(parent: Stream, childName: String) =
-    parent.uri + "/" + childName
+    normalizeUri(parent.uri + "/" + childName)
 
-
+  /**
+   * TODO: move to controller
+   */
   def asEditable(poster: User, stream: Stream): Option[Stream] =
     if (stream != null && poster != null && stream.ownerId == poster.id)
       Some(stream)
@@ -162,7 +167,7 @@ object Stream
    */
   def findByUri(uri: String): Option[Stream] =
     Option(db()
-      .filter("uri = ", uri)
+      .filter("uri = ", normalizeUri(uri))
       .get())
 
   /**
@@ -202,7 +207,7 @@ object Stream
   private def createStreamWithName(name: String, uri: String, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      save(Stream(null, name, uri, created, created, Status.defaultStatus(owner.id), owner.id))
+      save(Stream(null, name, normalizeUri(uri), created, created, Status.defaultStatus(owner.id), owner.id))
     }
 
   /**

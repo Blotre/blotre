@@ -74,6 +74,18 @@ var toggleFavoriteButton = function(stream, user) {
     }
 };
 
+var createChildStream = function(stream, user, name) {
+   $.ajax({
+      type: "PUT",
+      url: jsRoutes.controllers.Stream.apiCreateStream().url,
+      contentType: 'application/json',
+      data: JSON.stringify({
+          name: name,
+          uri: stream.uri() + "/" + name
+      })
+  });
+};
+
 /**
 */
 $(function(){
@@ -136,6 +148,25 @@ $(function(){
             updateStatus(color);
         });
 
+    // Create child form
+    $('#create-child-expand-button')
+        .on('click', function(e) {
+            var hidden = $('#create-child-name-input').hasClass('hidden');
+            var target = $('#create-child-name-input, #create-child-cancel-button')
+            if (hidden) {
+                target.removeClass('hidden');
+            } else {
+                createChildStream(model.stream(), model.user(), $('#create-child-name-input input').val());
+                target.addClass('hidden');
+            }
+        });
+
+    $('#create-child-cancel-button button')
+        .on('click', function(e) {
+            $('#create-child-name-input, #create-child-cancel-button').addClass('hidden');
+        });
+
+    // Children
     $.ajax({
         type: "GET",
         url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url

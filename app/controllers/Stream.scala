@@ -1,8 +1,10 @@
 package controllers
 
 import Actors.{StreamSupervisor}
+import models.Status
 import org.bson.types.ObjectId
 import play.api.mvc._
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.Play.current
 import scala.collection.immutable._
@@ -128,25 +130,21 @@ object Stream extends Controller
    * is owned by the current user.
    */
   def tryCreateDecendant(uri: String, request: Request[AnyContent]) = {
-    val user = Application.getLocalUser(request)
-    getParentPath(uri) match {
-      case Some((parent, child)) =>
-        models.Stream.findByUri(parent)
-          .flatMap({ stream =>
-            models.Stream.asEditable(user, stream)
-          })
-          .map(stream =>
-            Ok(views.html.stream.createChild.render(stream, child)))
-          .getOrElse(
-            NotFound(views.html.notFound.render("")))
-
-      case _ =>
+    getParentFromPath(uri) map {
+      case (parent, child) =>
+        val user = Application.getLocalUser(request)
+        models.Stream.asEditable(user, parent) map { stream =>
+          Ok(views.html.stream.createChild.render(stream, child))
+        } getOrElse {
+          Unauthorized
+        }
+    } getOrElse {
         NotFound(views.html.notFound.render(""))
     }
   }
 
   /**
-   * TODO: add name validation.
+   *
    */
   def createChildStream(uri: String) = AuthenticatedAction { implicit request =>
     val user = Application.getLocalUser(request)
@@ -165,13 +163,10 @@ object Stream extends Controller
     }
   }
 
-  private def createDescendant(uri: String, user: models.User): Option[models.Stream] = {
-    getParentPath(uri) flatMap { paths =>
-      models.Stream.findByUri(paths._1) flatMap { parent =>
-        createDescendant(parent, paths._2, user)
-      }
+  private def createDescendant(uri: String, user: models.User): Option[models.Stream] =
+    getParentFromPath(uri) flatMap { case (parent, child) =>
+      createDescendant(parent, child, user)
     }
-  }
 
   private def createDescendant(parent: models.Stream, name: String, user: models.User): Option[models.Stream] = {
     models.Stream.createDescendant(parent.uri, name, user) map { newChild =>
@@ -179,6 +174,12 @@ object Stream extends Controller
       newChild
     }
   }
+
+  private def getParentFromPath(uri: String) =
+    getParentPath(uri) flatMap {
+      case (parentUri, child) =>
+        models.Stream.findByUri(parentUri).map(parent => (parent, child))
+    }
 
   private def getParentPath(uri: String) = {
     val index = uri.lastIndexOf('/')
@@ -195,7 +196,7 @@ object Stream extends Controller
   }
 
   /**
-   *
+   * Lookup a stream by id.
    */
   def apiGetStream(id: String) = Action { implicit request => {
     models.Stream.findById(id) map { stream =>
@@ -205,40 +206,76 @@ object Stream extends Controller
     }
   }}
 
+
+  case class ApiCreateStreamData(name: String, uri: String, status: Option[models.Status])
+
+  implicit val apiCreateStreamData: Reads[ApiCreateStreamData] = (
+      (JsPath \ "name").read[String] and
+      (JsPath \ "uri").read[String] and
+        (JsPath \ "status").readNullable[models.Status]
+    )(ApiCreateStreamData.apply _)
+
   /**
+   * Create a new stream.
    *
+   * Api cannot create root streams.
+   */
+  def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request => {
+    (Json.fromJson[ApiCreateStreamData](request.body)).fold(
+      valid = value => {
+        apiCreateStream(request, value.name, value.uri, value.status.getOrElse(new models.Status()), request.user)
+      },
+      invalid = e =>
+        BadRequest)
+  }}
+
+  def apiCreateStream(request: Request[JsValue], name: String, uri: String, status: models.Status, user: models.User): Result =
+    getParentFromPath(uri) map { case (parent, childName) =>
+      if (childName != name) {
+        BadRequest
+      } else {
+        models.Stream.asEditable(user, parent) map { parent =>
+          createDescendant(parent, name, user) map { newStream =>
+            Ok(Json.toJson(newStream))
+          } getOrElse(InternalServerError)
+        } getOrElse(Unauthorized)
+       }
+    } getOrElse(NotFound)
+
+  /**
+   * Lookup that status of a stream.
    */
   def apiGetStreamStatus(id: String) = Action { implicit request => {
     models.Stream.findById(id) map { stream =>
       Ok(Json.toJson(stream.status))
-    } getOrElse {
-      NotFound
-    }
+    } getOrElse(NotFound)
   }}
 
   /**
-   *
+   * Set the status of a stream.
    */
-  def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { request => {
+  def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request => {
     models.Stream.findById(id) map { stream =>
       apiSetStreamStatus(stream, request.user, request)
     } getOrElse(NotFound)
   }}
 
   def apiSetStreamStatus(stream: models.Stream, user: models.User, request: Request[JsValue]): Result = {
-    models.Stream.asEditable(user, stream) map { stream =>
-      ((__ \ "color").read[String]).reads(request.body) map { status =>
+    ((__ \ "color").read[String]).reads(request.body) map { status =>
+      models.Stream.asEditable(user, stream) map { stream =>
         updateStreamStatus(stream, status, user) map { _ =>
           Ok("")
         } getOrElse(BadRequest)
-      } recoverTotal {
-        e => BadRequest
-      }
-    } getOrElse(Unauthorized)
+      } getOrElse(Unauthorized)
+    } recoverTotal {
+      e => BadRequest
+    }
   }
 
   /**
+   * Get all children of a sttream.
    *
+   * TODO: normally should return list of ids which query params can expand to stream.
    */
   def apiGetChildren(id: String) = Action { implicit request => {
     models.Stream.findById(id) map { stream =>

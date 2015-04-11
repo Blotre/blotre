@@ -21,6 +21,7 @@ POST    /v0/oauth2/access_token           controllers.OAuth2Controller.accessTok
 
 
 # Stream Api
+PUT     /v0/api/stream/                      controllers.Stream.apiCreateStream()
 GET     /v0/api/stream/:id                   controllers.Stream.apiGetStream(id)
 GET     /v0/api/stream/:id/status            controllers.Stream.apiGetStreamStatus(id)
 POST    /v0/api/stream/:id/status            controllers.Stream.apiSetStreamStatus(id)

@@ -62,21 +62,18 @@
         </nav>
     </div>
 
-    <div class="stream-search">
-        <div class="input-group search-children">
-              <span class="input-group-btn">
+    <div class="stream-body">
+        <div class="stream-search input-group">
+            <span class="input-group-btn">
                 <button class="btn btn-default" type="button">Go!</button>
-              </span>
+            </span>
             <input type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
         </div>
 
-        <div class="create-child">
-            <form class="collapse" id="create-child-form" >
-                <input type="text" />
-            </form>
-            <a class="glyphicon glyphicon-plus create-child-expand-button"
-               data-toggle="collapse"
-               data-target="#create-child-form"></a>
+        <div class="create-child clearfix @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
+            <div class="hidden" id="create-child-name-input"><input class="form-control" type="text" name="name" placeholder="Name" /></div>
+            <button id="create-child-expand-button" class="btn btn-default glyphicon glyphicon-plus"></button>
+            <div class="hidden" id="create-child-cancel-button"><button class="btn btn-default">Cancel</button></div>
         </div>
 
         <ul class="stream-children" data-bind="template: { name: 'stream-search-result-template', foreach: children }"></ul>
