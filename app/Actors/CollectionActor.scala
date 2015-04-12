@@ -4,10 +4,9 @@ import akka.actor._
 import java.util.Date
 import scala.collection.immutable.ListSet
 
+case class GetCollectionStatus(size: Int, offset: Int)
 
-case class GetCollectionStatus(name: String, offset: Int, size: Int)
-
-case class GetCollectionStatusResponse(name: String, values: List[String])
+case class GetCollectionStatusResponse(values: Seq[String])
 
 /**
  * Manages a collection.
@@ -31,8 +30,8 @@ class CollectionActor(path: String) extends Actor
 
     case msg@AddChildEvent(uri, status) =>
 
-    case GetCollectionStatus(_, offset, size) =>
-      val results = updated.map { uri => state get uri}
+    case GetCollectionStatus(size, offset) =>
+      sender ! updated.drop(offset).take(size).toList
 
     case _ =>
   }
@@ -42,8 +41,8 @@ class CollectionActor(path: String) extends Actor
       stream.getChildren()
     } getOrElse(List())
 
-    state = children.map({ child => (child.uri, child.status) }).toMap
-    updated = updated ++ children.sortBy(child => child.updated).map(_.uri)
+    state = children.map(child => (child.uri, child.status)).toMap
+    updated = updated ++ children.sortBy(_.updated).map(_.uri)
 
     StreamSupervisor.subscribe(self, children.map(_.uri))
   }

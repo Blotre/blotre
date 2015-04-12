@@ -1,6 +1,6 @@
 package controllers
 
-import Actors.{StreamSupervisor}
+import Actors.{CollectionSupervisor, StreamSupervisor}
 import models.Status
 import org.bson.types.ObjectId
 import play.api.data.validation._
@@ -10,6 +10,8 @@ import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.Play.current
 import scala.collection.immutable._
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import helper.ImageHelper
 
 /**
@@ -290,12 +292,15 @@ object Stream extends Controller
    *
    * TODO: normally should return list of ids which query params can expand to stream.
    */
-  def apiGetChildren(id: String) = Action { implicit request => {
+  def apiGetChildren(id: String) = Action.async { implicit request =>
     models.Stream.findById(id) map { stream =>
-      val children = stream.getChildData().map(_.childId)
-      Ok(Json.toJson(children.map(childId => models.Stream.findById(childId))))
-    } getOrElse(NotFound)
-  }}
+      CollectionSupervisor.getCollectionState(stream.uri, 20, 0) map { children =>
+        //val children = stream.getChildData().map(_.childId)
+        Ok(Json.toJson(children.map(models.Stream.findByUri(_))))
+      }
+
+    } getOrElse(Future.successful(NotFound))
+  }
 
   /**
    * Get a child of this stream.
@@ -377,7 +382,6 @@ object Stream extends Controller
       StreamSupervisor.updateStatus(stream.uri, s.status)
       s.status
     }
-
 
   private def addChild(parent: models.Stream, child: models.Stream, user: models.User): Option[models.ChildStream] =
     models.Stream.addChild(parent, child.id, user) map { newChildData =>

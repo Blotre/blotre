@@ -184,7 +184,9 @@ $(function(){
                 return x.uri() === stream.uri;
             });
             if (child) {
+                model.children.remove(child);
                 child.status(models.StatusModel.fromJson(stream.status));
+                model.children.unshift(child);
             }
         });
     });

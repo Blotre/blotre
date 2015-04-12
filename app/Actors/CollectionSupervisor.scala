@@ -1,15 +1,14 @@
 package Actors
 
 import akka.actor._
-import akka.contrib.pattern.DistributedPubSubExtension
-import akka.contrib.pattern.DistributedPubSubMediator
+import akka.pattern.{ask}
+import akka.util.Timeout
 import helper._
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json.{Json, JsValue, Writes}
-import play.api.libs.functional.syntax._
-
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 case class GetCollection(uri: String)
 case class GetCollectionResponse(actor: ActorRef)
@@ -37,4 +36,15 @@ object CollectionSupervisor
   def props(): Props = Props(new CollectionSupervisor())
 
   lazy val supervisor = Akka.system.actorOf(props())
+
+  implicit val timeout = Timeout(5 seconds)
+
+  def getCollection(uri: String): Future[ActorRef] =
+    ask(supervisor, GetCollection(uri)).mapTo[GetCollectionResponse].map(_.actor)
+
+  def getCollectionState(uri: String, count: Int, offset: Int): Future[Seq[String]] =
+    getCollection(uri) flatMap { collection =>
+      ask(collection, GetCollectionStatus(count, offset)).mapTo[Seq[String]]
+    }
+
 }
