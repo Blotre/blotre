@@ -97,7 +97,9 @@ object Stream
 {
   import models.Serializable._
 
-  val streamNamePattern = """[a-zA-Z0-9_\-$]+""".r
+  val streamNameCharacter = """[a-zA-Z0-9_\-$]"""
+
+  val streamNamePattern = (streamNameCharacter + "{1,64}").r
 
   def isValidStreamName(name: String) =
     !name.isEmpty && name.length < 64 && name.matches(streamNamePattern.toString)
@@ -284,6 +286,7 @@ object Stream
   def getChildrenData(parent: Stream) =
     childDb()
       .filter("parentId =", parent.id)
+      .order("-created")
       .asList()
       .asScala.toList
 

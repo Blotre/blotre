@@ -3,9 +3,11 @@ package controllers
 import Actors.{StreamSupervisor}
 import models.Status
 import org.bson.types.ObjectId
+import play.api.data.validation._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import play.api.libs.json.Reads._
 import play.api.Play.current
 import scala.collection.immutable._
 import helper.ImageHelper
@@ -206,13 +208,24 @@ object Stream extends Controller
     }
   }}
 
+  def colorValidate = Reads.StringReads.filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
 
-  case class ApiCreateStreamData(name: String, uri: String, status: Option[models.Status])
+  case class ApiSetStatusData(color: String, doNotUse: Option[Int])
 
-  implicit val apiCreateStreamData: Reads[ApiCreateStreamData] = (
-      (JsPath \ "name").read[String] and
+  // Having filter with single field validator does not compile
+  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] = (
+    (JsPath \ "color").read[String](colorValidate) and (JsPath \ "__doNotUse").readNullable[Int]
+    )(ApiSetStatusData.apply _)
+
+
+  case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
+
+  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.Stream.streamNamePattern.toString))
+
+  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
+      (JsPath \ "name").read[String](nameValidate) and
       (JsPath \ "uri").read[String] and
-        (JsPath \ "status").readNullable[models.Status]
+        (JsPath \ "status").readNullable[ApiSetStatusData]
     )(ApiCreateStreamData.apply _)
 
   /**
@@ -220,22 +233,23 @@ object Stream extends Controller
    *
    * Api cannot create root streams.
    */
-  def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request => {
+  def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     (Json.fromJson[ApiCreateStreamData](request.body)).fold(
       valid = value => {
-        apiCreateStream(request, value.name, value.uri, value.status.getOrElse(new models.Status()), request.user)
+        apiCreateStream(request, value.name, value.uri, value.status, request.user)
       },
       invalid = e =>
-        BadRequest)
-  }}
+        BadRequest(JsError.toFlatJson(e)))
+  }
 
-  def apiCreateStream(request: Request[JsValue], name: String, uri: String, status: models.Status, user: models.User): Result =
+  def apiCreateStream(request: Request[JsValue], name: String, uri: String, status: Option[ApiSetStatusData], user: models.User): Result =
     getParentFromPath(uri) map { case (parent, childName) =>
       if (childName != name) {
         BadRequest
       } else {
         models.Stream.asEditable(user, parent) map { parent =>
           createDescendant(parent, name, user) map { newStream =>
+            status.map(s => updateStreamStatus(newStream, s.color, user))
             Ok(Json.toJson(newStream))
           } getOrElse(InternalServerError)
         } getOrElse(Unauthorized)
@@ -245,32 +259,31 @@ object Stream extends Controller
   /**
    * Lookup that status of a stream.
    */
-  def apiGetStreamStatus(id: String) = Action { implicit request => {
+  def apiGetStreamStatus(id: String) = Action { implicit request =>
     models.Stream.findById(id) map { stream =>
       Ok(Json.toJson(stream.status))
     } getOrElse(NotFound)
-  }}
+  }
 
   /**
    * Set the status of a stream.
    */
-  def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request => {
+  def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     models.Stream.findById(id) map { stream =>
       apiSetStreamStatus(stream, request.user, request)
     } getOrElse(NotFound)
-  }}
+  }
 
-  def apiSetStreamStatus(stream: models.Stream, user: models.User, request: Request[JsValue]): Result = {
-    ((__ \ "color").read[String]).reads(request.body) map { status =>
+  def apiSetStreamStatus(stream: models.Stream, user: models.User, request: Request[JsValue]): Result =
+    Json.fromJson[ApiSetStatusData](request.body) map { status =>
       models.Stream.asEditable(user, stream) map { stream =>
-        updateStreamStatus(stream, status, user) map { _ =>
-          Ok("")
+        updateStreamStatus(stream, status.color, user) map { status =>
+          Ok(Json.toJson(status))
         } getOrElse(BadRequest)
       } getOrElse(Unauthorized)
     } recoverTotal {
-      e => BadRequest
+      e => BadRequest(JsError.toFlatJson(e))
     }
-  }
 
   /**
    * Get all children of a sttream.
@@ -292,7 +305,7 @@ object Stream extends Controller
       parent <- stringToObjectId(parentId);
       child <- stringToObjectId(childId);
       childData <- models.Stream.getChildById(parent, child);
-      child <- models.Stream.findById(childData.id)
+      child <- models.Stream.findById(childData.childId)
     } yield Ok(Json.toJson(child))) getOrElse(NotFound)
   }}
 
@@ -357,11 +370,12 @@ object Stream extends Controller
   /**
    *
    */
-  private def updateStreamStatus(stream: models.Stream, color: String, poster: models.User) =
+  private def updateStreamStatus(stream: models.Stream, color: String, poster: models.User): Option[models.Status] =
     canUpdateStreamStatus(stream, poster) flatMap { _ =>
       models.Stream.updateStreamStatus(stream, color, poster)
     } map { s =>
       StreamSupervisor.updateStatus(stream.uri, s.status)
+      s.status
     }
 
 

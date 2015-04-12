@@ -100,7 +100,7 @@ object User
 {
   import models.Serializable._
 
-  val userNamePattern = Stream.streamNamePattern
+  val userNamePattern = (Stream.streamNameCharacter + "{3,64}").r
 
   private def getDb(): Query[User] =
     MorphiaObject.datastore.createQuery((classOf[User]))

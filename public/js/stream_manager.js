@@ -11,15 +11,9 @@ var StreamManager = function() {
 
     var processStatusUpdate = function(msg) {
         var path = msg.stream.uri;
-        var current = self.streams[path];
-        if (current) {
-            var color = msg.stream.status.color;
-            current.model.setColor(color);
-            current.model.updated(new Date(msg.stream.updated));
-            current.listeners.forEach(function(x) {
-                x(msg.stream);
-            });
-        }
+        (self.streams[path] || []).listeners.forEach(function(x) {
+            x(msg.stream);
+        });
     };
 
     var processMessage = function(msg) {
@@ -48,16 +42,28 @@ var StreamManager = function() {
 };
 
 StreamManager.prototype.subscribe = function(path, callback) {
-    var current = this.streams[path];
+    this.subscribeAll([path], callback);
+};
 
-    if (current) {
-        current.listeners.push(callback);
-    } else {
-        this.streams[path] = current = { model: new models.StreamModel(path, path, null), listeners: [callback] };
-        if (this.ready) {
-            this.socket.send(JSON.stringify({
+StreamManager.prototype.subscribeAll = function(paths, callback) {
+    var self = this;
+
+    var newSubscriptions = [];
+    paths.forEach(function(path) {
+        var current = self.streams[path];
+        if (current) {
+            current.listeners.push(callback);
+        } else {
+            self.streams[path] = { listeners: [callback] };
+            newSubscriptions.push(path);
+        }
+    });
+
+    if (newSubscriptions.length) {
+        if (self.ready) {
+            self.socket.send(JSON.stringify({
                 "type": "Subscribe",
-                "to": [path]
+                "to": newSubscriptions
             }));
         }
     }

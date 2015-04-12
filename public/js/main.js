@@ -17,7 +17,7 @@ var AppViewModel = function(user, stream) {
 
     self.stream = ko.observable(stream);
 
-    self.children = ko.observableArray();
+    self.children = ko.observableArray([]);
 
     self.color = ko.computed(function() {
         var stream = self.stream();
@@ -62,28 +62,37 @@ var disableFavoriteButton = function() {
 var toggleFavoriteButton = function(stream, user) {
     disableFavoriteButton();
 
-    if (stream && user) {
-       $.ajax({
-          type: "GET",
-          url: jsRoutes.controllers.Stream.apiGetChild(stream.id()).url,
-          contentType: 'application/json',
-          data: JSON.stringify({
-              color: color
-          })
-      });
+    if (stream && user && user.rootStream() && user.rootStream() != stream.id()) {
+        $.ajax({
+            type: "GET",
+            url: jsRoutes.controllers.Stream.apiGetChild(user.rootStream(), stream.id()).url,
+            error: function(e) {
+                enableFavoriteButton();
+            }
+        });
     }
 };
 
-var createChildStream = function(stream, user, name) {
-   $.ajax({
-      type: "PUT",
-      url: jsRoutes.controllers.Stream.apiCreateStream().url,
-      contentType: 'application/json',
-      data: JSON.stringify({
+var hideChildForm = function() {
+    $('#create-child-name-input, #create-child-cancel-button').addClass('hidden');
+    $('#create-child-name-input input').val('');
+};
+
+var createChildStream = function(model, stream, user, name) {
+    $.ajax({
+        type: "PUT",
+        url: jsRoutes.controllers.Stream.apiCreateStream().url,
+        contentType: 'application/json',
+        data: JSON.stringify({
           name: name,
           uri: stream.uri() + "/" + name
-      })
-  });
+        }),
+        error: function(error) {
+            console.error(error);
+        }
+    }).then(function(result) {
+        model.children.unshift(models.StreamModel.fromJson(result));
+    });
 };
 
 /**
@@ -156,15 +165,13 @@ $(function(){
             if (hidden) {
                 target.removeClass('hidden');
             } else {
-                createChildStream(model.stream(), model.user(), $('#create-child-name-input input').val());
-                target.addClass('hidden');
+                createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val());
+                hideChildForm();
             }
         });
 
     $('#create-child-cancel-button button')
-        .on('click', function(e) {
-            $('#create-child-name-input, #create-child-cancel-button').addClass('hidden');
-        });
+        .on('click', hideChildForm);
 
     // Children
     $.ajax({
@@ -172,6 +179,14 @@ $(function(){
         url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url
     }).then(function(children) {
         model.children((children || []).map(models.StreamModel.fromJson));
+        model.manager.subscribeAll(children.map(function(child) { return child.uri; }), function(stream) {
+            var child = Array.prototype.find.call(model.children(), function(x) {
+                return x.uri() === stream.uri;
+            });
+            if (child) {
+                child.status(models.StatusModel.fromJson(stream.status));
+            }
+        });
     });
 
 

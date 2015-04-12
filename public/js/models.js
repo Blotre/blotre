@@ -83,10 +83,11 @@ StreamModel.fromJson = function(data) {
 
 /**
 */
-var UserModel = function(userName , status) {
+var UserModel = function(userName, status, rootStream) {
     var self = this;
     self.userName = ko.observable(userName || '');
     self.status = ko.observable(status || StatusModel.empty());
+    self.rootStream = ko.observable(rootStream);
 
     self.color = ko.computed(function() {
         var status = self.status();
@@ -97,7 +98,8 @@ var UserModel = function(userName , status) {
 UserModel.fromJson = function(data) {
     return new UserModel(
         data && data.userName,
-        StatusModel.fromJson(data && data.status));
+        StatusModel.fromJson(data && data.status),
+        data && data.rootStream);
 };
 
 return {
