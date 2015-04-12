@@ -182,14 +182,22 @@ $(function(){
 
     });
 
-    model.manager.subscribeCollection(model.stream().uri(), function(from, stream) {
-        var child = Array.prototype.find.call(model.children(), function(x) {
-            return x.uri() === stream.uri;
-        });
-        if (child) {
-            model.children.remove(child);
-            child.status(models.StatusModel.fromJson(stream.status));
-            model.children.unshift(child);
+    model.manager.subscribeCollection(model.stream().uri(), {
+        'statusUpdate': function(from, stream) {
+            var child = Array.prototype.find.call(model.children(), function(x) {
+                return x.uri() === stream.uri;
+            });
+            if (child) {
+                model.children.remove(child);
+                child.status(models.StatusModel.fromJson(stream.status));
+                model.children.unshift(child);
+            }
+        },
+        'childAdded': function(from, child) {
+            model.children.remove(function(x) {
+                return x.uri() === child.uri;
+            });
+            model.children.unshift(models.StreamModel.fromJson(child));
         }
     });
 
@@ -199,11 +207,13 @@ $(function(){
 
     model.color.subscribe(updateFavicon);
 
-    model.manager.subscribe(model.stream().uri(), function(stream) {
-        model.setColor(stream.status.color);
-        model.stream().updated(new Date(stream.updated));
+    model.manager.subscribe(model.stream().uri(), {
+        'statusUpdate': function(stream) {
+            model.setColor(stream.status.color);
+            model.stream().updated(new Date(stream.updated));
 
-        statusPicker.spectrum("set", stream.status.color);
+            statusPicker.spectrum("set", stream.status.color);
+        }
     });
 
     ko.applyBindings(model);

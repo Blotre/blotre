@@ -41,8 +41,8 @@ object StreamSupervisor
       mediator ! DistributedPubSubMediator.Publish(topic, StatusUpdate(path, status))
   }
 
-  def addChild(path: String, childData: models.ChildStream) =
+  def addChild(path: String, child: models.Stream) =
     getStreamTopic(path) map { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, AddChildEvent(path, childData))
+      mediator ! DistributedPubSubMediator.Publish(topic, ChildAddedEvent(path, child))
   }
 }

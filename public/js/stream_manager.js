@@ -13,14 +13,24 @@ var StreamManager = function() {
     var processStatusUpdate = function(msg) {
         var path = msg.stream.uri;
         (self.streams[path] || []).listeners.forEach(function(x) {
-            x(msg.stream);
+            if (x.statusUpdate)
+                x.statusUpdate(msg.stream);
         });
     };
 
     var processCollectionStatusUpdate = function(msg) {
         var path = msg.from;
         (self.collections[path] || []).listeners.forEach(function(x) {
-            x(msg.from, msg.stream);
+            if (x.statusUpdate)
+                x.statusUpdate(msg.from, msg.stream);
+        });
+    };
+
+    var processChildAdded = function(msg) {
+        var path = msg.from;
+        (self.collections[path] || []).listeners.forEach(function(x) {
+            if (x.childAdded)
+                x.childAdded(msg.from, msg.child);
         });
     };
 
@@ -31,6 +41,9 @@ var StreamManager = function() {
 
         case "CollectionStatusUpdate":
             processCollectionStatusUpdate(msg);
+
+        case "ChildAdded":
+            processChildAdded(msg);
         }
     };
 

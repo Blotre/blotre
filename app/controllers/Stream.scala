@@ -385,7 +385,7 @@ object Stream extends Controller
 
   private def addChild(parent: models.Stream, child: models.Stream, user: models.User): Option[models.ChildStream] =
     models.Stream.addChild(parent, child.id, user) map { newChildData =>
-      StreamSupervisor.addChild(parent.uri, newChildData)
+      StreamSupervisor.addChild(parent.uri, child)
       newChildData
     }
 }

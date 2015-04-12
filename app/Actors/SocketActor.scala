@@ -25,23 +25,16 @@ object StatusUpdate
 /**
  * Stream child added event.
  */
-case class AddChildEvent(uri: String, childData: models.ChildStream)
+case class ChildAddedEvent(uri: String, child: models.Stream)
 
-object AddChildEvent extends
+object ChildAddedEvent extends
 {
-  import models.Serializable._
-
-  implicit val addChildWrites = new Writes[AddChildEvent] {
-    def writes(x: AddChildEvent): JsValue =
+  implicit val addChildWrites = new Writes[ChildAddedEvent] {
+    def writes(x: ChildAddedEvent): JsValue =
       Json.obj(
-        "type" -> "AddChild",
-        "stream" -> Json.obj(
-          "uri" -> x.uri),
-        "child" -> Json.obj(
-          "id" -> x.childData.childId,
-          "uri" -> x.childData.childUri,
-          "added" -> x.childData.created
-        ))
+        "type" -> "ChildAdded",
+        "from" -> x.uri,
+        "child" -> x.child)
   }
 }
 
@@ -99,8 +92,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     case msg@CollectionStatusUpdate(_, _, _) =>
       out ! Json.toJson(msg)
 
-    case GetCollectionResponse(col) =>
-      out ! Json.obj("x" ->1)
+    case msg@ChildAddedEvent(_, _) =>
+      out ! Json.toJson(msg)
 
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)

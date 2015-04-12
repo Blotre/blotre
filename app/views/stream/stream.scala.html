@@ -71,9 +71,16 @@
         </div>
 
         <div class="create-child clearfix @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
-            <div class="hidden" id="create-child-name-input"><input class="form-control" type="text" name="name" placeholder="Name" /></div>
-            <button id="create-child-expand-button" class="btn btn-default glyphicon glyphicon-plus"></button>
-            <div class="hidden" id="create-child-cancel-button"><button class="btn btn-default">Cancel</button></div>
+            <div class="hidden" id="create-child-name-input">
+                <input class="form-control" type="text" name="name" placeholder="Name" />
+            </div>
+            <button id="create-child-expand-button"
+                class="btn btn-default glyphicon glyphicon-plus"
+                title="@Messages("blotre.stream.stream.createChildButtonTitle")">
+            </button>
+            <div class="hidden" id="create-child-cancel-button">
+                <button class="btn btn-default">@Messages("blotre.stream.stream.cancelCreateChildButton")</button>
+            </div>
         </div>
 
         <ul class="stream-children" data-bind="template: { name: 'stream-search-result-template', foreach: children }"></ul>

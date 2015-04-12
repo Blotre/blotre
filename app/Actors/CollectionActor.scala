@@ -24,12 +24,19 @@ class CollectionActor(path: String) extends Actor
 
   def receive = {
     case msg@StatusUpdate(uri, status) =>
-      updated -= uri
-      updated += uri
-      state += (uri -> status)
-      CollectionSupervisor.broadcast(path, CollectionStatusUpdate(path, uri, status))
+      if (uri != path) { // Skip root stream updates
+        updated -= uri
+        updated += uri
+        state += (uri -> status)
+        CollectionSupervisor.broadcast(path, CollectionStatusUpdate(path, uri, status))
+      }
 
-    case msg@AddChildEvent(uri, status) =>
+    case msg@ChildAddedEvent(uri, child) =>
+      if (uri == path) { // only monitor root stream child adds.
+        updated += child.uri
+        state += (child.uri -> child.status)
+        CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child))
+      }
 
     case GetCollectionStatus(size, offset) =>
       sender ! updated.drop(offset).take(size).toList
@@ -45,6 +52,7 @@ class CollectionActor(path: String) extends Actor
     state = children.map(child => (child.uri, child.status)).toMap
     updated = updated ++ children.sortBy(_.updated).map(_.uri)
 
+    StreamSupervisor.subscribe(self, path)
     StreamSupervisor.subscribe(self, children.map(_.uri))
   }
 
