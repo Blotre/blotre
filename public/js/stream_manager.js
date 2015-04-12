@@ -8,6 +8,7 @@ function(models)
 var StreamManager = function() {
     var self = this;
     self.streams = { };
+    self.collections = { };
 
     var processStatusUpdate = function(msg) {
         var path = msg.stream.uri;
@@ -16,21 +17,43 @@ var StreamManager = function() {
         });
     };
 
+    var processCollectionStatusUpdate = function(msg) {
+        var path = msg.from;
+        (self.collections[path] || []).listeners.forEach(function(x) {
+            x(msg.from, msg.stream);
+        });
+    };
+
     var processMessage = function(msg) {
         switch (msg.type) {
         case "StatusUpdate":
             processStatusUpdate(msg);
+
+        case "CollectionStatusUpdate":
+            processCollectionStatusUpdate(msg);
         }
     };
 
     self.socket = new WebSocket("ws://localhost:9000/v0/ws");
     self.ready = false;
     self.socket.onopen = function(e) {
-        self.socket.send(JSON.stringify({
-            "type": "Subscribe",
-            "to": Object.keys(self.streams)
-        }));
-        //self.socket.set()
+        var targetStreams = Object.keys(self.streams);
+        if (targetStreams.length) {
+            self.socket.send(JSON.stringify({
+                "type": "Subscribe",
+                "to": targetStreams
+            }));
+        }
+
+        var targetCollections = Object.keys(self.streams);
+        if (targetCollections.length) {
+            targetCollections.forEach(function(x) {
+                self.socket.send(JSON.stringify({
+                    "type": "SubscribeCollection",
+                    "to": x
+                }));
+            });
+        }
     };
 
     self.socket.onmessage = function(event) {
@@ -68,6 +91,24 @@ StreamManager.prototype.subscribeAll = function(paths, callback) {
         }
     }
 };
+
+StreamManager.prototype.subscribeCollection = function(path, callback) {
+    var self = this;
+
+    var current = self.collections[path];
+    if (current) {
+        current.listeners.push(callback);
+    } else {
+        self.collections[path] = { listeners: [callback] };
+        if (self.ready) {
+            self.socket.send(JSON.stringify({
+                "type": "SubscribeCollection",
+                "to": path
+            }));
+        }
+    }
+};
+
 
 
 return {

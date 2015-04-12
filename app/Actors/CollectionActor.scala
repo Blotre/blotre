@@ -27,6 +27,7 @@ class CollectionActor(path: String) extends Actor
       updated -= uri
       updated += uri
       state += (uri -> status)
+      CollectionSupervisor.broadcast(path, CollectionStatusUpdate(path, uri, status))
 
     case msg@AddChildEvent(uri, status) =>
 

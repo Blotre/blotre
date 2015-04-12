@@ -46,6 +46,25 @@ object AddChildEvent extends
 }
 
 /**
+ * Status update event for a collection.
+ */
+case class CollectionStatusUpdate(from: String, uri: String, status: models.Status)
+
+object CollectionStatusUpdate
+{
+  implicit val statusWrites = new Writes[CollectionStatusUpdate] {
+    def writes(x: CollectionStatusUpdate): JsValue =
+      Json.obj(
+        "type" -> "CollectionStatusUpdate",
+        "from" -> x.from,
+        "stream" -> Json.obj(
+          "uri" -> x.uri,
+          "updated" -> x.status.created,
+          "status" -> x.status))
+  }
+}
+
+/**
  *
  */
 case class SocketError(error: String, correlation: Int)
@@ -77,6 +96,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     case msg@StatusUpdate(_, _) =>
       out ! Json.toJson(msg)
 
+    case msg@CollectionStatusUpdate(_, _, _) =>
+      out ! Json.toJson(msg)
+
     case GetCollectionResponse(col) =>
       out ! Json.obj("x" ->1)
 
@@ -90,8 +112,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
           recieveUnsubscribeMessage(msg)
 
         case "SubscribeCollection" =>
-          CollectionSupervisor.supervisor ! GetCollection("mb1")
-
+          recieveSubscribeCollectionMessage(msg)
 
         case "UnsubscribeCollection" =>
           //recieveUnsubscribeMessage(msg)
@@ -118,6 +139,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
         out ! Json.toJson(SocketError("Could not process request", correlation))
       }
 
+  private def recieveSubscribeCollectionMessage(msg: JsValue)(implicit correlation: Int) =
+    ((__ \ "to").read[String]).reads(msg)
+      .map(subscribeCollection)
+      .recoverTotal { _ =>
+      out ! Json.toJson(SocketError("Could not process request", correlation))
+    }
+
   private def subscribe(targets: List[String]): Unit =
     targets.foreach(subscribe)
 
@@ -133,5 +161,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     StreamSupervisor.unsubscribe(self, targets)
     subscriptions = subscriptions -- targets
   }
+
+  private def subscribeCollection(uri: String) =
+    CollectionSupervisor.subscribeCollection(self, uri)
 }
 

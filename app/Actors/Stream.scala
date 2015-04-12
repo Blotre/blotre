@@ -7,8 +7,6 @@ import helper._
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json.{Json, JsValue, Writes}
-import play.api.libs.functional.syntax._
 
 /**
  * Manages the main stream status change event bus.

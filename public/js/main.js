@@ -179,18 +179,19 @@ $(function(){
         url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url
     }).then(function(children) {
         model.children((children || []).map(models.StreamModel.fromJson));
-        model.manager.subscribeAll(children.map(function(child) { return child.uri; }), function(stream) {
-            var child = Array.prototype.find.call(model.children(), function(x) {
-                return x.uri() === stream.uri;
-            });
-            if (child) {
-                model.children.remove(child);
-                child.status(models.StatusModel.fromJson(stream.status));
-                model.children.unshift(child);
-            }
-        });
+
     });
 
+    model.manager.subscribeCollection(model.stream().uri(), function(from, stream) {
+        var child = Array.prototype.find.call(model.children(), function(x) {
+            return x.uri() === stream.uri;
+        });
+        if (child) {
+            model.children.remove(child);
+            child.status(models.StatusModel.fromJson(stream.status));
+            model.children.unshift(child);
+        }
+    });
 
     model.stream.subscribe(function(x) {
         toggleFavoriteButton(x, model.user());
