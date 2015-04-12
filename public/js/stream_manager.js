@@ -37,13 +37,13 @@ var StreamManager = function() {
     var processMessage = function(msg) {
         switch (msg.type) {
         case "StatusUpdate":
-            processStatusUpdate(msg);
+            return processStatusUpdate(msg);
 
         case "CollectionStatusUpdate":
-            processCollectionStatusUpdate(msg);
+            return processCollectionStatusUpdate(msg);
 
         case "ChildAdded":
-            processChildAdded(msg);
+            return processChildAdded(msg);
         }
     };
 

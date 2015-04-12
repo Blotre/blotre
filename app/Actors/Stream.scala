@@ -10,6 +10,8 @@ import play.api.libs.concurrent.Execution.Implicits._
 
 /**
  * Manages the main stream status change event bus.
+ *
+ * TODO: break out subscription types.
  */
 object StreamSupervisor
 {

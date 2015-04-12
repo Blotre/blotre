@@ -2,7 +2,7 @@ package Actors
 
 import akka.actor._
 import java.util.Date
-import scala.collection.immutable.ListSet
+import scala.collection.mutable.ListBuffer
 
 case class GetCollectionStatus(size: Int, offset: Int)
 
@@ -20,26 +20,27 @@ class CollectionActor(path: String) extends Actor
 
   private var state = Map[String, models.Status]()
 
-  private var updated = ListSet[String]()
+  private var updated = ListBuffer[String]()
 
   def receive = {
     case msg@StatusUpdate(uri, status) =>
       if (uri != path) { // Skip root stream updates
         updated -= uri
-        updated += uri
+        uri +=: updated
         state += (uri -> status)
         CollectionSupervisor.broadcast(path, CollectionStatusUpdate(path, uri, status))
       }
 
     case msg@ChildAddedEvent(uri, child) =>
-      if (uri == path) { // only monitor root stream child adds.
-        updated += child.uri
+      if (uri == path && !state.contains(child.uri)) { // only monitor root stream child adds.
+        child.uri +=: updated
         state += (child.uri -> child.status)
         CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child))
+        StreamSupervisor.subscribe(self, child.uri)
       }
 
     case GetCollectionStatus(size, offset) =>
-      sender ! updated.drop(offset).take(size).toList
+      sender ! updated.drop(offset).take(size)
 
     case _ =>
   }
@@ -50,12 +51,11 @@ class CollectionActor(path: String) extends Actor
     } getOrElse(List())
 
     state = children.map(child => (child.uri, child.status)).toMap
-    updated = updated ++ children.sortBy(_.updated).map(_.uri)
+    updated = updated ++ children.sortBy(-_.updated.getTime).map(_.uri)
 
     StreamSupervisor.subscribe(self, path)
     StreamSupervisor.subscribe(self, children.map(_.uri))
   }
-
 }
 
 

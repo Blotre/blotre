@@ -29,6 +29,13 @@ var AppViewModel = function(user, stream) {
         stream.setColor(color);
         self.stream(stream);
     };
+
+    self.addChild = function(child) {
+       self.children.remove(function(x) {
+            return x.uri() === child.uri();
+        });
+        self.children.unshift(child);
+    };
 };
 
 var initialStream = function() {
@@ -91,7 +98,7 @@ var createChildStream = function(model, stream, user, name) {
             console.error(error);
         }
     }).then(function(result) {
-        model.children.unshift(models.StreamModel.fromJson(result));
+        model.addChild(models.StreamModel.fromJson(result));
     });
 };
 
@@ -184,20 +191,16 @@ $(function(){
 
     model.manager.subscribeCollection(model.stream().uri(), {
         'statusUpdate': function(from, stream) {
-            var child = Array.prototype.find.call(model.children(), function(x) {
+            var existingChild = model.children.remove(function(x) {
                 return x.uri() === stream.uri;
             });
-            if (child) {
-                model.children.remove(child);
-                child.status(models.StatusModel.fromJson(stream.status));
-                model.children.unshift(child);
+            if (existingChild.length) {
+                existingChild[0].status(models.StatusModel.fromJson(stream.status));
+                model.children.unshift(existingChild[0]);
             }
         },
         'childAdded': function(from, child) {
-            model.children.remove(function(x) {
-                return x.uri() === child.uri;
-            });
-            model.children.unshift(models.StreamModel.fromJson(child));
+            model.addChild(models.StreamModel.fromJson(child));
         }
     });
 
