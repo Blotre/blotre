@@ -17,7 +17,7 @@ var AppViewModel = function(user, stream) {
 
     self.stream = ko.observable(stream);
 
-    self.children = ko.observableArray([]);
+    self.children = ko.observable(new models.Collection(stream.uri()));
 
     self.color = ko.computed(function() {
         var stream = self.stream();
@@ -31,10 +31,7 @@ var AppViewModel = function(user, stream) {
     };
 
     self.addChild = function(child) {
-       self.children.remove(function(x) {
-            return x.uri() === child.uri();
-        });
-        self.children.unshift(child);
+        self.children.addChild(child);
     };
 };
 
@@ -69,7 +66,7 @@ var disableFavoriteButton = function() {
 var toggleFavoriteButton = function(stream, user) {
     disableFavoriteButton();
 
-    if (stream && user && user.rootStream() && user.rootStream() != stream.id()) {
+    if (stream && user && user.rootStream() && user.rootStream() !== stream.id()) {
         $.ajax({
             type: "GET",
             url: jsRoutes.controllers.Stream.apiGetChild(user.rootStream(), stream.id()).url,
@@ -201,8 +198,7 @@ $(function(){
         type: "GET",
         url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url
     }).then(function(children) {
-        model.children((children || []).map(models.StreamModel.fromJson));
-
+        model.children().children((children || []).map(models.StreamModel.fromJson));
     });
 
     model.manager.subscribeCollection(model.stream().uri(), {

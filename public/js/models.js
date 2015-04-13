@@ -102,11 +102,27 @@ UserModel.fromJson = function(data) {
         data && data.rootStream);
 };
 
+/**
+*/
+var Collection = function(uri) {
+    var self = this;
+    self.uri = ko.observable(uri);
+    self.children = ko.observableArray();
+
+     self.addChild = function(child) {
+       self.children.remove(function(x) {
+            return x.uri() === child.uri();
+        });
+        self.children.unshift(child);
+    };
+};
+
 return {
     DEFAULT_COLOR: DEFAULT_COLOR,
     StatusModel: StatusModel,
     StreamModel: StreamModel,
-    UserModel: UserModel
+    UserModel: UserModel,
+    Collection: Collection
 };
 
 });

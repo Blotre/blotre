@@ -13,6 +13,7 @@ var AppViewModel = function(user, page) {
     var self = this;
     self.user = ko.observable(user);
     self.page = ko.observable(page);
+    self.favorites = ko.observableArray();
 
     self.manager = new stream_manager.StreamManager();
 
