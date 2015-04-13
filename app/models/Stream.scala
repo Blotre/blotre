@@ -102,8 +102,9 @@ object Stream
   val streamNamePattern = (streamNameCharacter + "{1,64}").r
 
   def isValidStreamName(name: String) =
-    !name.isEmpty && name.length < 64 && name.matches(streamNamePattern.toString)
+    name.matches(streamNamePattern.toString)
 
+  val maxChildren = 1000
 
   implicit val streamReads: Reads[Stream] = (
     (JsPath \ "id").read[ObjectId] and
@@ -124,8 +125,7 @@ object Stream
         "created" -> x.created,
         "updated" -> x.updated,
         "status" -> x.status,
-        "owner" -> x.ownerId
-      )
+        "owner" -> x.ownerId)
     }
   }
 

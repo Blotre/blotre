@@ -86,6 +86,20 @@ var hideChildForm = function() {
 };
 
 var createChildStream = function(model, stream, user, name) {
+    $('#create-child-expand-button')
+        .addClass('glyphicon-refresh glyphicon-refresh-animate');
+
+    $('#create-child-name-input input, #create-child-cancel-button button, #create-child-expand-button')
+        .prop('disabled', true);
+
+    var onComplete = function() {
+        $('#create-child-expand-button')
+            .removeClass('glyphicon-refresh glyphicon-refresh-animate');
+
+        $('#create-child-name-input input, #create-child-cancel-button button, #create-child-expand-button')
+            .prop('disabled', false);
+    };
+
     $.ajax({
         type: "PUT",
         url: jsRoutes.controllers.Stream.apiCreateStream().url,
@@ -96,9 +110,12 @@ var createChildStream = function(model, stream, user, name) {
         }),
         error: function(error) {
             console.error(error);
+            onComplete();
         }
     }).then(function(result) {
         model.addChild(models.StreamModel.fromJson(result));
+        onComplete();
+        hideChildForm();
     });
 };
 
@@ -173,7 +190,6 @@ $(function(){
                 target.removeClass('hidden');
             } else {
                 createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val());
-                hideChildForm();
             }
         });
 

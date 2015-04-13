@@ -16,8 +16,10 @@ var AppViewModel = function(user, page) {
 
     self.manager = new stream_manager.StreamManager();
 
-    self.manager.subscribe(user.userName(), function(stream) {
-        self.user().status(new models.StatusModel(stream.status.color));
+    self.manager.subscribe(user.userName(), {
+        'statusUpdate': function(stream) {
+            self.user().status(new models.StatusModel(stream.status.color));
+        }
     });
 };
 

@@ -123,7 +123,6 @@ StreamManager.prototype.subscribeCollection = function(path, callback) {
 };
 
 
-
 return {
     StreamManager: StreamManager
 };

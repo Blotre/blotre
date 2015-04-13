@@ -98,6 +98,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
+        case "GetStatus" =>
+          recieveGetStatusMessage(msg)
+
         case "Subscribe" =>
           recieveSubscribeMessage(msg)
 
@@ -111,45 +114,84 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
           //recieveUnsubscribeMessage(msg)
 
         case _ =>
-          out ! Json.toJson(SocketError("Unknown type", correlation))
+          error("Unknown type")
       }
     } recoverTotal { _ =>
-        out ! Json.toJson(SocketError("Could not process request", correlation))
+        error("Could not process request")
     }
   }
+
+  private def recieveGetStatusMessage(msg: JsValue)(implicit correlation: Int) =
+    ((__ \ "of").read[String]).reads(msg)
+      .map(subscribe)
+      .recoverTotal { _ =>
+        error("Could not process request")
+      }
 
   private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
       .map(subscribe)
       .recoverTotal { _ =>
-        out ! Json.toJson(SocketError("Could not process request", correlation))
-    }
+        error("Could not process request")
+      }
 
   private def recieveUnsubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
       .map(unsubscribe)
       .recoverTotal { _ =>
-        out ! Json.toJson(SocketError("Could not process request", correlation))
+        error("Could not process request")
       }
 
   private def recieveSubscribeCollectionMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[String]).reads(msg)
       .map(subscribeCollection)
       .recoverTotal { _ =>
-      out ! Json.toJson(SocketError("Could not process request", correlation))
+        error("Could not process request")
+      }
+
+  private def error(message: String)(implicit correlation: Int) =
+    out ! Json.toJson(SocketError(message, correlation))
+
+  private def getStatus(uri: String)(implicit correlation: Int): Unit =
+    models.Stream.findByUri(uri) map { stream =>
+      out ! Json.toJson(StatusUpdate(uri, stream.status))
+    } getOrElse {
+      error("No such stream")
     }
 
-  private def subscribe(targets: List[String]): Unit =
+  /**
+   * Get the status of a stream.
+   */
+  private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
+    out ! Json.toJson(StatusUpdate(stream.uri, stream.status))
+
+  /**
+   * Subscribe to a stream's updates.
+   *
+   * Also gets the status of the target.
+   */
+  private def subscribe(targets: List[String])(implicit correlation: Int): Unit =
     targets.foreach(subscribe)
 
-  private def subscribe(target: String): Unit = {
-    if (subscriptions.contains(target) || subscriptions.size >= SUBSCRIPTION_LIMIT)
+  private def subscribe(target: String)(implicit correlation: Int): Unit = {
+    if (subscriptions.contains(target)) {
+      getStatus(target)
       return
+    }
 
-    models.Stream.findByUri(target).map(_ =>
-      StreamSupervisor.subscribe(self, target))
+    if (subscriptions.size >= SUBSCRIPTION_LIMIT) {
+      error("Subscription limit exceeded")
+    } else {
+      models.Stream.findByUri(target) map { stream =>
+        StreamSupervisor.subscribe(self, target)
+        getStatus(stream)
+      }
+    }
   }
 
+  /**
+   * Unsubscribe from a stream's updates
+   */
   private def unsubscribe(targets: List[String]) = {
     StreamSupervisor.unsubscribe(self, targets)
     subscriptions = subscriptions -- targets

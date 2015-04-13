@@ -210,7 +210,7 @@ object Stream extends Controller
     }
   }}
 
-  def colorValidate = Reads.StringReads.filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
+  def colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
 
   case class ApiSetStatusData(color: String, doNotUse: Option[Int])
 
@@ -245,18 +245,23 @@ object Stream extends Controller
   }
 
   def apiCreateStream(request: Request[JsValue], name: String, uri: String, status: Option[ApiSetStatusData], user: models.User): Result =
-    getParentFromPath(uri) map { case (parent, childName) =>
-      if (childName != name) {
+    models.Stream.findByUri(uri) map {
+      existing =>
         BadRequest
-      } else {
-        models.Stream.asEditable(user, parent) map { parent =>
-          createDescendant(parent, name, user) map { newStream =>
-            status.map(s => updateStreamStatus(newStream, s.color, user))
-            Ok(Json.toJson(newStream))
-          } getOrElse(InternalServerError)
-        } getOrElse(Unauthorized)
-       }
-    } getOrElse(NotFound)
+    } getOrElse {
+      getParentFromPath(uri) map { case (parent, childName) =>
+        if (childName != name) {
+          BadRequest
+        } else {
+          models.Stream.asEditable(user, parent) map { parent =>
+            createDescendant(parent, name, user) map { newStream =>
+              status.map(s => updateStreamStatus(newStream, s.color, user))
+              Ok(Json.toJson(newStream))
+            } getOrElse (InternalServerError)
+          } getOrElse (Unauthorized)
+        }
+      } getOrElse (NotFound)
+    }
 
   /**
    * Lookup that status of a stream.
@@ -354,7 +359,6 @@ object Stream extends Controller
       } recoverTotal { _ =>
         BadRequest
       }
-
     } getOrElse(NotFound)
   }
 
