@@ -29,7 +29,7 @@ class CollectionSupervisor extends Actor
 
   private def getOrCreateChild(uri: String) = {
     val name = ActorHelper.normalizeName(uri)
-    context.child(name) getOrElse (context.actorOf(CollectionActor.props(name), name = name))
+    context.child(name) getOrElse (context.actorOf(CollectionActor.props(uri), name = name))
   }
 }
 

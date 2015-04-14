@@ -33,6 +33,12 @@ var AppViewModel = function(user, stream) {
     self.addChild = function(child) {
         self.children().addChild(child);
     };
+
+    self.removeChild = function(childUri) {
+        return self.children().children.remove(function(x) {
+             return x.uri() === childUri;
+         });
+    };
 };
 
 var initialStream = function() {
@@ -131,7 +137,7 @@ var addFavorite = function(targetStreamId, childId) {
             enableFavoriteButton();
         }
     }).then(function(result) {
-        alert('fas')
+        // TODO: signal suc
     });
 };
 
@@ -227,12 +233,10 @@ $(function(){
 
     model.manager.subscribeCollection(model.stream().uri(), {
         'statusUpdate': function(from, stream) {
-            var existingChild = model.children.remove(function(x) {
-                return x.uri() === stream.uri;
-            });
+            var existingChild = model.removeChild(stream.uri);
             if (existingChild.length) {
                 existingChild[0].status(models.StatusModel.fromJson(stream.status));
-                model.children.unshift(existingChild[0]);
+                model.addChild(existingChild[0]);
             }
         },
         'childAdded': function(from, child) {
@@ -252,7 +256,7 @@ $(function(){
     });
 
     ko.applyBindings(model);
-    toggleFavoriteButton();
+    toggleFavoriteButton(model.stream(), model.user());
 });
 
 });
