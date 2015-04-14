@@ -23,11 +23,11 @@ object Stream extends Controller
 
   val AcceptsPng = Accepting("image/png")
 
-  def uriMap(uri: String): Map[String, String] =
+  def uriMap(uri: String): Seq[(String, String)] =
     (uri
       .split('/')
-      .foldLeft(("", Map[String, String]())) { (p, c) =>
-        (p._1 + "/" + c, p._2 + (c -> (p._1 + "/" + c)))
+      .foldLeft(("", Seq[(String, String)]())) { (p, c) =>
+        (p._1 + "/" + c, p._2 :+ (c, (p._1 + "/" + c)))
       })._2
 
   /**

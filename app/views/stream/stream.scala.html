@@ -1,7 +1,7 @@
 @(
     stream: models.Stream,
     children: scala.collection.immutable.List[models.Stream] = scala.collection.immutable.List(),
-    uriPath: scala.collection.immutable.Map[String, String])
+    uriPath: scala.collection.immutable.Seq[(String, String)])
 
 @import play.api.libs.json._
 @import helper._
@@ -18,7 +18,7 @@
 @navHeader = {
     <ul class="navbar-nav pull-left stream-path">
         @for((name, path) <- uriPath) {
-        <li><a href="/s@path">@name</a></li>
+            <li><a href="/s@path">@name</a></li>
         }
     </ul>
 }
