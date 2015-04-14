@@ -31,7 +31,7 @@ var AppViewModel = function(user, stream) {
     };
 
     self.addChild = function(child) {
-        self.children.addChild(child);
+        self.children().addChild(child);
     };
 };
 
