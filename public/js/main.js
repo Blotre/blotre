@@ -25,9 +25,9 @@ var AppViewModel = function(user, stream) {
     });
 
     self.setColor = function(color) {
-        var stream = self.stream() || new models.StreamModel();
-        stream.setColor(color);
-        self.stream(stream);
+        if (!self.stream())
+            self.stream(new models.StreamModel());
+        self.stream().setColor(color);
     };
 
     self.addChild = function(child) {
@@ -40,6 +40,7 @@ var initialStream = function() {
 };
 
 /**
+    Redraw the favicon for a given status.
 */
 var updateFavicon = function(color) {
     var canvas = document.createElement('canvas');
@@ -52,6 +53,8 @@ var updateFavicon = function(color) {
     link.href = canvas.toDataURL('image/png');
 };
 
+/**
+*/
 var enableFavoriteButton = function() {
     $('.stream-favorite')
         .prop("disabled", false);
@@ -59,8 +62,7 @@ var enableFavoriteButton = function() {
 
 var disableFavoriteButton = function() {
     $('.stream-favorite')
-        .prop("disabled", true)
-        .off('click');
+        .prop("disabled", true);
 };
 
 var toggleFavoriteButton = function(stream, user) {
@@ -77,6 +79,8 @@ var toggleFavoriteButton = function(stream, user) {
     }
 };
 
+/**
+*/
 var hideChildForm = function() {
     $('#create-child-name-input, #create-child-cancel-button').addClass('hidden');
     $('#create-child-name-input input').val('');
@@ -113,6 +117,21 @@ var createChildStream = function(model, stream, user, name) {
         model.addChild(models.StreamModel.fromJson(result));
         onComplete();
         hideChildForm();
+    });
+};
+
+/**
+*/
+var addFavorite = function(targetStreamId, childId) {
+    disableFavoriteButton();
+    $.ajax({
+        type: "PUT",
+        url: jsRoutes.controllers.Stream.apiCreateChild(targetStreamId, childId).url,
+        error: function(error) {
+            enableFavoriteButton();
+        }
+    }).then(function(result) {
+        alert('fas')
     });
 };
 
@@ -193,6 +212,11 @@ $(function(){
     $('#create-child-cancel-button button')
         .on('click', hideChildForm);
 
+    // Favorite Button
+    $('button.stream-favorite').click(function(e) {
+        addFavorite(model.user().rootStream(), model.stream().id());
+    });
+
     // Children
     $.ajax({
         type: "GET",
@@ -214,10 +238,6 @@ $(function(){
         'childAdded': function(from, child) {
             model.addChild(models.StreamModel.fromJson(child));
         }
-    });
-
-    model.stream.subscribe(function(x) {
-        toggleFavoriteButton(x, model.user());
     });
 
     model.color.subscribe(updateFavicon);

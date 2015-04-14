@@ -23,13 +23,12 @@ object Stream extends Controller
 
   val AcceptsPng = Accepting("image/png")
 
-  def uriMap(uri: String): Map[String, String] = {
+  def uriMap(uri: String): Map[String, String] =
     (uri
       .split('/')
       .foldLeft(("", Map[String, String]())) { (p, c) =>
         (p._1 + "/" + c, p._2 + (c -> (p._1 + "/" + c)))
       })._2
-  }
 
   /**
    * Stream root index page.
@@ -46,8 +45,7 @@ object Stream extends Controller
       case Accepts.Json() =>
         Ok(Json.obj(
           "query" -> query,
-          "streams" -> streams
-        ))
+          "streams" -> streams))
     }
   }}
 
@@ -120,11 +118,11 @@ object Stream extends Controller
       })
       .getOrElse(NotFound)
 
-  def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request => {
+  def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request =>
     models.Stream.findByUri(uri) map { stream =>
       apiSetStreamStatus(stream, request.user, request)
     } getOrElse(NotFound)
-  }}
+  }
 
   /**
    * Checks if child stream can created and displays an create page.
@@ -253,7 +251,7 @@ object Stream extends Controller
               status.map(s => updateStreamStatus(newStream, s.color, user))
               Ok(Json.toJson(newStream))
             } getOrElse(InternalServerError)
-          } getOrElse(Unauthorized(Json.toJson(ApiError("User does not have permission to add child to parent stream."))))
+          } getOrElse(Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
         }
       } getOrElse(NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
     }
@@ -343,19 +341,17 @@ object Stream extends Controller
    *
    * Noop if the child already exists
    */
-  def apiCreateChild(parentId: String) = AuthorizedAction(parse.json) { implicit request =>
+  def apiCreateChild(parentId: String, childId: String) = AuthorizedAction{ implicit request =>
     val user = Application.getLocalUser(request)
     models.Stream.findById(parentId) map { parent =>
-      ((__ \ "childId").read[ObjectId]).reads(request.body) map { childId =>
+      models.Stream.asEditable(user, parent) map { parent =>
         models.Stream.findById(childId) map { child =>
           addChild(parent, child, user) map { childData =>
             Ok("")
-          } getOrElse (InternalServerError)
-        } getOrElse(NotFound(Json.toJson(ApiError("Child stream does not exist"))))
-      } recoverTotal { e =>
-        BadRequest(Json.toJson(ApiError("Could not process request", e)))
-      }
-    } getOrElse(NotFound(Json.toJson(ApiError("Parent stream does not exist"))))
+          } getOrElse(InternalServerError)
+        } getOrElse(NotFound(Json.toJson(ApiError("Child stream does not exist."))))
+      } getOrElse(Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
+    } getOrElse(NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
   }
 
   /**

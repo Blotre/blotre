@@ -27,6 +27,7 @@ GET     /v0/api/stream/:id/status            controllers.Stream.apiGetStreamStat
 POST    /v0/api/stream/:id/status            controllers.Stream.apiSetStreamStatus(id)
 GET     /v0/api/stream/:id/children          controllers.Stream.apiGetChildren(id)
 GET     /v0/api/stream/:id/children/:child   controllers.Stream.apiGetChild(id, child)
+PUT     /v0/api/stream/:id/children/:child   controllers.Stream.apiCreateChild(id, child)
 DELETE  /v0/api/stream/:id/children/:child   controllers.Stream.apiDeleteChild(id, child)
 
 # User Api
