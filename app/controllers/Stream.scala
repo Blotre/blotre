@@ -1,7 +1,6 @@
 package controllers
 
 import Actors.{CollectionSupervisor, StreamSupervisor}
-import org.bson.types.ObjectId
 import play.api.data.validation._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
@@ -43,9 +42,7 @@ object Stream extends Controller
         Ok(views.html.stream.index.render())
 
       case Accepts.Json() =>
-        Ok(Json.obj(
-          "query" -> query,
-          "streams" -> streams))
+        Ok(Json.toJson(streams))
     }
   }}
 
@@ -284,17 +281,26 @@ object Stream extends Controller
     }
 
   /**
-   * Get all children of a stream.
+   * Get children of a stream.
+   *
+   * Returns either the most recent children or
    *
    * TODO: normally should return list of ids which query params can expand to stream.
    */
-  def apiGetChildren(id: String) = Action.async { implicit request =>
+  def apiGetChildren(id: String) = Action.async { implicit request => {
+    val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
-      CollectionSupervisor.getCollectionState(stream.uri, 20, 0) map { children =>
-        Ok(Json.toJson(children.map(models.Stream.findByUri(_))))
+      if (query.isEmpty) {
+        // Get most recently updated children
+        CollectionSupervisor.getCollectionState(stream.uri, 20, 0) map { children =>
+          Ok(Json.toJson(children.map(models.Stream.findByUri(_))))
+        }
+      } else {
+        // Lookup children using query
+        Future.successful(Ok(Json.toJson(models.Stream.getChildrenByQuery(stream, query, 20))))
       }
     } getOrElse(Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
-  }
+  }}
 
   /**
    * Get a child of this stream.

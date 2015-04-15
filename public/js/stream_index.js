@@ -38,15 +38,15 @@ var updateSearchResultsForQuery = function(model, query) {
         }
     }).done(function(result) {
         $('.list-loading').addClass('hidden');
-        if (result.streams) {
-            if (result.streams.length)
+        if (result) {
+            if (result.length)
                 $('.no-results').addClass('hidden');
             else
                 $('.no-results').removeClass('hidden');
-
-            model.query(result.query);
-            model.results(result.streams.map(models.StreamModel.fromJson));
+            model.query(query);
         }
+
+        model.results((result || []).map(models.StreamModel.fromJson));
     });
 };
 

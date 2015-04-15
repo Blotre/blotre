@@ -1,11 +1,13 @@
 require([
     './models',
     './stream_manager',
-    './application_model'],
+    './application_model',
+    './shared'],
 function(
     models,
     stream_manager,
-    application_model)
+    application_model,
+    shared)
 {
 "use-strict";
 
@@ -16,8 +18,8 @@ var AppViewModel = function(user, stream) {
     application_model.AppViewModel.call(this, user);
 
     self.stream = ko.observable(stream);
-
     self.children = ko.observable(new models.Collection(stream.uri()));
+    self.query = ko.observable();
 
     self.color = ko.computed(function() {
         var stream = self.stream();
@@ -141,6 +143,38 @@ var addFavorite = function(targetStreamId, childId) {
     });
 };
 
+var updateSearchResultsForQuery = function(model, query) {
+    $('.list-loading').removeClass('hidden');
+    $('.no-results').addClass('hidden');
+    $.ajax({
+        type: "GET",
+        url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url,
+        data: "query=" + query,
+        headers: {
+            accept: "application/json"
+        },
+        error: function() {
+            $('.list-loading').addClass('hidden');
+        }
+    }).done(function(result) {
+        $('.list-loading').addClass('hidden');
+        if (result) {
+            if (result.length)
+                $('.no-results').addClass('hidden');
+            else
+                $('.no-results').removeClass('hidden');
+
+            model.query(query);
+        }
+        model.children().children((result || []).map(models.StreamModel.fromJson));
+    });
+};
+
+var updateSearchResults = function(model) {
+    var query = $('#stream-search-form input').val();
+    return updateSearchResultsForQuery(model, query);
+};
+
 /**
 */
 $(function(){
@@ -223,13 +257,22 @@ $(function(){
         addFavorite(model.user().rootStream(), model.stream().id());
     });
 
-    // Children
-    $.ajax({
-        type: "GET",
-        url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url
-    }).then(function(children) {
-        model.children().children((children || []).map(models.StreamModel.fromJson));
+    // Child Search
+    $('#stream-search-form button').on('click', function(e) {
+        e.preventDefault();
+        updateSearchResults(model);
     });
+
+    $('#stream-search-form input').keypress(function(e) {
+        if (e.keyCode === 13) {
+            updateSearchResults(model);
+            e.preventDefault();
+        }
+    });
+
+    // Children
+    var query = shared.getQueryString()['query'];
+    updateSearchResultsForQuery(model, (query || ''));
 
     model.manager.subscribeCollection(model.stream().uri(), {
         'statusUpdate': function(from, stream) {

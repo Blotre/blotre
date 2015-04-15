@@ -298,6 +298,18 @@ object Stream
       .map(x => findById(x.childId).get)
 
   /**
+   * Query the children of a given stream
+   */
+  def getChildrenByQuery(parent: Stream, query: String, limit: Int): List[Stream] = {
+    val q = childDb().limit(limit).filter("parentId =", parent.id)
+    q.criteria("childName")
+      .containsIgnoreCase(query)
+    q.asList()
+      .asScala.toList
+      .map(x => findById(x.childId).get)
+  }
+
+  /**
    * Lookup the child of a stream by the child's id.
    */
   def getChildById(parentId: ObjectId, childId: ObjectId): Option[ChildStream] =
