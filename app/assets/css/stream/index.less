@@ -62,19 +62,22 @@
     width: 1px;
     word-break: break-all;
     word-wrap: break-word;
-
     line-height: 0.9em;
     -webkit-transform: translateY(-50%);
     -moz-transform: translateY(-50%);
     transform: translateY(-50%);
 }
 
-.stream-search-result h2 {
-    width: 100%;
-    font-weight: 300;
-    margin-bottom: 0;
+.stream-search-result h2,
+.stream-search-result .stream-uri {
+    display: block;
     text-overflow: ellipsis;
     overflow: hidden;
+}
+
+.stream-search-result h2 {
+    font-weight: 300;
+    margin-bottom: 0;
 }
 
 .stream-search-result a:hover h2 {
@@ -88,6 +91,3 @@
 .stream-search-result .stream-uri:before {
     content: "/";
 }
-
-
-

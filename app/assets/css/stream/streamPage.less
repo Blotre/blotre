@@ -2,6 +2,41 @@
     padding-top: 0;
 }
 
+
+/**
+    Page header navigation.
+*/
+#stream-breadcrumbs {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    list-style: none;
+    margin: 0;
+    padding-top: 16px;
+    padding-left: 115px;  /* clear brand */
+    padding-right: 440px;  /* clear search */
+    color: #444;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#stream-breadcrumbs li {
+    display: inline;
+    font-size: 1.6rem;
+}
+
+#stream-breadcrumbs li:before {
+    content: "/";
+    padding: 0 0.6rem;
+    color: inherit;
+}
+
+#header-bar #stream-breadcrumbs li a {
+    color: inherit;
+}
+
+
 /**
 */
 .stream-header {
@@ -123,3 +158,12 @@
     display: inline-block;
 }
 
+
+/**
+     Header collapse
+*/
+@media only screen and (max-width : 767px) {
+    #stream-breadcrumbs {
+        padding-right: 120px;
+    }
+}

@@ -16,7 +16,7 @@
 }
 
 @navHeader = {
-    <ul class="navbar-nav pull-left stream-path">
+    <ul id="stream-breadcrumbs">
         @for((name, path) <- uriPath) {
             <li><a href="/s@path">@name</a></li>
         }
