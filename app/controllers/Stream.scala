@@ -136,9 +136,7 @@ object Stream extends Controller
         val user = Application.getLocalUser(request)
         models.Stream.asEditable(user, parent) map { stream =>
           Ok(views.html.stream.createChild.render(stream, child))
-        } getOrElse {
-          Unauthorized
-        }
+        } getOrElse(Unauthorized)
     } getOrElse {
         NotFound(views.html.notFound.render(""))
     }
