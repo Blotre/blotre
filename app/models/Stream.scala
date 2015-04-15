@@ -176,10 +176,10 @@ object Stream
    * Lookup streams using a search term.
    */
   def findByQuery(query: String): List[Stream] = {
-    val q = db().limit(20);
+    val q = db().limit(20)
     q.criteria("name")
       .containsIgnoreCase(query)
-    q.asList().asScala.toList
+    q.order("-updated").asList().asScala.toList
   }
 
   /**
