@@ -79,9 +79,11 @@ object SocketActor {
 }
 
 class SocketActor(user: User, out: ActorRef) extends Actor {
-  val SUBSCRIPTION_LIMIT = 255
+  val SUBSCRIPTION_LIMIT = 256
+  val COLLECTION_SUBSCRIPTION_LIMIT = 8
 
   var subscriptions = Set[String]()
+  var collectionSubscriptions = Set[String]()
 
   def receive = {
     case msg@StatusUpdate(_, _, _) =>
@@ -109,13 +111,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
           recieveSubscribeCollectionMessage(msg)
 
         case "UnsubscribeCollection" =>
-          //recieveUnsubscribeMessage(msg)
+          recieveUnsubscribeCollectionMessage(msg)
 
         case _ =>
-          error("Unknown type")
+          error("Unknown type.")
       }
     } recoverTotal { _ =>
-        error("Could not process request")
+        error("Could not process request.")
     }
   }
 
@@ -123,29 +125,36 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     ((__ \ "of").read[String]).reads(msg)
       .map(subscribe)
       .recoverTotal { _ =>
-        error("Could not process request")
+        error("Could not process request.")
       }
 
   private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
       .map(subscribe)
       .recoverTotal { _ =>
-        error("Could not process request")
+        error("Could not process request.")
       }
 
   private def recieveUnsubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
       .map(unsubscribe)
       .recoverTotal { _ =>
-        error("Could not process request")
+        error("Could not process request.")
       }
 
   private def recieveSubscribeCollectionMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[String]).reads(msg)
       .map(subscribeCollection)
       .recoverTotal { _ =>
-        error("Could not process request")
+        error("Could not process request.")
       }
+
+  private def recieveUnsubscribeCollectionMessage(msg: JsValue)(implicit correlation: Int) =
+    ((__ \ "to").read[String]).reads(msg)
+      .map(unsubscribeCollection)
+      .recoverTotal { _ =>
+      error("Could not process request.")
+    }
 
   private def error(message: String)(implicit correlation: Int) =
     out ! Json.toJson(SocketError(message, correlation))
@@ -154,7 +163,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     models.Stream.findByUri(uri) map { stream =>
       out ! Json.toJson(StatusUpdate(uri, stream.status))
     } getOrElse {
-      error("No such stream")
+      error("No such stream.")
     }
 
   /**
@@ -178,10 +187,11 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     }
 
     if (subscriptions.size >= SUBSCRIPTION_LIMIT) {
-      error("Subscription limit exceeded")
+      error("Subscription limit exceeded.")
     } else {
       models.Stream.findByUri(target) map { stream =>
         StreamSupervisor.subscribe(self, target)
+        subscriptions += target
         getStatus(stream)
       }
     }
@@ -195,7 +205,29 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     subscriptions = subscriptions -- targets
   }
 
-  private def subscribeCollection(uri: String) =
-    CollectionSupervisor.subscribeCollection(self, uri)
+  /**
+   * Subscribe to collection updates.
+   */
+  private def subscribeCollection(target: String)(implicit correlation: Int): Unit = {
+    if (collectionSubscriptions.contains(target)) {
+      return
+    }
+
+    if (collectionSubscriptions.size >= COLLECTION_SUBSCRIPTION_LIMIT) {
+      error("Subscription limit exceeded.")
+    } else {
+      models.Stream.findByUri(target) map { stream =>
+        collectionSubscriptions += target
+        CollectionSupervisor.subscribeCollection(self, target)
+      }
+    }
+  }
+
+  /**
+   * Unsubscribe from collection updates.
+   */
+  private def unsubscribeCollection(uri: String) = {
+    CollectionSupervisor.unsubscribeCollection(self, uri)
+  }
 }
 

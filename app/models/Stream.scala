@@ -265,7 +265,7 @@ object Stream
     if (color.matches(Status.colorPattern.toString())) {
       asEditable(poster, stream) flatMap { current =>
         val updated = new Date()
-        current.status = Status(color, 0, updated, poster.id)
+        current.status = Status(color, updated, poster.id)
         current.updated = updated
         save(current)
       }
