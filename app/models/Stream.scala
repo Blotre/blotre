@@ -253,7 +253,7 @@ object Stream
   /**
    * Remove an existing child.
    */
-  def removeChild(parent: Stream, child: ObjectId) =
+  def removeChild(parent: Stream, child: ObjectId): Unit =
     MorphiaObject.datastore.delete(
       childDb()
         .filter("parentId =", parent.id)

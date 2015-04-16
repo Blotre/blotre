@@ -47,4 +47,9 @@ object StreamSupervisor
     getStreamTopic(path) map { topic =>
       mediator ! DistributedPubSubMediator.Publish(topic, ChildAddedEvent(path, child))
   }
+
+  def removeChild(path: String, child: models.Stream) =
+    getStreamTopic(path) map { topic =>
+      mediator ! DistributedPubSubMediator.Publish(topic, ChildRemovedEvent(path, child))
+    }
 }

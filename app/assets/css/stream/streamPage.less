@@ -8,6 +8,7 @@
 */
 #stream-breadcrumbs {
     position: absolute;
+    z-index: 0;
     left: 0;
     width: 100%;
     list-style: none;
@@ -46,6 +47,7 @@
 .color-label {
     display: block;
     color: #bbb;
+    text-transform: uppercase;
 }
 
 .stream-header .color-label {
@@ -102,6 +104,31 @@
     vertical-align: bottom;
     margin-top: 2rem;
 }
+
+.stream-favorite span:before {
+    content: "\e007"; /* empty star */
+}
+
+.stream-favorite:hover span:before {
+    content: "\e006"; /* star */
+}
+
+.stream-favorite.active span:before {
+    content: "\e006"; /* star */
+}
+
+.stream-favorite.active:hover span:before {
+    content: "\e007"; /* empty star */
+}
+
+.stream-favorite[disabled] span:before {
+    content: "\e006"; /* star */
+}
+
+
+
+
+
 
 
 /**

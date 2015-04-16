@@ -10,41 +10,16 @@ var StreamManager = function() {
     self.streams = { };
     self.collections = { };
 
-    var processStatusUpdate = function(msg) {
-        var path = msg.stream.uri;
-        (self.streams[path] || []).listeners.forEach(function(x) {
-            if (x.statusUpdate)
-                x.statusUpdate(msg.stream);
-        });
-    };
-
-    var processCollectionStatusUpdate = function(msg) {
-        var path = msg.from;
-        (self.collections[path] || []).listeners.forEach(function(x) {
-            if (x.statusUpdate)
-                x.statusUpdate(msg.from, msg.stream);
-        });
-    };
-
-    var processChildAdded = function(msg) {
-        var path = msg.from;
-        (self.collections[path] || []).listeners.forEach(function(x) {
-            if (x.childAdded)
-                x.childAdded(msg.from, msg.child);
-        });
-    };
-
     var processMessage = function(msg) {
-        switch (msg.type) {
-        case "StatusUpdate":
-            return processStatusUpdate(msg);
+        if (!msg || !msg.type)
+            return;
 
-        case "CollectionStatusUpdate":
-            return processCollectionStatusUpdate(msg);
-
-        case "ChildAdded":
-            return processChildAdded(msg);
-        }
+        var type = msg.type;
+        var target = (msg.source ? self.collections[msg.source] : self.streams[msg.from]);
+        (target ? target.listeners : []).forEach(function(x) {
+            if (x[type])
+                x[type](msg);
+        });
     };
 
     self.socket = new WebSocket("ws://localhost:9000/v0/ws");

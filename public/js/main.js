@@ -11,6 +11,13 @@ function(
 {
 "use-strict";
 
+var FavoriteStatus = Object.freeze({
+    Unknown: 0,
+    No: 1,
+    Yes: 2,
+    Hierarchical: 3
+});
+
 /**
 */
 var AppViewModel = function(user, stream) {
@@ -20,6 +27,7 @@ var AppViewModel = function(user, stream) {
     self.stream = ko.observable(stream);
     self.children = ko.observable(new models.Collection(stream.uri()));
     self.query = ko.observable();
+    self.favorite = ko.observable(FavoriteStatus.Unknown);
 
     self.color = ko.computed(function() {
         var stream = self.stream();
@@ -43,6 +51,34 @@ var AppViewModel = function(user, stream) {
     };
 };
 
+var isHierarchical = function(parentName, uri) {
+    if (parentName === uri)
+        return true;
+
+    var index = uri.lastIndexOf('/');
+    return (index >= 0 && parentName === uri.slice(0, index));
+};
+
+AppViewModel.prototype.checkFavorite = function() {
+    var self = this;
+
+    if (isHierarchical(self.user().userName(), self.stream().uri())) {
+        self.favorite(FavoriteStatus.Hierarchical);
+    } else {
+        $.ajax({
+            type: "GET",
+            url: jsRoutes.controllers.Stream.apiGetChild(self.user().rootStream(), self.stream().id()).url,
+            error: function(e) {
+                if (e.status === 404) {
+                    self.favorite(FavoriteStatus.No);
+                }
+            }
+        }).then(function() {
+           self.favorite(FavoriteStatus.Yes);
+        });
+    }
+};
+
 var initialStream = function() {
     return models.StreamModel.fromJson(window.initialStreamData);
 };
@@ -63,28 +99,20 @@ var updateFavicon = function(color) {
 
 /**
 */
-var enableFavoriteButton = function() {
+var enableFavoriteButton = function(existing) {
     $('.stream-favorite')
-        .prop("disabled", false);
+        .prop('disabled', false)
+        .prop('title', existing ? "Remove Favorite" : "Add Favorite");
+
+    if (existing) {
+        $('.stream-favorite')
+            .addClass('active');
+    }
 };
 
 var disableFavoriteButton = function() {
     $('.stream-favorite')
         .prop("disabled", true);
-};
-
-var toggleFavoriteButton = function(stream, user) {
-    disableFavoriteButton();
-
-    if (stream && user && user.rootStream() && user.rootStream() !== stream.id()) {
-        $.ajax({
-            type: "GET",
-            url: jsRoutes.controllers.Stream.apiGetChild(user.rootStream(), stream.id()).url,
-            error: function(e) {
-                enableFavoriteButton();
-            }
-        });
-    }
 };
 
 /**
@@ -130,16 +158,29 @@ var createChildStream = function(model, stream, user, name) {
 
 /**
 */
-var addFavorite = function(targetStreamId, childId) {
+var addFavorite = function(model, targetStreamId, childId) {
     disableFavoriteButton();
     $.ajax({
         type: "PUT",
         url: jsRoutes.controllers.Stream.apiCreateChild(targetStreamId, childId).url,
         error: function(error) {
-            enableFavoriteButton();
+            model.favorite(FavoriteStatus.Unknown);
         }
     }).then(function(result) {
-        // TODO: signal suc
+        model.favorite(FavoriteStatus.Yes);
+    });
+};
+
+var removeFavorite = function(model, targetStreamId, childId) {
+    disableFavoriteButton();
+    $.ajax({
+        type: "DELETE",
+        url: jsRoutes.controllers.Stream.apiDeleteChild(targetStreamId, childId).url,
+        error: function(error) {
+            model.favorite(FavoriteStatus.Unknown);
+        }
+    }).then(function(result) {
+        model.favorite(FavoriteStatus.No);
     });
 };
 
@@ -258,10 +299,7 @@ $(function(){
     $('#create-child-cancel-button button')
         .on('click', hideChildForm);
 
-    // Favorite Button
-    $('button.stream-favorite').click(function(e) {
-        addFavorite(model.user().rootStream(), model.stream().id());
-    });
+
 
     // Child Search
     $('#stream-search-form button').on('click', function(e) {
@@ -281,31 +319,60 @@ $(function(){
     updateSearchResultsForQuery(model, (query || ''));
 
     model.manager.subscribeCollection(model.stream().uri(), {
-        'statusUpdate': function(from, stream) {
-            var existingChild = model.removeChild(stream.uri);
+        'StatusUpdate': function(msg) {
+            var existingChild = model.removeChild(msg.from);
             if (existingChild.length) {
-                existingChild[0].status(models.StatusModel.fromJson(stream.status));
+                existingChild[0].status(models.StatusModel.fromJson(msg.status));
                 model.addChild(existingChild[0]);
             }
         },
-        'childAdded': function(from, child) {
-            model.addChild(models.StreamModel.fromJson(child));
+        'ChildAdded': function(msg) {
+            model.addChild(models.StreamModel.fromJson(msg.child));
+        },
+        'ChildRemoved': function(msg) {
+            model.removeChild(msg.child.uri);
         }
     });
 
     model.color.subscribe(updateFavicon);
 
-    model.manager.subscribe(model.stream().uri(), {
-        'statusUpdate': function(stream) {
-            model.setColor(stream.status.color);
-            model.stream().updated(new Date(stream.updated));
+    // Favorite Button
+    disableFavoriteButton();
 
-            statusPicker.spectrum("set", stream.status.color);
+    model.favorite.subscribe(function(status) {
+        switch (status) {
+        case FavoriteStatus.Yes:
+            return enableFavoriteButton(true);
+        case FavoriteStatus.No:
+            return enableFavoriteButton(false);
+        default:
+            return disableFavoriteButton();
+        }
+    });
+
+    model.checkFavorite();
+
+
+    $('button.stream-favorite').click(function(e) {
+        switch (model.favorite()) {
+        case FavoriteStatus.Yes:
+            return removeFavorite(model, model.user().rootStream(), model.stream().id());
+        case FavoriteStatus.No:
+            return addFavorite(model, model.user().rootStream(), model.stream().id());
+        }
+    });
+
+    model.manager.subscribe(model.stream().uri(), {
+        'StatusUpdate': function(msg) {
+            if (msg.from === model.stream().uri()) {
+                model.setColor(msg.status.color);
+                model.stream().updated(new Date(msg.status.created));
+                statusPicker.spectrum("set", msg.status.color);
+            }
         }
     });
 
     ko.applyBindings(model);
-    toggleFavoriteButton(model.stream(), model.user());
 });
 
 });

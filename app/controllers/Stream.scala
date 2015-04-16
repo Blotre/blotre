@@ -15,8 +15,8 @@ import helper.ImageHelper
 /**
  *
  */
-object Stream extends Controller
-{
+object Stream extends Controller {
+
   import models.Serializable._
   import ControllerHelper._
 
@@ -26,8 +26,8 @@ object Stream extends Controller
     (uri
       .split('/')
       .foldLeft(("", Seq[(String, String)]())) { (p, c) =>
-        (p._1 + "/" + c, p._2 :+ (c, (p._1 + "/" + c)))
-      })._2
+      (p._1 + "/" + c, p._2 :+(c, (p._1 + "/" + c)))
+    })._2
 
   /**
    * Stream root index page.
@@ -44,17 +44,18 @@ object Stream extends Controller
       case Accepts.Json() =>
         Ok(Json.toJson(streams))
     }
-  }}
+  }
+  }
 
   /**
    * Lookup a stream.
    *
    * Supports:
-   *     png - Render 1x1 image of the current status.
+   * png - Render 1x1 image of the current status.
    *
-   *     html - View of the stream.
+   * html - View of the stream.
    *
-   *     json: Returns json of the stream.
+   * json: Returns json of the stream.
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
     val pathAndExt = uri.split('.')
@@ -73,7 +74,8 @@ object Stream extends Controller
           renderStreamStatusPng(path, request)
       }
     }
-  }}
+  }
+  }
 
   /**
    * Render a stream as html.
@@ -96,7 +98,7 @@ object Stream extends Controller
   def renderStreamJson(uri: String, request: Request[AnyContent]): Result =
     models.Stream.findByUri(uri)
       .map(s =>
-        renderStreamJson(s, request))
+      renderStreamJson(s, request))
       .getOrElse(NotFound)
 
 
@@ -109,16 +111,16 @@ object Stream extends Controller
   def renderStreamStatusPng(uri: String, request: Request[AnyContent]) =
     models.Stream.findByUri(uri)
       .map(s => {
-        val img = ImageHelper.createImage(s.status.color)
-        noCache(Ok(ImageHelper.toPng(img)))
-          .as("image/png")
-      })
+      val img = ImageHelper.createImage(s.status.color)
+      noCache(Ok(ImageHelper.toPng(img)))
+        .as("image/png")
+    })
       .getOrElse(NotFound)
 
   def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request =>
     models.Stream.findByUri(uri) map { stream =>
       apiSetStreamStatus(stream, request.user, request)
-    } getOrElse(NotFound)
+    } getOrElse (NotFound)
   }
 
   /**
@@ -133,9 +135,9 @@ object Stream extends Controller
         val user = Application.getLocalUser(request)
         models.Stream.asEditable(user, parent) map { stream =>
           Ok(views.html.stream.createChild.render(stream, child))
-        } getOrElse(Unauthorized)
+        } getOrElse (Unauthorized)
     } getOrElse {
-        NotFound(views.html.notFound.render(""))
+      NotFound(views.html.notFound.render(""))
     }
   }
 
@@ -148,13 +150,13 @@ object Stream extends Controller
       case Accepts.Json() =>
         createDescendant(uri, user)
           .map(s =>
-            renderStreamJson(s, request))
+          renderStreamJson(s, request))
           .getOrElse(BadRequest)
 
       case Accepts.Html() =>
         createDescendant(uri, user)
           .map(s =>
-            Redirect(routes.Stream.getStream(s.uri)))
+          Redirect(routes.Stream.getStream(s.uri)))
           .getOrElse(BadRequest)
     }
   }
@@ -200,7 +202,8 @@ object Stream extends Controller
     } getOrElse {
       NotFound
     }
-  }}
+  }
+  }
 
   val colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
 
@@ -213,9 +216,9 @@ object Stream extends Controller
   def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.Stream.streamNamePattern.toString))
 
   implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
-      (JsPath \ "name").read[String](nameValidate) and
+    (JsPath \ "name").read[String](nameValidate) and
       (JsPath \ "uri").read[String] and
-        (JsPath \ "status").readNullable[ApiSetStatusData]
+      (JsPath \ "status").readNullable[ApiSetStatusData]
     )(ApiCreateStreamData.apply _)
 
   /**
@@ -233,9 +236,8 @@ object Stream extends Controller
   }
 
   def apiCreateStream(request: Request[JsValue], name: String, uri: String, status: Option[ApiSetStatusData], user: models.User): Result =
-    models.Stream.findByUri(uri) map {
-      existing =>
-        UnprocessableEntity(Json.toJson(ApiError("Stream already exists")))
+    models.Stream.findByUri(uri) map { existing =>
+      UnprocessableEntity(Json.toJson(ApiError("Stream already exists")))
     } getOrElse {
       getParentFromPath(uri) map { case (parent, childName) =>
         if (childName != name) {
@@ -244,11 +246,11 @@ object Stream extends Controller
           models.Stream.asEditable(user, parent) map { parent =>
             createDescendant(parent, name, user) map { newStream =>
               status.map(s => updateStreamStatus(newStream, s.color, user))
-              Ok(Json.toJson(newStream))
-            } getOrElse(InternalServerError)
-          } getOrElse(Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
+              Created(Json.toJson(newStream))
+            } getOrElse (InternalServerError)
+          } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
         }
-      } getOrElse(NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
+      } getOrElse (NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
     }
 
   /**
@@ -257,7 +259,7 @@ object Stream extends Controller
   def apiGetStreamStatus(id: String) = Action { implicit request =>
     models.Stream.findById(id) map { stream =>
       Ok(Json.toJson(stream.status))
-    } getOrElse(NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
   /**
@@ -266,7 +268,7 @@ object Stream extends Controller
   def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     models.Stream.findById(id) map { stream =>
       apiSetStreamStatus(stream, request.user, request)
-    } getOrElse(NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
   def apiSetStreamStatus(stream: models.Stream, user: models.User, request: Request[JsValue]): Result =
@@ -274,8 +276,8 @@ object Stream extends Controller
       models.Stream.asEditable(user, stream) map { stream =>
         updateStreamStatus(stream, status.color, user) map { status =>
           Ok(Json.toJson(status))
-        } getOrElse(InternalServerError)
-      } getOrElse(Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
+        } getOrElse (InternalServerError)
+      } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
     } recoverTotal { e =>
       BadRequest(Json.toJson(ApiError("Could not process request", e)))
     }
@@ -299,8 +301,9 @@ object Stream extends Controller
         // Lookup children using query
         Future.successful(Ok(Json.toJson(models.Stream.getChildrenByQuery(stream, query, 20))))
       }
-    } getOrElse(Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
-  }}
+    } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
+  }
+  }
 
   /**
    * Get a child of this stream.
@@ -311,7 +314,7 @@ object Stream extends Controller
       child <- stringToObjectId(childId);
       childData <- models.Stream.getChildById(parent, child);
       child <- models.Stream.findById(childData.childId)
-    } yield Ok(Json.toJson(child))) getOrElse(NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    } yield Ok(Json.toJson(child))) getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
 
@@ -327,16 +330,17 @@ object Stream extends Controller
       childId <- stringToObjectId(childId);
       parent <- models.Stream.findById(parentId);
       childData <- models.Stream.getChildById(parentId, childId)
+      child <- models.Stream.findById(childId)
     } yield (
         if (canUpdateStreamStatus(parent, user).isDefined) {
           if (childData.hierarchical)
             UnprocessableEntity(Json.toJson(ApiError("Cannot remove hierarchical child.")))
           else {
-            models.Stream.removeChild(parent, childData.childId)
+            removeChild(parent, child)
             Ok("")
           }
         } else Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
-      ) getOrElse(NotFound(Json.toJson(ApiError("Stream does not exist."))))
+      ) getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
 
@@ -350,12 +354,16 @@ object Stream extends Controller
     models.Stream.findById(parentId) map { parent =>
       models.Stream.asEditable(user, parent) map { parent =>
         models.Stream.findById(childId) map { child =>
-          addChild(false, parent, child, user) map { childData =>
-            Ok("")
-          } getOrElse(InternalServerError)
-        } getOrElse(NotFound(Json.toJson(ApiError("Child stream does not exist."))))
-      } getOrElse(Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
-    } getOrElse(NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
+          models.Stream.getChildById(parent.id, child.id) map { _ =>
+            Ok(Json.toJson(child))
+          } orElse {
+            addChild(false, parent, child, user) map { childData =>
+              Created(Json.toJson(child))
+            }
+          } getOrElse (InternalServerError)
+        } getOrElse (NotFound(Json.toJson(ApiError("Child stream does not exist."))))
+      } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
+    } getOrElse (NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
   }
 
   /**
@@ -388,5 +396,12 @@ object Stream extends Controller
       StreamSupervisor.addChild(parent.uri, child)
       newChildData
     }
+
+  private def removeChild(parent: models.Stream, child: models.Stream): Option[models.Stream] = {
+    models.Stream.removeChild(parent, child.id)
+    StreamSupervisor.removeChild(parent.uri, child)
+    Some(child)
+  }
+
 }
 

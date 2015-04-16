@@ -23,19 +23,26 @@ class CollectionActor(path: String) extends Actor
   private var updated = ListBuffer[String]()
 
   def receive = {
-    case msg@StatusUpdate(uri, status) =>
+    case msg@StatusUpdate(uri, status, _) =>
       if (uri != path) { // Skip root stream updates
         updated -= uri
         uri +=: updated
         state += (uri -> status)
-        CollectionSupervisor.broadcast(path, CollectionStatusUpdate(path, uri, status))
+        CollectionSupervisor.broadcast(path, StatusUpdate(uri, status, Some(path)))
       }
 
-    case msg@ChildAddedEvent(uri, child) =>
-      if (uri == path && !state.contains(child.uri)) { // only monitor root stream child adds.
+    case msg@ChildRemovedEvent(uri, child, _) =>
+      if (uri == path) { // only monitor root stream child changes
+        updated -= child.uri
+        state -= child.uri
+        CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, child, Some(path)))
+      }
+
+    case msg@ChildAddedEvent(uri, child, _) =>
+      if (uri == path && !state.contains(child.uri)) { // only monitor root stream child changes
         child.uri +=: updated
         state += (child.uri -> child.status)
-        CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child))
+        CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child, Some(path)))
         StreamSupervisor.subscribe(self, child.uri)
       }
 

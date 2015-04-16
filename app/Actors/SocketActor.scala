@@ -7,7 +7,7 @@ import play.api.libs.json._
 /**
  * Stream status update event.
  */
-case class StatusUpdate(uri: String, status: models.Status)
+case class StatusUpdate(uri: String, status: models.Status, source: Option[String] = None)
 
 object StatusUpdate
 {
@@ -15,17 +15,16 @@ object StatusUpdate
     def writes(x: StatusUpdate): JsValue =
       Json.obj(
         "type" -> "StatusUpdate",
-        "stream" -> Json.obj(
-          "uri" -> x.uri,
-          "updated" -> x.status.created,
-          "status" -> x.status))
+        "from" -> x.uri,
+        "status" -> x.status,
+        "source" -> x.source)
   }
 }
 
 /**
  * Stream child added event.
  */
-case class ChildAddedEvent(uri: String, child: models.Stream)
+case class ChildAddedEvent(uri: String, child: models.Stream, source: Option[String] = None)
 
 object ChildAddedEvent extends
 {
@@ -34,26 +33,25 @@ object ChildAddedEvent extends
       Json.obj(
         "type" -> "ChildAdded",
         "from" -> x.uri,
-        "child" -> x.child)
+        "child" -> x.child,
+        "source" -> x.source)
   }
 }
 
 /**
- * Status update event for a collection.
+ * Stream child removed event.
  */
-case class CollectionStatusUpdate(from: String, uri: String, status: models.Status)
+case class ChildRemovedEvent(uri: String, child: models.Stream, source: Option[String] = None)
 
-object CollectionStatusUpdate
+object ChildRemovedEvent extends
 {
-  implicit val statusWrites = new Writes[CollectionStatusUpdate] {
-    def writes(x: CollectionStatusUpdate): JsValue =
+  implicit val removeChildWrites = new Writes[ChildRemovedEvent] {
+    def writes(x: ChildRemovedEvent): JsValue =
       Json.obj(
-        "type" -> "CollectionStatusUpdate",
-        "from" -> x.from,
-        "stream" -> Json.obj(
-          "uri" -> x.uri,
-          "updated" -> x.status.created,
-          "status" -> x.status))
+        "type" -> "ChildRemoved",
+        "from" -> x.uri,
+        "child" -> x.child,
+        "source" -> x.source)
   }
 }
 
@@ -86,13 +84,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   var subscriptions = Set[String]()
 
   def receive = {
-    case msg@StatusUpdate(_, _) =>
+    case msg@StatusUpdate(_, _, _) =>
       out ! Json.toJson(msg)
 
-    case msg@CollectionStatusUpdate(_, _, _) =>
+    case msg@ChildAddedEvent(_, _, _) =>
       out ! Json.toJson(msg)
 
-    case msg@ChildAddedEvent(_, _) =>
+    case msg@ChildRemovedEvent(_, _, _) =>
       out ! Json.toJson(msg)
 
     case msg: JsValue =>
