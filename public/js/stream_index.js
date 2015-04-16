@@ -25,7 +25,6 @@ var StreamIndexViewModel = function(user, results) {
 
 var updateSearchResultsForQuery = function(model, query) {
     $('.list-loading').removeClass('hidden');
-    $('.no-results').addClass('hidden');
     $.ajax({
         type: "GET",
         url: jsRoutes.controllers.Stream.index().url,
@@ -38,14 +37,7 @@ var updateSearchResultsForQuery = function(model, query) {
         }
     }).done(function(result) {
         $('.list-loading').addClass('hidden');
-        if (result) {
-            if (result.length)
-                $('.no-results').addClass('hidden');
-            else
-                $('.no-results').removeClass('hidden');
-            model.query(query);
-        }
-
+        model.query(query);
         model.results((result || []).map(models.StreamModel.fromJson));
     });
 };
@@ -74,8 +66,16 @@ $(function(){
         }
     });
 
+    model.results.subscribe(function(results) {
+        if (results.length)
+            $('.no-results').addClass('hidden');
+        else
+            $('.no-results').removeClass('hidden');
+    });
+
     // Get initial set of results
     var query = shared.getQueryString()['query'];
+    $('#stream-search-form input').val(query);
     updateSearchResultsForQuery(model, (query || ''));
 
     ko.applyBindings(model);

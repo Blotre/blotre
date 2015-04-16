@@ -120,21 +120,35 @@ var disableFavoriteButton = function() {
 var hideChildForm = function() {
     $('#create-child-name-input, #create-child-cancel-button').addClass('hidden');
     $('#create-child-name-input input').val('');
+    $('.create-child .error')
+        .addClass('hidden')
+        .text('');
 };
 
 var createChildStream = function(model, stream, user, name) {
-    $('#create-child-expand-button')
+    $('.create-child .error').addClass('hidden');
+
+    $('#create-child-expand-button span')
         .addClass('glyphicon-refresh glyphicon-refresh-animate');
 
     $('#create-child-name-input input, #create-child-cancel-button button, #create-child-expand-button')
         .prop('disabled', true);
 
     var onComplete = function() {
-        $('#create-child-expand-button')
+        $('#create-child-expand-button span')
             .removeClass('glyphicon-refresh glyphicon-refresh-animate');
 
         $('#create-child-name-input input, #create-child-cancel-button button, #create-child-expand-button')
             .prop('disabled', false);
+    };
+
+    var getError = function(e) {
+        if (e && e.details) {
+            var details = e.details;
+            if (details['obj.name'])
+                return "Name is invalid. Must be between 1 and 64 letters and numbers."
+        }
+        return "An error occurred";
     };
 
     $.ajax({
@@ -145,8 +159,11 @@ var createChildStream = function(model, stream, user, name) {
           name: name,
           uri: stream.uri() + "/" + name
         }),
-        error: function(error) {
-            console.error(error);
+        error: function(e) {
+            $('.create-child .error')
+                .removeClass('hidden')
+                .text(getError(e.responseJSON));
+
             onComplete();
         }
     }).then(function(result) {
@@ -199,14 +216,7 @@ var updateSearchResultsForQuery = function(model, query) {
         }
     }).done(function(result) {
         $('.list-loading').addClass('hidden');
-        if (result) {
-            if (result.length)
-                $('.no-results').addClass('hidden');
-            else
-                $('.no-results').removeClass('hidden');
-
-            model.query(query);
-        }
+        model.query(query);
         model.children().children((result || []).map(models.StreamModel.fromJson));
     });
 };
@@ -286,13 +296,13 @@ $(function(){
             if (hidden) {
                 target.removeClass('hidden');
             } else {
-                createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val());
+                createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val().trim());
             }
         });
 
     $('#create-child-name-input').keypress(function(e) {
         if (e.keyCode === 13) {
-            createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val());
+            createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val().trim());
         }
     });
 
@@ -335,6 +345,13 @@ $(function(){
     });
 
     model.color.subscribe(updateFavicon);
+
+    model.children.subscribe(function(results) {
+        if (results.length)
+            $('.no-results').addClass('hidden');
+        else
+            $('.no-results').removeClass('hidden');
+    });
 
     // Favorite Button
     disableFavoriteButton();

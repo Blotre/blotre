@@ -14,7 +14,7 @@ object Serializable
   }
 
   implicit val objectIdFormat: Format[ObjectId] = new Format[ObjectId] {
-    def reads(json: JsValue) = {
+    def reads(json: JsValue) =
       json match {
         case jsString: JsString => {
           if (ObjectId.isValid(jsString.value))
@@ -25,10 +25,8 @@ object Serializable
         case other =>
           JsError("Can't parse json path as an ObjectId. Json content = " + other.toString())
       }
-    }
 
-    def writes(oId: ObjectId): JsValue = {
+    def writes(oId: ObjectId): JsValue =
       JsString(oId.toString)
-    }
   }
 }

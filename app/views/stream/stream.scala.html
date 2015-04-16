@@ -87,12 +87,14 @@
                 <input class="form-control" type="text" name="name" placeholder="Name" />
             </div>
             <button id="create-child-expand-button"
-                class="btn btn-default glyphicon glyphicon-plus"
+                class="btn btn-default"
                 title="@Messages("blotre.stream.stream.createChildButtonTitle")">
+                <span class="glyphicon glyphicon-plus"></span>
             </button>
             <div class="hidden" id="create-child-cancel-button">
                 <button class="btn btn-default">@Messages("blotre.stream.stream.cancelCreateChildButton")</button>
             </div>
+            <div class="error hidden"></div>
         </div>
 
         <ul class="stream-children" id="stream-search-results">

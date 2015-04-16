@@ -117,7 +117,7 @@ object Stream
     )(Stream.apply _)
 
   implicit val streamWrites = new Writes[Stream] {
-    def writes(x: Stream): JsValue = {
+    def writes(x: Stream): JsValue =
       Json.obj(
         "id" -> x.id,
         "name" -> x.name,
@@ -126,7 +126,6 @@ object Stream
         "updated" -> x.updated,
         "status" -> x.status,
         "owner" -> x.ownerId)
-    }
   }
 
   private def db(): Query[Stream] =

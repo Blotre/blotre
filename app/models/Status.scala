@@ -38,7 +38,7 @@ object Status
   val colorPattern = """#[0-9a-fA-F]{6}""".r
 
   def apply(color: String, priority: Int, created: Date, posterId: ObjectId): Status =
-    new Status(color, priority, created, posterId)
+    new Status(color.toLowerCase, priority, created, posterId)
 
   def defaultStatus(poster: ObjectId): Status =
     apply("#aaaaaa", 0, new Date(), poster)
@@ -51,13 +51,11 @@ object Status
     )(Status.apply _)
 
   implicit val statusWrites = new Writes[Status] {
-    def writes(x: Status): JsValue = {
+    def writes(x: Status): JsValue =
       Json.obj(
         "color" -> x.color,
         "priority" -> x.priority,
         "created" -> x.created,
-        "poster" -> x.posterId
-      )
-    }
+        "poster" -> x.posterId)
   }
 }
