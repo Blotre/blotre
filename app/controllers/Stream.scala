@@ -166,7 +166,7 @@ object Stream extends Controller
 
   private def createDescendant(parent: models.Stream, name: String, user: models.User): Option[models.Stream] = {
     models.Stream.createDescendant(parent.uri, name, user) map { newChild =>
-      addChild(parent, newChild, user)
+      addChild(true, parent, newChild, user)
       newChild
     }
   }
@@ -343,14 +343,14 @@ object Stream extends Controller
   /**
    * Link an existing stream as a child of a stream.
    *
-   * Noop if the child already exists
+   * Noop if the child already exists.
    */
-  def apiCreateChild(parentId: String, childId: String) = AuthorizedAction{ implicit request =>
+  def apiCreateChild(parentId: String, childId: String) = AuthorizedAction { implicit request =>
     val user = Application.getLocalUser(request)
     models.Stream.findById(parentId) map { parent =>
       models.Stream.asEditable(user, parent) map { parent =>
         models.Stream.findById(childId) map { child =>
-          addChild(parent, child, user) map { childData =>
+          addChild(false, parent, child, user) map { childData =>
             Ok("")
           } getOrElse(InternalServerError)
         } getOrElse(NotFound(Json.toJson(ApiError("Child stream does not exist."))))
@@ -383,8 +383,8 @@ object Stream extends Controller
       s.status
     }
 
-  private def addChild(parent: models.Stream, child: models.Stream, user: models.User): Option[models.ChildStream] =
-    models.Stream.addChild(parent, child.id, user) map { newChildData =>
+  private def addChild(heirarchical: Boolean, parent: models.Stream, child: models.Stream, user: models.User): Option[models.ChildStream] =
+    models.Stream.addChild(heirarchical, parent, child.id, user) map { newChildData =>
       StreamSupervisor.addChild(parent.uri, child)
       newChildData
     }

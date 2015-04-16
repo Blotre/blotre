@@ -136,7 +136,7 @@ object Stream
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
 
   private def normalizeUri(uri: String) =
-    uri.toLowerCase
+    if (uri == null) "" else uri.toLowerCase
 
   /**
    * Given a parent Stream and a child name, get the URI of the child.
@@ -240,14 +240,14 @@ object Stream
   /**
    * Registers a new child for a given stream.
    */
-   def addChild(parent: Stream, child: Stream, user: User): Option[ChildStream] =
+   def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] =
     asEditable(user, parent) flatMap { parent =>
-      save(ChildStream(null, true, parent.id, child.id, child.name, child.uri, new Date()))
+      save(ChildStream(null, hierarchical, parent.id, child.id, child.name, child.uri, new Date()))
     }
 
-  def addChild(parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
+  def addChild(hierarchical: Boolean, parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
     findById(childId) flatMap { child =>
-      addChild(parent, child, user)
+      addChild(hierarchical, parent, child, user)
     }
 
   /**

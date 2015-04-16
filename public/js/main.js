@@ -249,6 +249,12 @@ $(function(){
             }
         });
 
+    $('#create-child-name-input').keypress(function(e) {
+        if (e.keyCode === 13) {
+            createChildStream(model, model.stream(), model.user(), $('#create-child-name-input input').val());
+        }
+    });
+
     $('#create-child-cancel-button button')
         .on('click', hideChildForm);
 
