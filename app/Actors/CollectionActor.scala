@@ -22,28 +22,41 @@ class CollectionActor(path: String) extends Actor
 
   private var updated = ListBuffer[String]()
 
+  private def updateChild(uri: String, status: models.Status): Unit = {
+    updated -= uri
+    uri +=: updated
+    state += (uri -> status)
+    CollectionSupervisor.broadcast(path, StatusUpdate(uri, status, Some(path)))
+  }
+
+  private def addChild(child: models.Stream): Unit = {
+    child.uri +=: updated
+    state += (child.uri -> child.status)
+    CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child, Some(path)))
+    StreamSupervisor.subscribe(self, child.uri)
+  }
+
+  private def removeChild(child: models.Stream): Unit = {
+    updated -= child.uri
+    state -= child.uri
+    StreamSupervisor.unsubscribe(self, child.uri)
+    CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, child, Some(path)))
+  }
+
   def receive = {
     case msg@StatusUpdate(uri, status, _) =>
       if (uri != path) { // Skip root stream updates
-        updated -= uri
-        uri +=: updated
-        state += (uri -> status)
-        CollectionSupervisor.broadcast(path, StatusUpdate(uri, status, Some(path)))
+        updateChild(uri, status)
       }
 
     case msg@ChildRemovedEvent(uri, child, _) =>
-      if (uri == path) { // only monitor root stream child changes
-        updated -= child.uri
-        state -= child.uri
-        CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, child, Some(path)))
+      if (uri == path) { // Only monitor root stream child changes
+        removeChild(child)
       }
 
     case msg@ChildAddedEvent(uri, child, _) =>
-      if (uri == path && !state.contains(child.uri)) { // only monitor root stream child changes
-        child.uri +=: updated
-        state += (child.uri -> child.status)
-        CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child, Some(path)))
-        StreamSupervisor.subscribe(self, child.uri)
+      if (uri == path && !state.contains(child.uri)) { // Only monitor root stream child changes
+        addChild(child)
       }
 
     case GetCollectionStatus(size, offset) =>
