@@ -329,7 +329,7 @@ $(function(){
     updateSearchResultsForQuery(model, (query || ''));
 
     model.manager.subscribeCollection(model.stream().uri(), {
-        'StatusUpdate': function(msg) {
+        'StatusUpdated': function(msg) {
             var existingChild = model.removeChild(msg.from);
             if (existingChild.length) {
                 existingChild[0].status(models.StatusModel.fromJson(msg.status));
@@ -340,7 +340,7 @@ $(function(){
             model.addChild(models.StreamModel.fromJson(msg.child));
         },
         'ChildRemoved': function(msg) {
-            model.removeChild(msg.child.uri);
+            model.removeChild(msg.child);
         }
     });
 
@@ -380,7 +380,7 @@ $(function(){
     });
 
     model.manager.subscribe(model.stream().uri(), {
-        'StatusUpdate': function(msg) {
+        'StatusUpdated': function(msg) {
             if (msg.from === model.stream().uri()) {
                 model.setColor(msg.status.color);
                 model.stream().updated(new Date(msg.status.created));

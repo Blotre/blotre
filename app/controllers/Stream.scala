@@ -119,7 +119,7 @@ object Stream extends Controller {
 
   def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request =>
     models.Stream.findByUri(uri) map { stream =>
-      apiSetStreamStatus(stream, request.user, request)
+      apiSetStreamStatus(stream, request.user, request.body)
     } getOrElse (NotFound)
   }
 
@@ -224,24 +224,27 @@ object Stream extends Controller {
   /**
    * Create a new stream.
    *
-   * Api cannot create root streams.
+   * Cannot create root streams.
    */
   def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     (Json.fromJson[ApiCreateStreamData](request.body)).fold(
       valid = value => {
-        apiCreateStream(request, value.name, value.uri, value.status, request.user)
+        apiCreateStream(value.name, value.uri, value.status, request.user)
       },
       invalid = e =>
         BadRequest(Json.toJson(ApiError("Could not process request", e))))
   }
 
-  def apiCreateStream(request: Request[JsValue], name: String, uri: String, status: Option[ApiSetStatusData], user: models.User): Result =
+  def apiCreateStream(name: String, uri: String, status: Option[ApiSetStatusData], user: models.User): Result = {
+    if (!name.matches(models.Stream.streamNamePattern.toString))
+      return UnprocessableEntity(Json.toJson(ApiError("Stream name is invalid.")))
+
     models.Stream.findByUri(uri) map { existing =>
-      UnprocessableEntity(Json.toJson(ApiError("Stream already exists")))
+      UnprocessableEntity(Json.toJson(ApiError("Stream already exists.")))
     } getOrElse {
       getParentFromPath(uri) map { case (parent, childName) =>
         if (childName != name) {
-          UnprocessableEntity(Json.toJson(ApiError("Stream name and uri do not match")))
+          UnprocessableEntity(Json.toJson(ApiError("Stream name and uri do not match.")))
         } else {
           models.Stream.asEditable(user, parent) map { parent =>
             createDescendant(parent, name, user) map { newStream =>
@@ -252,6 +255,28 @@ object Stream extends Controller {
         }
       } getOrElse (NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
     }
+  }
+
+  /**
+   * Delete an existing stream.
+   *
+   * Cannot delete root streams.
+   */
+  def apiDeleteStream(id: String): Action[Unit] = AuthorizedAction(parse.empty) { implicit request =>
+    models.Stream.findById(id) map { stream =>
+      apiDeleteStream(stream, request.user)
+    } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
+  }
+
+  def apiDeleteStream(stream: models.Stream, user: models.User): Result =
+    models.Stream.asEditable(user, stream) map { ownedStream =>
+      if (ownedStream.name == ownedStream.uri) {
+        UnprocessableEntity(Json.toJson(ApiError("Cannot delete root streams.")))
+      } else {
+        deleteStream(stream)
+        Ok("")
+      }
+    } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to delete stream."))))
 
   /**
    * Lookup that status of a stream.
@@ -267,19 +292,19 @@ object Stream extends Controller {
    */
   def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     models.Stream.findById(id) map { stream =>
-      apiSetStreamStatus(stream, request.user, request)
+      apiSetStreamStatus(stream, request.user, request.body)
     } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
-  def apiSetStreamStatus(stream: models.Stream, user: models.User, request: Request[JsValue]): Result =
-    Json.fromJson[ApiSetStatusData](request.body) map { status =>
+  def apiSetStreamStatus(stream: models.Stream, user: models.User, body: JsValue): Result =
+    Json.fromJson[ApiSetStatusData](body) map { status =>
       models.Stream.asEditable(user, stream) map { stream =>
         updateStreamStatus(stream, status.color, user) map { status =>
           Ok(Json.toJson(status))
         } getOrElse (InternalServerError)
       } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
     } recoverTotal { e =>
-      BadRequest(Json.toJson(ApiError("Could not process request", e)))
+      BadRequest(Json.toJson(ApiError("Could not process request.", e)))
     }
 
   /**
@@ -399,9 +424,20 @@ object Stream extends Controller {
 
   private def removeChild(parent: models.Stream, child: models.Stream): Option[models.Stream] = {
     models.Stream.removeChild(parent, child.id)
-    StreamSupervisor.removeChild(parent.uri, child)
+    StreamSupervisor.removeChild(parent.uri, child.uri)
     Some(child)
   }
 
+  private def removeChild(childData: models.ChildStream): Unit = {
+    models.Stream.removeChild(childData)
+    StreamSupervisor.removeChild(childData.parentUri, childData.childUri)
+  }
+
+  private def deleteStream(stream: models.Stream): Unit = {
+    models.Stream.getChildrenData(stream).foreach(removeChild)
+    models.Stream.getRelations(stream).foreach(removeChild)
+    models.Stream.deleteStream(stream)
+    StreamSupervisor.deleteStream(stream.uri)
+  }
 }
 

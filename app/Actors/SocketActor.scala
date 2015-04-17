@@ -5,18 +5,50 @@ import models.User
 import play.api.libs.json._
 
 /**
+ * Current stream status response.
+ */
+case class CurrentStatusResponse(uri: String, status: models.Status)
+
+object CurrentStatusResponse
+{
+  implicit val statusWrites = new Writes[CurrentStatusResponse] {
+    def writes(x: CurrentStatusResponse): JsValue =
+      Json.obj(
+        "type" -> "StreamStatus",
+        "from" -> x.uri,
+        "status" -> x.status)
+  }
+}
+
+/**
  * Stream status update event.
  */
-case class StatusUpdate(uri: String, status: models.Status, source: Option[String] = None)
+case class StatusUpdatedEvent(uri: String, status: models.Status, source: Option[String] = None)
 
-object StatusUpdate
+object StatusUpdatedEvent
 {
-  implicit val statusWrites = new Writes[StatusUpdate] {
-    def writes(x: StatusUpdate): JsValue =
+  implicit val statusWrites = new Writes[StatusUpdatedEvent] {
+    def writes(x: StatusUpdatedEvent): JsValue =
       Json.obj(
-        "type" -> "StatusUpdate",
+        "type" -> "StatusUpdated",
         "from" -> x.uri,
         "status" -> x.status,
+        "source" -> x.source)
+  }
+}
+
+/**
+ * Stream deleted event
+ */
+case class StreamDeletedEvent(uri: String, source: Option[String] = None)
+
+object StreamDeletedEvent extends
+{
+  implicit val addChildWrites = new Writes[StreamDeletedEvent] {
+    def writes(x: StreamDeletedEvent): JsValue =
+      Json.obj(
+        "type" -> "StreamDeleted",
+        "from" -> x.uri,
         "source" -> x.source)
   }
 }
@@ -41,7 +73,7 @@ object ChildAddedEvent extends
 /**
  * Stream child removed event.
  */
-case class ChildRemovedEvent(uri: String, child: models.Stream, source: Option[String] = None)
+case class ChildRemovedEvent(uri: String, child: String, source: Option[String] = None)
 
 object ChildRemovedEvent extends
 {
@@ -86,13 +118,16 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   var collectionSubscriptions = Set[String]()
 
   def receive = {
-    case msg@StatusUpdate(_, _, _) =>
+    case msg@StatusUpdatedEvent(_, _, _) =>
       out ! Json.toJson(msg)
 
     case msg@ChildAddedEvent(_, _, _) =>
       out ! Json.toJson(msg)
 
     case msg@ChildRemovedEvent(_, _, _) =>
+      out ! Json.toJson(msg)
+
+    case msg@StreamDeletedEvent(uri, _) =>
       out ! Json.toJson(msg)
 
     case msg: JsValue =>
@@ -161,7 +196,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
 
   private def getStatus(uri: String)(implicit correlation: Int): Unit =
     models.Stream.findByUri(uri) map { stream =>
-      out ! Json.toJson(StatusUpdate(uri, stream.status))
+      out ! Json.toJson(CurrentStatusResponse(uri, stream.status))
     } getOrElse {
       error("No such stream.")
     }
@@ -170,7 +205,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
    * Get the status of a stream.
    */
   private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
-    out ! Json.toJson(StatusUpdate(stream.uri, stream.status))
+    out ! Json.toJson(StatusUpdatedEvent(stream.uri, stream.status))
 
   /**
    * Subscribe to a stream's updates.

@@ -18,7 +18,7 @@ var AppViewModel = function(user, page) {
     self.manager = new stream_manager.StreamManager();
 
     self.manager.subscribe(user.userName(), {
-        'StatusUpdate': function(msg) {
+        'StatusUpdated': function(msg) {
             if (msg.from === user.userName()) {
                 self.user().status(new models.StatusModel(msg.status.color));
             }

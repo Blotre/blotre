@@ -23,30 +23,14 @@ case class ChildStream(
   id: ObjectId,
   hierarchical: Boolean,
   parentId: ObjectId,
+  parentName: String,
+  parentUri: String,
   childId: ObjectId,
   childName: String,
   childUri: String,
   created: Date)
 {
-  def this() = this(null, false, null, null, "", "", new Date(0))
-}
-
-object ChildStream
-{
-  import models.Serializable._
-
-  implicit val streamWrites = new Writes[ChildStream] {
-    def writes(x: ChildStream): JsValue = {
-      Json.obj(
-        "id" -> x.id,
-        "parentId" -> x.parentId,
-        "childId" -> x.childId,
-        "childName" -> x.childName,
-        "childUri" -> x.childUri,
-        "created" -> x.created
-      )
-    }
-  }
+  def this() = this(null, false, null, null, null, null, "", "", new Date(0))
 }
 
 /**
@@ -241,7 +225,7 @@ object Stream
    */
    def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] =
     asEditable(user, parent) flatMap { parent =>
-      save(ChildStream(null, hierarchical, parent.id, child.id, child.name, child.uri, new Date()))
+      save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
     }
 
   def addChild(hierarchical: Boolean, parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
@@ -257,6 +241,11 @@ object Stream
       childDb()
         .filter("parentId =", parent.id)
         .filter("childId =", child))
+
+  def removeChild(childData: ChildStream): Unit =
+    MorphiaObject.datastore.delete(
+      childDb()
+        .filter("id =", childData.id))
 
   /**
    *
@@ -278,6 +267,37 @@ object Stream
     findByUri(uri) flatMap { current =>
       updateStreamStatus(current, color, poster)
     }
+
+  /**
+   * Delete an existing stream.
+   *
+   * Caller should also clean up relationships before delete.
+   */
+  def deleteStream(stream: Stream): Unit =
+    MorphiaObject.datastore.delete(
+      db()
+        .filter("id =", stream.id))
+
+  /**
+   * Remove all relationships that a stream appears in
+   */
+  private def deleteStreamRelationships(stream: Stream): Unit = {
+    val q = childDb()
+    q.or(
+        q.criteria("parentId").equal(stream.id),
+        q.criteria("childId").equal(stream.id))
+
+    MorphiaObject.datastore.delete(q)
+  }
+
+  /**
+   * Get data about all relationships a child is in.
+   */
+  def getRelations(child: Stream) =
+    childDb()
+      .filter("childId =", child.id)
+      .asList()
+      .asScala.toList
 
   /**
    * Get data about the children of a given stream.

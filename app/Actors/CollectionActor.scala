@@ -22,37 +22,46 @@ class CollectionActor(path: String) extends Actor
 
   private var updated = ListBuffer[String]()
 
-  private def updateChild(uri: String, status: models.Status): Unit = {
-    updated -= uri
-    uri +=: updated
-    state += (uri -> status)
-    CollectionSupervisor.broadcast(path, StatusUpdate(uri, status, Some(path)))
-  }
+  private def hasChild(childUri: String) =
+    updated.contains(childUri)
 
-  private def addChild(child: models.Stream): Unit = {
-    child.uri +=: updated
-    state += (child.uri -> child.status)
-    CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child, Some(path)))
-    StreamSupervisor.subscribe(self, child.uri)
-  }
+  private def updateChild(uri: String, status: models.Status): Unit =
+    if (hasChild(uri)) {
+      updated -= uri
+      uri +=: updated
+      state += (uri -> status)
+      CollectionSupervisor.broadcast(path, StatusUpdatedEvent(uri, status, Some(path)))
+    }
 
-  private def removeChild(child: models.Stream): Unit = {
-    updated -= child.uri
-    state -= child.uri
-    StreamSupervisor.unsubscribe(self, child.uri)
-    CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, child, Some(path)))
-  }
+  private def addChild(child: models.Stream): Unit =
+    if (!hasChild(child.uri)) {
+      child.uri +=: updated
+      state += (child.uri -> child.status)
+      CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child, Some(path)))
+      StreamSupervisor.subscribe(self, child.uri)
+    }
+
+  private def removeChild(childUri: String): Unit =
+    if (hasChild(childUri)) {
+      updated -= childUri
+      state -= childUri
+      StreamSupervisor.unsubscribe(self, childUri)
+      CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, childUri, Some(path)))
+    }
 
   def receive = {
-    case msg@StatusUpdate(uri, status, _) =>
+    case msg@StatusUpdatedEvent(uri, status, _) =>
       if (uri != path) { // Skip root stream updates
         updateChild(uri, status)
       }
 
-    case msg@ChildRemovedEvent(uri, child, _) =>
+    case msg@ChildRemovedEvent(uri, childUri, _) =>
       if (uri == path) { // Only monitor root stream child changes
-        removeChild(child)
+        removeChild(childUri)
       }
+
+    case msg@StreamDeletedEvent(uri, _) =>
+      removeChild(uri)
 
     case msg@ChildAddedEvent(uri, child, _) =>
       if (uri == path && !state.contains(child.uri)) { // Only monitor root stream child changes
