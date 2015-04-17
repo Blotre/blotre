@@ -71,6 +71,23 @@ object ChildAddedEvent extends
 }
 
 /**
+ * Stream added as the child of a stream.
+ */
+case class ParentAddedEvent(uri: String, parent: models.Stream, source: Option[String] = None)
+
+object ParentAddedEvent extends
+{
+  implicit val parentAddedEventWrites = new Writes[ParentAddedEvent] {
+    def writes(x: ParentAddedEvent): JsValue =
+      Json.obj(
+        "type" -> "ParentAdded",
+        "from" -> x.uri,
+        "parent" -> x.parent,
+        "source" -> x.source)
+  }
+}
+
+/**
  * Stream child removed event.
  */
 case class ChildRemovedEvent(uri: String, child: String, source: Option[String] = None)
@@ -83,6 +100,23 @@ object ChildRemovedEvent extends
         "type" -> "ChildRemoved",
         "from" -> x.uri,
         "child" -> x.child,
+        "source" -> x.source)
+  }
+}
+
+/**
+ * Stream removed as the child of a stream.
+ */
+case class ParentRemovedEvent(uri: String, parent: String, source: Option[String] = None)
+
+object ParentRemovedEvent extends
+{
+  implicit val parentAddedEventWrites = new Writes[ParentRemovedEvent] {
+    def writes(x: ParentRemovedEvent): JsValue =
+      Json.obj(
+        "type" -> "ParentRemoved",
+        "from" -> x.uri,
+        "parent" -> x.parent,
         "source" -> x.source)
   }
 }
@@ -128,6 +162,12 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       out ! Json.toJson(msg)
 
     case msg@StreamDeletedEvent(uri, _) =>
+      out ! Json.toJson(msg)
+
+    case msg@ParentAddedEvent(_, _, _) =>
+      out ! Json.toJson(msg)
+
+    case msg@ParentRemovedEvent(_, _, _) =>
       out ! Json.toJson(msg)
 
     case msg: JsValue =>

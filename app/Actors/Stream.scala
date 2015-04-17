@@ -43,15 +43,23 @@ object StreamSupervisor
       mediator ! DistributedPubSubMediator.Publish(topic, StatusUpdatedEvent(path, status))
   }
 
-  def addChild(path: String, child: models.Stream) =
-    getStreamTopic(path) map { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, ChildAddedEvent(path, child))
+  def addChild(parent: models.Stream, child: models.Stream) = {
+    getStreamTopic(parent.uri) map { parentTopic =>
+      mediator ! DistributedPubSubMediator.Publish(parentTopic, ChildAddedEvent(parent.uri, child))
+    }
+    getStreamTopic(child.uri) map { childTopic =>
+      mediator ! DistributedPubSubMediator.Publish(childTopic, ParentAddedEvent(child.uri, parent))
+    }
   }
 
-  def removeChild(path: String, childUri: String) =
+  def removeChild(path: String, childUri: String) = {
     getStreamTopic(path) map { topic =>
       mediator ! DistributedPubSubMediator.Publish(topic, ChildRemovedEvent(path, childUri))
     }
+    getStreamTopic(childUri) map { childTopic =>
+      mediator ! DistributedPubSubMediator.Publish(childTopic, ParentRemovedEvent(childUri, path))
+    }
+  }
 
   def deleteStream(path: String) =
     getStreamTopic(path) map { topic =>

@@ -104,10 +104,11 @@ var enableFavoriteButton = function(existing) {
         .prop('disabled', false)
         .prop('title', existing ? "Remove Favorite" : "Add Favorite");
 
-    if (existing) {
-        $('.stream-favorite')
-            .addClass('active');
-    }
+    if (existing)
+        $('.stream-favorite').addClass('active');
+    else
+        $('.stream-favorite').removeClass('active');
+
 };
 
 var disableFavoriteButton = function() {
@@ -346,7 +347,7 @@ $(function(){
 
     model.color.subscribe(updateFavicon);
 
-    model.children.subscribe(function(results) {
+    model.children().children.subscribe(function(results) {
         if (results.length)
             $('.no-results').addClass('hidden');
         else
@@ -386,7 +387,15 @@ $(function(){
                 model.stream().updated(new Date(msg.status.created));
                 statusPicker.spectrum("set", msg.status.color);
             }
-        }
+        },
+        'ParentAdded': function(msg) {
+            if (msg.from === model.stream().uri() && msg.parent.uri === model.user().userName())
+                model.favorite(FavoriteStatus.Yes);
+        },
+        'ParentRemoved': function(msg) {
+            if (msg.from === model.stream().uri() && msg.parent === model.user().userName())
+                model.favorite(FavoriteStatus.No);
+        },
     });
 
     ko.applyBindings(model);

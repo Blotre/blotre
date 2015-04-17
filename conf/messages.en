@@ -177,9 +177,11 @@ blotre.account.link.description=Linking allows you to login using multiple provi
 # Stream
 blotre.stream.index.title=Blot're
 blotre.stream.index.pageTitle=Find Color
+blotre.stream.index.noResults=No streams found.
 
 blotre.stream.stream.createChildButtonTitle=Create child
 blotre.stream.stream.cancelCreateChildButton=Cancel
+blotre.stream.stream.noChildren=No children found.
 
 blotre.stream.tryCreate.title=Create
 blotre.stream.tryCreate.header=Not Found
