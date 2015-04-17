@@ -100,17 +100,24 @@
 
             @content
 
-            <hr>
-
             <footer>
                 <nav>
+                    <div class="row">
+                        <div class="col-xs-4 col-xs-offset-2">
+                            <a href="https://github.com/mattbierner/blotre">Source</a>
+                        </div>
+                        <div class="col-xs-4">
+                            <a href="https://github.com/mattbierner/blotre/wiki">Developer</a>
+                        </div>
+                    </div>
 
                 </nav>
-                <p>
+                <p id="copyright">
                     &copy; @(new Date().format("yyyy")) by <a href="http://mattbierner.com">Matt Bierner</a>
                 </p>
             </footer>
         </div>
+
 
         @helper.javascriptRouter("jsRoutes")(
             routes.javascript.Stream.getStream,
