@@ -19,7 +19,7 @@ var StreamIndexViewModel = function(user, results) {
 
     self.user = ko.observable(user);
     self.results = ko.observableArray(results);
-    self.query = ko.observableArray('');
+    self.query = ko.observable('');
 };
 
 
@@ -34,6 +34,7 @@ var updateSearchResultsForQuery = function(model, query) {
         },
         error: function() {
             $('.list-loading').addClass('hidden');
+            // todo: display error msg
         }
     }).done(function(result) {
         $('.list-loading').addClass('hidden');
@@ -47,6 +48,13 @@ var updateSearchResults = function(model) {
     return updateSearchResultsForQuery(model, query);
 };
 
+var updateFromQueryString = function(model) {
+    var qs = shared.getQueryString()['query'];
+    var query = (qs ? qs[0] : '');
+    $('#stream-search-form input').val(query);
+    updateSearchResultsForQuery(model, query);
+};
+
 /**
 */
 $(function(){
@@ -54,7 +62,7 @@ $(function(){
         application_model.initialUser(),
         []);
 
-    $('#stream-search-form button').on('click', function(e) {
+    $('#stream-search-form button').click(function(e) {
         e.preventDefault();
         updateSearchResults(model);
     });
@@ -73,10 +81,20 @@ $(function(){
             $('.no-results').removeClass('hidden');
     });
 
-    // Get initial set of results
-    var query = shared.getQueryString()['query'];
-    $('#stream-search-form input').val(query);
-    updateSearchResultsForQuery(model, (query || ''));
+    model.query.subscribe(function(query) {
+        var qs = shared.getQueryString()['query'];
+        if (qs && qs[0] === query)
+            return;
+        var path = window.location.origin + window.location.pathname;
+        var url = (query ? path + "?query=" + encodeURIComponent(query) : path);
+        window.history.pushState({path: url}, '', url)
+    });
+
+    window.onpopstate = function(e) {
+      updateFromQueryString(model);
+    };
+
+    updateFromQueryString(model);
 
     ko.applyBindings(model);
 });
