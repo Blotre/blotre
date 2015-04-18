@@ -42,6 +42,9 @@
                 <h2 data-bind="text: name"></h2>
                 <span class="stream-uri" data-bind="text: uri"></span>
             </a>
+            <div class="child-controls">
+                <button><span class="glyphicon glyphicon-remove"></span></button>
+            </div>
         </li>
     </script>
 
@@ -53,9 +56,11 @@
     <div class="stream-header">
         <div class="stream-data">
             <span class="color-label" data-bind="text: color"></span>
-            <a href="@routes.Stream.getStream(stream.uri)"><h1 class="stream-title">@stream.name</h1></a>
-            <div class="stream-updated"
-                 data-bind="text: stream().displayUpdated">@stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")</div>
+            <h1 class="stream-title">
+                <a data-bind="text: stream().name" href="@routes.Stream.getStream(stream.uri)">@stream.name</a>
+            </h1>
+            <span class="stream-updated"
+                 data-bind="text: stream().displayUpdated">@stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")</span>
         </div>
 
         <nav class="stream-controls @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">

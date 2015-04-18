@@ -58,7 +58,7 @@ object Stream extends Controller {
    * json: Returns json of the stream.
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
-    val pathAndExt = uri.split('.')
+    val pathAndExt = models.Stream.normalizeUri(uri).split('.')
     val path = pathAndExt(0)
     if (pathAndExt.length == 2 && pathAndExt(1) == "png")
       renderStreamStatusPng(path, request)
@@ -85,8 +85,7 @@ object Stream extends Controller {
   def renderStream(uri: String, request: Request[AnyContent]) =
     models.Stream.findByUri(uri) match {
       case Some(s) =>
-        val map = uriMap(s.uri)
-        Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = map))
+        Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri)))
 
       case _ =>
         tryCreateDecendant(uri, request)
@@ -97,13 +96,12 @@ object Stream extends Controller {
    */
   def renderStreamJson(uri: String, request: Request[AnyContent]): Result =
     models.Stream.findByUri(uri)
-      .map(s =>
-      renderStreamJson(s, request))
+      .map(renderStreamJson)
       .getOrElse(NotFound)
 
 
-  def renderStreamJson(stream: models.Stream, request: Request[AnyContent]): Result =
-    Ok(Json.toJson(stream).as[JsObject])
+  def renderStreamJson(stream: models.Stream): Result =
+    Ok(Json.toJson(stream))
 
   /**
    * Render a stream's current status as a 1x1 PNG image.
@@ -149,8 +147,7 @@ object Stream extends Controller {
     render {
       case Accepts.Json() =>
         createDescendant(uri, user)
-          .map(s =>
-          renderStreamJson(s, request))
+          .map(renderStreamJson)
           .getOrElse(BadRequest)
 
       case Accepts.Html() =>

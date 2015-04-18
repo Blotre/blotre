@@ -118,8 +118,8 @@ object Stream
   private def childDb(): Query[ChildStream] =
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
 
-  private def normalizeUri(uri: String) =
-    if (uri == null) "" else uri.toLowerCase
+  def normalizeUri(uri: String) =
+    if (uri == null) "" else uri.toLowerCase.stripSuffix("/")
 
   /**
    * Given a parent Stream and a child name, get the URI of the child.

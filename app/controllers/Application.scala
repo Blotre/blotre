@@ -57,6 +57,13 @@ object Application extends Controller
     getTokenUser(request) orElse (Option(Application.getLocalUser(request)))
 
   /**
+   * Handle trailing slash paths.
+   */
+  def untrail(path: String) = Action {
+    MovedPermanently("/" + path)
+  }
+
+  /**
    * Index page.
    *
    * Renders hero page for non logged in users or the users's root stream for logged in users.

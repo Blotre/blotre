@@ -39,6 +39,7 @@
 
 
 /**
+    Stream Header
 */
 .stream-header {
     text-align: center;
@@ -50,24 +51,28 @@
     text-transform: lowercase;
 }
 
-.stream-header .color-label {
-    text-align: center;
-}
-
 .stream-header .stream-data {
     padding-bottom: 1.6rem;
+    text-align: center;
 }
 
 .stream-header .stream-title {
-    color: #444;
-    text-align: center;
-    display: inline-block;
-    border-bottom: 2px solid #444;
-    margin-bottom: 0.15em;
+    margin-bottom: 0.25em;
     word-break: break-all;
 }
 
+.stream-header .stream-title a {
+    color: inherit;
+    border-bottom: 2px solid #444;
+}
 
+.stream-header .stream-title a:hover {
+    text-decoration: none;
+}
+
+/**
+    Stream body
+*/
 .stream-body {
     max-width: 600px;
     margin: 0 auto;
@@ -78,6 +83,7 @@
 */
 .stream-controls {
     padding-bottom: 4rem;
+    display: inline-block;
 }
 
 .stream-controls > * {
