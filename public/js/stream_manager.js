@@ -3,6 +3,11 @@ function(models)
 {
 "use-strict";
 
+var socketPath = function() {
+    var secure = window.location.protocol === 'https:';
+    return (secure ? 'wss' : 'ws') + '://' + window.location.host + '/v0/ws'
+};
+
 /**
 */
 var StreamManager = function() {
@@ -22,7 +27,7 @@ var StreamManager = function() {
         });
     };
 
-    self.socket = new WebSocket("ws://localhost:9000/v0/ws");
+    self.socket = new WebSocket(socketPath());
     self.ready = false;
     self.socket.onopen = function(e) {
         var targetStreams = Object.keys(self.streams);
