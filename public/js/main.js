@@ -18,6 +18,15 @@ var FavoriteStatus = Object.freeze({
     Hierarchical: 3
 });
 
+var isHierarchical = function(parentName, uri) {
+    if (parentName === uri)
+        return true;
+
+    var index = uri.lastIndexOf('/');
+    return (index >= 0 && parentName === uri.slice(0, index));
+};
+
+
 /**
 */
 var AppViewModel = function(user, stream) {
@@ -49,15 +58,24 @@ var AppViewModel = function(user, stream) {
              return x.uri() === childUri;
          });
     };
+
+    self.removeChildButtonClick = function(child, event) {
+        var url = isHierarchical(self.stream().uri(), child.uri()) ?
+            jsRoutes.controllers.Stream.apiDeleteStream(child.id()).url :
+            jsRoutes.controllers.Stream.apiDeleteChild(self.stream().id(), child.id()).url;
+
+        $.ajax({
+            type: "DELETE",
+            url: url,
+            error: function(e) {
+
+            }
+        }).then(function() {
+           self.removeChild(child.uri());
+        });
+    };
 };
 
-var isHierarchical = function(parentName, uri) {
-    if (parentName === uri)
-        return true;
-
-    var index = uri.lastIndexOf('/');
-    return (index >= 0 && parentName === uri.slice(0, index));
-};
 
 AppViewModel.prototype.checkFavorite = function() {
     var self = this;

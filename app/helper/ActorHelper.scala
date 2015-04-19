@@ -8,5 +8,5 @@ object ActorHelper
    * so there may be collisions between names.
    */
   def normalizeName(name: String) =
-    name.replaceAll("""[^a-zA-Z0-9\-_$]""", "+")
+    if (name != null) name.replaceAll("""[^a-zA-Z0-9\-_$]""", "+") else ""
 }
