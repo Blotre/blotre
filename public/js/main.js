@@ -59,20 +59,42 @@ var AppViewModel = function(user, stream) {
          });
     };
 
-    self.removeChildButtonClick = function(child, event) {
-        var url = isHierarchical(self.stream().uri(), child.uri()) ?
-            jsRoutes.controllers.Stream.apiDeleteStream(child.id()).url :
-            jsRoutes.controllers.Stream.apiDeleteChild(self.stream().id(), child.id()).url;
-
+    self.deleteStream = function(child) {
         $.ajax({
             type: "DELETE",
-            url: url,
+            url: jsRoutes.controllers.Stream.apiDeleteStream(child.id()).url,
             error: function(e) {
 
             }
         }).then(function() {
            self.removeChild(child.uri());
         });
+    };
+
+    self.removeChildButtonClick = function(child, event) {
+        if (isHierarchical(self.stream().uri(), child.uri())) {
+            bootbox.confirm({
+                title: "Are you sure?",
+                animate: false,
+                closeButton: false,
+                message: "This will permanently delete this stream and all of its children.",
+                callback: function(result) {
+                    if (result) {
+                        self.deleteStream(child);
+                    }
+                }
+            });
+        } else {
+             $.ajax({
+                type: "DELETE",
+                url: jsRoutes.controllers.Stream.apiDeleteChild(self.stream().id(), child.id()).url,
+                error: function(e) {
+
+                }
+            }).then(function() {
+               self.removeChild(child.uri());
+            });
+        }
     };
 };
 
@@ -162,11 +184,16 @@ var createChildStream = function(model, stream, user, name) {
     };
 
     var getError = function(e) {
-        if (e && e.details) {
-            var details = e.details;
-            if (details['obj.name'])
-                return "Name is invalid. Must be between 1 and 64 letters and numbers."
+        if (e) {
+            if (e.details) {
+                if (e.details['obj.name']) {
+                    return "Name is invalid. Must be between 1 and 64 letters and numbers.";
+                }
+            }
+            if (e.error)
+                return e.error;
         }
+
         return "An error occurred";
     };
 

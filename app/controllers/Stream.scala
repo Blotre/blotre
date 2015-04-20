@@ -431,7 +431,12 @@ object Stream extends Controller {
   }
 
   private def deleteStream(stream: models.Stream): Unit = {
-    models.Stream.getChildrenData(stream).foreach(removeChild)
+    models.Stream.getChildrenData(stream) foreach { childData =>
+      removeChild(childData)
+      if (childData.hierarchical) {
+        models.Stream.findById(childData.childId).map(deleteStream)
+      }
+    }
     models.Stream.getRelations(stream).foreach(removeChild)
     models.Stream.deleteStream(stream)
     StreamSupervisor.deleteStream(stream.uri)
