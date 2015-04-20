@@ -2,19 +2,27 @@ import com.feth.play.module.pa.PlayAuthenticate
 import com.feth.play.module.pa.PlayAuthenticate.Resolver
 import com.feth.play.module.pa.exceptions.AccessDeniedException
 import com.feth.play.module.pa.exceptions.AuthException
+import com.typesafe.config.ConfigFactory
 import controllers.{JavaContext, routes}
 import helper.datasources.MongoDB
 import helper.datasources.MorphiaObject
 import models.SecurityRole
 import play.Logger
-import play.libs.F._
 import play.api._
 import play.api.mvc._
 import play.api.mvc.Results._
 import play.filters.csrf._
 import scala.concurrent.Future
+import java.io.File
 
 object Global extends /*WithFilters(CSRFFilter()) with*/ GlobalSettings {
+    /**
+     * Load environment specific config.
+     */
+    override def onLoadConfig(config: Configuration, path: File, classLoader: ClassLoader, mode: Mode.Mode): Configuration = {
+        val localConfig = Configuration(ConfigFactory.load(s"application.${mode.toString.toLowerCase}.conf"))
+        super.onLoadConfig(config ++ localConfig, path, classLoader, mode)
+    }
 
     override def onHandlerNotFound(request: RequestHeader) = {
         implicit val h = request
