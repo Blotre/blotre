@@ -163,6 +163,9 @@ blotre.account.selectUserNameDescription=Your user name will also be your root s
 blotre.account.link.title=Link Account
 blotre.account.link.description=Linking allows you to login using multiple providers.
 
+# Developer
+blotre.developer.client.error.tooManyClients=Too many clients for account. Cannot create new client.
+
 # Stream
 blotre.stream.index.title=Blot're
 blotre.stream.index.pageTitle=Find Color

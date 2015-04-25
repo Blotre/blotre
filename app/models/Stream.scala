@@ -40,29 +40,16 @@ case class ChildStream(
 @SerialVersionUID(1)
 case class Stream(
   @(Id @field)
-  var id: ObjectId,
-
-  @Constraints.Required
-  @Constraints.MaxLength(64)
-  @Constraints.MinLength(1)
-  var name: String,
-
-  @Constraints.Required
-  @Constraints.MaxLength(2000)
-  @Constraints.MinLength(1)
+  id: ObjectId,
+  name: String,
   @Indexed(unique=true)
-  var uri: String,
+  uri: String,
 
-  @Constraints.Required
-  var created: Date,
-
-  @Constraints.Required
+  created: Date,
   var updated: Date,
-
   @Embedded
   var status: Status,
-
-  var ownerId: ObjectId)
+  ownerId: ObjectId)
 {
   def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null)
 

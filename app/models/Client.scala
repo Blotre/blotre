@@ -16,28 +16,13 @@ import scala.collection.JavaConverters._
 @SerialVersionUID(1)
 case class Client(
   @(Id @field)
-  var id: ObjectId,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
-  var name: String,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
+  id: ObjectId,
+  name: String,
   var uri: String,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
   var blurb: String,
-
   var clientSecret: String,
-
-  var created: Date,
-
-  var ownerId: ObjectId)
+  created: Date,
+  ownerId: ObjectId)
 {
   def this() = this(null, "", "", "", "", new Date(0), null)
 
@@ -49,20 +34,13 @@ case class Client(
  *
  */
 @Entity
-@Indexes(Array(new Index(value = "clientId, uri", unique=true)))
 @SerialVersionUID(1)
 case class ClientRedirectUri(
   @(Id @field)
-  var id: ObjectId,
-
-  var clientId: ObjectId,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
-  var uri: String,
-
-  var created: Date)
+  id: ObjectId,
+  clientId: ObjectId,
+  uri: String,
+  created: Date)
 {
   def this() = this(null, null, "", new Date(0))
 }
@@ -71,6 +49,8 @@ case class ClientRedirectUri(
 object Client
 {
   import Serializable._
+
+  val maxClientCount = 10
 
   private def save[A](obj: A): Option[A] = {
     MorphiaObject.datastore.save[A](obj)

@@ -3,6 +3,8 @@ package controllers
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
+import play.i18n.Messages
+
 
 case class CreateClientForm(name: String, uri: String, blurb: String)
 
@@ -38,9 +40,13 @@ object DeveloperController extends Controller
         Ok(views.html.developer.createClient.render(formWithErrors)),
 
       value =>
-        models.Client.createClient(value.name, value.uri, value.blurb, user) map { _ =>
-          Redirect(routes.DeveloperController.index)
-        } getOrElse(InternalServerError))
+        if (models.Client.findForUser(user).length >= models.Client.maxClientCount)
+          Ok(views.html.developer.createClient.render(createClientForm.fillAndValidate(value)))
+            .flashing("error" -> Messages.get("blotre.developer.client.error.tooManyClients"))
+        else
+          models.Client.createClient(value.name, value.uri, value.blurb, user) map { _ =>
+            Redirect(routes.DeveloperController.index)
+          } getOrElse(InternalServerError))
   }}
 
   /**
