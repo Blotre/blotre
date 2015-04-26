@@ -20,13 +20,6 @@
     float: none;
 }
 
-
-.glyphicon-refresh-animate {
-    -webkit-animation: spinWebkit 1s infinite linear;
-    -moz-animation: spin 1s infinite linear;
-    animation: spin 1s infinite linear;
-}
-
 .collapsing {
     -webkit-transition: none;
     -moz-transition: none;
@@ -37,23 +30,23 @@
 /**
     Kv-group
 */
-.kv-group .key,
-.kv-group .value {
-    display: block;
-    width: 50%;
-    float: left;
-}
-
 .kv-group .key {
     font-weight: bold;
     text-align: right;
     padding-right: 0.2em;
 }
 .kv-group .key:after {
-    content: ": ";
+    content: ":";
 }
 
-
+/**
+    Animated loading icon
+*/
+.glyphicon-refresh-animate {
+    -webkit-animation: spinWebkit 1s infinite linear;
+    -moz-animation: spin 1s infinite linear;
+    animation: spin 1s infinite linear;
+}
 
 @-webkit-keyframes spinWebkit {
     from { -webkit-transform: rotate(0deg); }

@@ -65,7 +65,10 @@ $(function() {
         application_model.initialUser(),
         window.clientId);
 
+    var currentRedirects =  $('#redirects-textbox').val();
+
     $('#cancel-redirects-button').on('click', function(e) {
+        $('#redirects-textbox').val(currentRedirects);
         $('#save-redirects-button, #cancel-redirects-button')
             .attr("disabled", true);
     });
@@ -76,7 +79,8 @@ $(function() {
     });
 
     $('#save-redirects-button').on('click', function() {
-        updateRedirects(model.clientId(), $('#redirects-textbox').val());
+        currentRedirects = $('#redirects-textbox').val();
+        updateRedirects(model.clientId(), currentRedirects);
     });
 
     $('#delete-client-button').on('click', function(e) {
