@@ -8,6 +8,7 @@ import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.Play.current
 import scala.collection.immutable._
+import scala.Either
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import helper.ImageHelper
@@ -28,6 +29,18 @@ object Stream extends Controller {
       .foldLeft(("", Seq[(String, String)]())) { (p, c) =>
       (p._1 + "/" + c, p._2 :+(c, (p._1 + "/" + c)))
     })._2
+
+  private def toResponse(result: ApiResult) =
+    result match {
+      case ApiCreated(x) => Created(Json.toJson(x))
+      case ApiOk(x) => Ok(Json.toJson(x))
+      case ApiSuccess(x) => Ok(Json.toJson(x))
+
+      case ApiUnauthroized(x) => Unauthorized(Json.toJson(x))
+      case ApiNotFound(x) => NotFound(Json.toJson(x))
+      case x: ApiInternalError => InternalServerError(Json.toJson(x.value))
+      case ApiCouldNotProccessRequest(x) => UnprocessableEntity(Json.toJson(x))
+    }
 
   /**
    * Stream root index page.
@@ -117,7 +130,7 @@ object Stream extends Controller {
 
   def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request =>
     models.Stream.findByUri(uri) map { stream =>
-      apiSetStreamStatus(request.user, stream, request.body)
+      toResponse(apiSetStreamStatus(request.user, stream, request.body))
     } getOrElse (NotFound)
   }
 
@@ -151,7 +164,7 @@ object Stream extends Controller {
       case Accepts.Html() =>
         createDescendant(user, uri)
           .map(s =>
-            Redirect(routes.Stream.getStream(s.uri)))
+          Redirect(routes.Stream.getStream(s.uri)))
           .getOrElse(BadRequest)
     }
   }
@@ -163,7 +176,7 @@ object Stream extends Controller {
 
   private def createDescendant(user: models.User, parent: models.Stream, name: String): Option[models.Stream] =
     models.Stream.createDescendant(parent.uri, name, user) flatMap { newChild =>
-      addChild(true, parent, newChild, user)
+      addChild(user, true, parent, newChild)
     }
 
   private def getParentFromPath(uri: String) =
@@ -192,7 +205,7 @@ object Stream extends Controller {
   def apiGetStream(id: String) = Action { implicit request =>
     models.Stream.findById(id) map { stream =>
       Ok(Json.toJson(stream))
-    } getOrElse(NotFound)
+    } getOrElse (NotFound)
   }
 
   val colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
@@ -287,20 +300,28 @@ object Stream extends Controller {
    */
   def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     models.Stream.findById(id) map { stream =>
-      apiSetStreamStatus(request.user, stream, request.body)
+      toResponse(apiSetStreamStatus(request.user, stream, request.body))
     } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
- def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): Result =
+  def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): ApiResult =
     Json.fromJson[ApiSetStatusData](body) map { status =>
-      models.Stream.asEditable(user, stream) map { stream =>
-        updateStreamStatus(stream, status.color, user) map { status =>
-          Ok(Json.toJson(status))
-        } getOrElse (InternalServerError)
-      } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
+      apiSetStreamStatus(user, stream, status)
     } recoverTotal { e =>
-      BadRequest(Json.toJson(ApiError("Could not process request.", e)))
+      ApiCouldNotProccessRequest(ApiError("Could not process request.", e))
     }
+
+  def apiSetStreamStatus(user: models.User, streamId: String, status: ApiSetStatusData): ApiResult  =
+    models.Stream.findById(streamId) map { stream =>
+      apiSetStreamStatus(user, stream, status)
+    } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
+
+  def apiSetStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult  =
+    models.Stream.asEditable(user, stream) map { stream =>
+      updateStreamStatus(stream, status.color, user) map { status =>
+        ApiOk(Json.toJson(status))
+      } getOrElse (ApiInternalError())
+    } getOrElse (ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
 
   /**
    * Get children of a stream.
@@ -388,7 +409,7 @@ object Stream extends Controller {
     models.Stream.getChildById(parent.id, child.id) map { _ =>
       Ok(Json.toJson(child))
     } orElse {
-      addChild(false, parent, child, user) map { _ =>
+      addChild(user, false, parent, child) map { _ =>
         Created(Json.toJson(child))
       }
     } getOrElse (InternalServerError)
@@ -418,7 +439,7 @@ object Stream extends Controller {
       s.status
     }
 
-  private def addChild(heirarchical: Boolean, parent: models.Stream, child: models.Stream, user: models.User): Option[models.Stream] =
+  private def addChild(user: models.User, heirarchical: Boolean, parent: models.Stream, child: models.Stream): Option[models.Stream] =
     if (parent.childCount < models.Stream.maxChildren)
       models.Stream.addChild(heirarchical, parent, child.id, user) map { newChildData =>
         StreamSupervisor.addChild(parent, child)

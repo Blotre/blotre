@@ -2,24 +2,22 @@ package Actors
 
 import akka.actor._
 import models.User
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
-
-
+import play.api.libs.json.Reads._
+import play.api.mvc.Results
 
 /**
  *
  */
-case class SocketError(error: String, correlation: Int)
+case class SocketApiSetStatus(of: String, status: controllers.Stream.ApiSetStatusData)
 
-object SocketError
+object SocketApiSetStatus
 {
-  implicit val statusWrites = new Writes[SocketError] {
-    def writes(x: SocketError): JsValue =
-      Json.obj(
-        "type" -> "Error",
-        "error" -> x.error,
-        "correlation" -> x.correlation)
-  }
+  implicit val socketApiSetStatusReads: Reads[SocketApiSetStatus] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "status").read[controllers.Stream.ApiSetStatusData]
+    )(SocketApiSetStatus.apply _)
 }
 
 /**
@@ -36,30 +34,45 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   var subscriptions = Set[String]()
   var collectionSubscriptions = Set[String]()
 
+  /**
+   * Write a result to the socket.
+   */
+  private def output[T](value: T)(implicit w: Writes[T])=
+   out ! Json.toJson(value)
+
+  /**
+   * Write an error result to the socket.
+   */
+  private def error(message: String)(implicit correlation: Int) =
+    output(SocketError(message, correlation))
+
   def receive = {
     case msg@StatusUpdatedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ChildAddedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ChildRemovedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@StreamDeletedEvent(uri, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ParentAddedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ParentRemovedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
         case "GetStatus" =>
           recieveGetStatusMessage(msg)
+
+        case "SetStatus" =>
+          recieveSetStatusMessage(msg)
 
         case "Subscribe" =>
           recieveSubscribeMessage(msg)
@@ -87,6 +100,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       .recoverTotal { _ =>
         error("Could not process request.")
       }
+
+  private def recieveSetStatusMessage(msg: JsValue)(implicit correlation: Int) =
+    (Json.fromJson[SocketApiSetStatus](msg)).fold(
+      valid = x =>
+        setStatus(user, x.of, x.status),
+      invalid = e =>
+        error("Could not process request."))
 
   private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
@@ -116,21 +136,28 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       error("Could not process request.")
     }
 
-  private def error(message: String)(implicit correlation: Int) =
-    out ! Json.toJson(SocketError(message, correlation))
-
   /**
    * Get the status of a stream.
    */
   private def getStatus(uri: String)(implicit correlation: Int): Unit =
-    models.Stream.findByUri(uri) map { stream =>
-      out ! Json.toJson(CurrentStatusResponse(uri, stream.status))
-    } getOrElse {
+    models.Stream.findByUri(uri) map (getStatus) getOrElse {
       error("No such stream.")
     }
 
   private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
-    out ! Json.toJson(CurrentStatusResponse(stream.uri, stream.status))
+    output(CurrentStatusResponse(stream.uri, stream.status, correlation))
+
+  /**
+   * Get the status of a stream.
+   */
+  private def setStatus(user: models.User, uri: String, status: controllers.Stream.ApiSetStatusData)(implicit correlation: Int): Unit =
+    controllers.Stream.apiSetStreamStatus(user, uri, status) match {
+      case controllers.ApiSuccess(x) =>
+        output(SocketSuccess(correlation))
+
+      case controllers.ApiFailure(e) =>
+        error(e.error)
+    }
 
   /**
    * Subscribe to a stream's updates.

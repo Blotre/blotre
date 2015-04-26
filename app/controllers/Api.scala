@@ -26,3 +26,29 @@ object ApiError
         "details" -> x.details)
   }
 }
+
+
+abstract class ApiResult
+{
+}
+
+class ApiSuccess(val value: JsValue) extends ApiResult
+object ApiSuccess
+{
+  def unapply(t: ApiSuccess): Option[JsValue] = Some(t.value)
+}
+
+case class ApiCreated(x: JsValue) extends ApiSuccess(x)
+case class ApiOk(x: JsValue) extends ApiSuccess(x)
+
+
+class ApiFailure(val value: ApiError) extends ApiResult
+object ApiFailure
+{
+  def unapply(t: ApiFailure): Option[ApiError] = Some(t.value)
+}
+
+case class ApiNotFound(x: ApiError) extends ApiFailure(x)
+case class ApiUnauthroized(x: ApiError) extends ApiFailure(x)
+case class ApiCouldNotProccessRequest(x: ApiError) extends ApiFailure(x)
+case class ApiInternalError() extends ApiFailure(ApiError("An internal server error occured."))
