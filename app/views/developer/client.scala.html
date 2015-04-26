@@ -35,10 +35,12 @@
         <span class="key">Id</span><span class="value">@client.id</span>
     </li>
     <li>
-        <span class="key">Secret</span><span class="value">@client.clientSecret</span>
+        <span class="key">Secret</span><span class="value">
+        @client.clientSecret
         @helper.form(action = routes.DeveloperController.regenerateSecret(client.id.toString)) {
             <input type="submit" class="btn btn-default" value="Regenerate Secret" />
         }
+        </span>
     </li>
 </ul>
 
