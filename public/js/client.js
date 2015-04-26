@@ -31,6 +31,33 @@ var updateRedirects = function(clientId, rediectBlob) {
     });
 };
 
+var deleteClient = function(clientId) {
+    $.ajax({
+        type: "DELETE",
+        url: jsRoutes.controllers.DeveloperController.deleteClient(clientId).url,
+        error: function() {
+            // todo: display error msg
+        }
+    }).done(function(result) {
+        window.location = jsRoutes.controllers.DeveloperController.index().url;
+    });
+};
+
+
+var askDeleteClient = function(clientId) {
+    bootbox.confirm({
+        title: "Are you sure?",
+        animate: false,
+        closeButton: false,
+        message: "This will permanently delete this client and invalidate all token for it.",
+        callback: function(result) {
+            if (result) {
+                deleteClient(clientId);
+            }
+        }
+    });
+};
+
 /**
 */
 $(function() {
@@ -48,8 +75,12 @@ $(function() {
             .attr("disabled", false);
     });
 
-    $('#save-redirects-button').on('click', function(e) {
+    $('#save-redirects-button').on('click', function() {
         updateRedirects(model.clientId(), $('#redirects-textbox').val());
+    });
+
+    $('#delete-client-button').on('click', function(e) {
+        askDeleteClient(model.clientId());
     });
 });
 

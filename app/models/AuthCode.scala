@@ -93,4 +93,13 @@ object AuthCode
     updateAuthCode(client.id, user.id, Crypto.generateToken, new Date(), defaultExpiration)
     findByClient(client, user)
   }
+
+
+  /**
+   * Delete all access tokens associated with a client.
+   */
+  def deleteAllForClient(client: Client) =
+    MorphiaObject.datastore.delete(
+      MorphiaObject.datastore.createQuery(classOf[AccessToken])
+        .filter("clientId =", client.id))
 }

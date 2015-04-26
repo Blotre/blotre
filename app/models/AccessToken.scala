@@ -104,4 +104,12 @@ object AccessToken
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("refreshToken = ", refreshToken)
       .get)
+
+  /**
+   * Delete all access tokens associated with a client.
+   */
+  def deleteAllForClient(client: Client) =
+    MorphiaObject.datastore.delete(
+      MorphiaObject.datastore.createQuery(classOf[AccessToken])
+        .filter("clientId =", client.id))
 }

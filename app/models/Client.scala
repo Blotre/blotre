@@ -31,8 +31,8 @@ case class Client(
     this.clientSecret == secret
 }
 
-object Client
-{
+object Client {
+
   import Serializable._
 
   val maxClientCount = 10
@@ -118,10 +118,16 @@ object Client
       .asList()
       .asScala.toList
 
-  def deleteClient(client: Client): Unit =
+  /**
+   *
+   */
+  def deleteClient(client: Client): Unit = {
     MorphiaObject.datastore.delete(
       clientDb()
         .filter("id =", client.id))
+    AccessToken.deleteAllForClient(client)
+    AuthCode.deleteAllForClient(client)
+  }
 }
 
 object Crypto

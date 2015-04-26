@@ -20,16 +20,24 @@
 
 <h1>Client</h1>
 
-<ul>
-    <li><b>Name:</b> @client.name</li>
-    <li><b>Uri:</b> @client.uri</li>
-    <li><b>Blurb:</b> @client.blurb</li>
-
-    <li><b>ID:</b> @client.id</li>
+<ul class="kv-group">
     <li>
-        <b>Secret:</b> @client.clientSecret
+        <span class="key">Name</span><span class="value">@client.name</span>
+    </li>
+    <li>
+        <span class="key">Uri</span><span class="value">@client.uri</span>
+    </li>
+    <li>
+        <span class="key">Blurb</span><span class="value">@client.blurb</span>
+    </li>
+
+    <li>
+        <span class="key">Id</span><span class="value">@client.id</span>
+    </li>
+    <li>
+        <span class="key">Secret</span><span class="value">@client.clientSecret</span>
         @helper.form(action = routes.DeveloperController.regenerateSecret(client.id.toString)) {
-            <input type="submit" value="Regenerate Secret" />
+            <input type="submit" class="btn btn-default" value="Regenerate Secret" />
         }
     </li>
 </ul>
@@ -47,6 +55,6 @@
 </div>
 
 <div>
-    <button id="delete-client-button">Delete Client</button>
+    <button type="button" class="btn btn-danger" id="delete-client-button">Delete Client</button>
 </div>
 }

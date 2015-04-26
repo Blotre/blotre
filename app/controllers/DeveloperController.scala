@@ -65,7 +65,7 @@ object DeveloperController extends Controller
   def deleteClient(id: String) = AuthenticatedAction { implicit request => JavaContext.withContext {
     models.Client.findByIdForUser(id, request.user) map { client =>
       models.Client.deleteClient(client)
-      Redirect(routes.DeveloperController.index)
+      Ok("")
     } getOrElse(NotFound)
   }}
 
