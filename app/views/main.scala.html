@@ -132,8 +132,9 @@
             routes.javascript.Stream.apiGetChildren,
             routes.javascript.Stream.apiGetChild,
             routes.javascript.Stream.apiCreateChild,
-            routes.javascript.Stream.apiDeleteChild
+            routes.javascript.Stream.apiDeleteChild,
 
+            routes.javascript.DeveloperController.setRedirects
         )
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>

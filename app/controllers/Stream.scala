@@ -291,7 +291,7 @@ object Stream extends Controller {
     } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
-  def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): Result =
+ def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): Result =
     Json.fromJson[ApiSetStatusData](body) map { status =>
       models.Stream.asEditable(user, stream) map { stream =>
         updateStreamStatus(stream, status.color, user) map { status =>
@@ -309,7 +309,7 @@ object Stream extends Controller {
    *
    * TODO: normally should return list of ids which query params can expand to stream.
    */
-  def apiGetChildren(id: String) = Action.async { implicit request => {
+  def apiGetChildren(id: String) = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
       if (query.isEmpty) {
@@ -322,7 +322,6 @@ object Stream extends Controller {
         Future.successful(Ok(Json.toJson(models.Stream.getChildrenByQuery(stream, query, 20))))
       }
     } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
-  }
   }
 
   /**

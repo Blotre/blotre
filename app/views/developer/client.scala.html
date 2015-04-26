@@ -1,6 +1,5 @@
 @(
-    client: models.Client,
-    redirects: scala.collection.immutable.List[models.ClientRedirectUri])
+    client: models.Client)
 
 @import helper._
 @import com.feth.play.module.pa.views.html._
@@ -10,12 +9,17 @@
      style="background: #FF712C;"></div>
 }
 
+@extraScripts = {
+    <script>
+        window.clientId = "@client.id";
+    </script>
+    <script data-main="@routes.Assets.at("js/client.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+}
 
-@main(client.name, "client", articleHeader = articleHeader) {
+@main(client.name, "client", articleHeader = articleHeader, extraScripts = extraScripts) {
 
 <h1>Client</h1>
 
-<h3>About</h3>
 <ul>
     <li><b>Name:</b> @client.name</li>
     <li><b>Uri:</b> @client.uri</li>
@@ -25,18 +29,24 @@
     <li>
         <b>Secret:</b> @client.clientSecret
         @helper.form(action = routes.DeveloperController.regenerateSecret(client.id.toString)) {
-            <input type="submit" value="Regenerate Secrete" />
+            <input type="submit" value="Regenerate Secret" />
         }
     </li>
 </ul>
 
 <h3>Redirects</h3>
-<a href="@routes.DeveloperController.addRedirect(client.id.toString)">Edit redirects</a>
+<div>
+    <textarea id="redirects-textbox">@client.redirects</textarea>
+</div>
 
-<ul>
-    @for(redirect <- redirects) {
-        <li>@redirect.uri</li>
-    }
-</ul>
+<p class="error hidden" id="rediects-error"></p>
 
+<div class="btn-group" role="group">
+    <button type="button" class="btn btn-default" id="save-redirects-button" disabled>Save</button>
+    <button type="button" class="btn btn-default" id="cancel-redirects-button" disabled>Cancel</button>
+</div>
+
+<div>
+    <button id="delete-client-button">Delete Client</button>
+</div>
 }

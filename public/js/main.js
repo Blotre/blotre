@@ -26,7 +26,6 @@ var isHierarchical = function(parentName, uri) {
     return (index >= 0 && parentName === uri.slice(0, index));
 };
 
-
 /**
 */
 var AppViewModel = function(user, stream) {
