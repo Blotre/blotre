@@ -15,8 +15,7 @@ import scala.collection.JavaConverters._
 @Entity
 @SerialVersionUID(1)
 case class Client(
-  @(Id @field)
-  id: ObjectId,
+  @(Id @field) var id: ObjectId,
   name: String,
   var uri: String,
   var blurb: String,

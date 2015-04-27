@@ -56,7 +56,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     case msg@ChildRemovedEvent(_, _, _) =>
      output(msg)
 
-    case msg@StreamDeletedEvent(uri, _) =>
+    case msg@StreamDeletedEvent(_, _) =>
      output(msg)
 
     case msg@ParentAddedEvent(_, _, _) =>
@@ -147,6 +147,14 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
     output(CurrentStatusResponse(stream.uri, stream.status, correlation))
 
+  private def statusUpdate(uri: String)(implicit correlation: Int): Unit =
+    models.Stream.findByUri(uri) map (statusUpdate) getOrElse {
+      error("No such stream.")
+    }
+
+  private def statusUpdate(stream: models.Stream)(implicit correlation: Int): Unit =
+    output(StatusUpdatedEvent(stream.uri, stream.status, None))
+
   /**
    * Get the status of a stream.
    */
@@ -169,7 +177,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
 
   private def subscribe(target: String)(implicit correlation: Int): Unit = {
     if (subscriptions.contains(target)) {
-      getStatus(target)
+      statusUpdate(target)
       return
     }
 
@@ -179,7 +187,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       models.Stream.findByUri(target) map { stream =>
         StreamSupervisor.subscribe(self, target)
         subscriptions += target
-        getStatus(stream)
+        statusUpdate(stream)
       }
     }
   }

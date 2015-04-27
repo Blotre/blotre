@@ -8,7 +8,6 @@ import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.Play.current
 import scala.collection.immutable._
-import scala.Either
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import helper.ImageHelper

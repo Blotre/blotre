@@ -118,6 +118,14 @@
             </footer>
         </div>
 
+        <div id="loading-overlay" class="hidden">
+            <div class="centered">
+                <div class="loading-icon">
+                    <div></div>
+                </div>
+                Loading
+            </div>
+        </div>
 
         @helper.javascriptRouter("jsRoutes")(
             routes.javascript.Stream.getStream,

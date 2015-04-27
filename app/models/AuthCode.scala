@@ -13,8 +13,7 @@ import scala.collection.JavaConverters._
 @Entity
 @SerialVersionUID(1)
 case class AuthCode(
-  @(Id @field)
-  var id: ObjectId,
+  @(Id @field) var id: ObjectId,
 
   var clientId: ObjectId,
   var userId: ObjectId,

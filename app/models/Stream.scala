@@ -20,8 +20,7 @@ import scala.annotation.meta._
 @Indexes(Array(new Index(value = "parentId, childId", unique=true)))
 @SerialVersionUID(1)
 case class ChildStream(
-  @(Id @field)
-  var id: ObjectId,
+  @(Id @field) var id: ObjectId,
   hierarchical: Boolean,
   parentId: ObjectId,
   parentName: String,
@@ -38,8 +37,7 @@ case class ChildStream(
  *
  */
 case class ChildCount(
-  @(Id @field)
-  var id: ObjectId,
+  @(Id @field) var id: ObjectId,
   count: Int)
 {
   def this() = this(null, 0)
@@ -89,7 +87,7 @@ object Stream
   def isValidStreamName(name: String) =
     name.matches(streamNamePattern.toString)
 
-  val maxChildren = 5
+  val maxChildren = 1000
 
   implicit val streamReads: Reads[Stream] = (
     (JsPath \ "id").read[ObjectId] and
