@@ -40,6 +40,9 @@ object Client {
 
   var validUrlCharacters = """a-zA-Z0-9\-_\.~!\*'();:@&=\+$,/\?%#\[\]?"""
 
+  def isValidUrl(uri: String) =
+    uri.matches("(http://|https://)[" + validUrlCharacters + "]{3,255}")
+
   private def save[A](obj: A): Option[A] = {
     MorphiaObject.datastore.save[A](obj)
     Some(obj)

@@ -16,7 +16,7 @@ object DeveloperController extends Controller
 {
   val createClientForm = Form(mapping(
     "name" -> nonEmptyText(3, 255),
-    "uri" ->  nonEmptyText(3, 255).verifying("Http(s) url", uri => uri.startsWith("http://") || uri.startsWith("https://")),
+    "uri" ->  nonEmptyText(3, 255).verifying("Http(s) url", models.Client.isValidUrl(_)),
     "blurb" ->  nonEmptyText(3, 255)
   )(CreateClientForm.apply)(CreateClientForm.unapply))
 
@@ -97,8 +97,7 @@ object DeveloperController extends Controller
   }}
 
   private def validateRedirects(redirects: Array[String]) =
-    if (redirects.length <= models.Client.maxRedirects
-      && redirects.forall(redirect => redirect.matches("(http://|https://)[" + models.Client.validUrlCharacters + "]{3,255}")))
+    if (redirects.length <= models.Client.maxRedirects && redirects.forall(models.Client.isValidUrl))
       Some(redirects)
     else
       None
