@@ -1,9 +1,11 @@
 require([
     './models',
-    './application_model'],
+    './application_model',
+    './ui'],
 function(
     models,
-    application_model)
+    application_model,
+    ui)
 {
 "use-strict";
 
@@ -18,32 +20,44 @@ var StreamIndexViewModel = function(user, clientId) {
 
 
 var updateRedirects = function(clientId, rediectBlob) {
+    ui.showLoadingScreen();
     $.ajax({
         type: "POST",
         url: jsRoutes.controllers.DeveloperController.setRedirects(clientId).url,
         data: JSON.stringify(rediectBlob.split('\n')),
         contentType: 'application/json',
-        error: function() {
-            // todo: display error msg
+        error: function(e) {
+            ui.setAlert('alert-danger', e.status == 422 ? "Specified redirects are invalid. Must be at most 10 http(s) urls." : "An error occurred.");
+            ui.hideLoadingScreen();
         }
     }).done(function(result) {
-
+        ui.clearAlerts();
+        ui.hideLoadingScreen();
     });
 };
 
+/**
+    Actually delete the client.
+
+    Redirects to the developer home page on success.
+*/
 var deleteClient = function(clientId) {
+    ui.showLoadingScreen();
     $.ajax({
         type: "DELETE",
         url: jsRoutes.controllers.DeveloperController.deleteClient(clientId).url,
         error: function() {
-            // todo: display error msg
+            ui.setAlert('alert-danger', "Could not delete client, please try again.");
+            ui.hideLoadingScreen();
         }
     }).done(function(result) {
         window.location = jsRoutes.controllers.DeveloperController.index().url;
     });
 };
 
-
+/**
+    Prompt the user to ensure they really want to delete the client.
+*/
 var askDeleteClient = function(clientId) {
     bootbox.confirm({
         title: "Are you sure?",
@@ -81,6 +95,8 @@ $(function() {
     $('#save-redirects-button').on('click', function() {
         currentRedirects = $('#redirects-textbox').val();
         updateRedirects(model.clientId(), currentRedirects);
+        $('#save-redirects-button, #cancel-redirects-button')
+            .attr("disabled", true);
     });
 
     $('#delete-client-button').on('click', function(e) {

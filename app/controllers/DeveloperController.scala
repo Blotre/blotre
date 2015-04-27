@@ -81,7 +81,7 @@ object DeveloperController extends Controller
   }}
 
   /**
-   * Update the redirects of a given client
+   * Update the redirects of a given client.
    */
   def setRedirects(clientId: String) = AuthenticatedAction(parse.json) { implicit request => JavaContext.withContext {
     models.Client.findByIdForUser(clientId, request.user) map { client =>
@@ -98,7 +98,7 @@ object DeveloperController extends Controller
 
   private def validateRedirects(redirects: Array[String]) =
     if (redirects.length <= models.Client.maxRedirects
-      && redirects.forall(redirect => redirect.matches("(http://|https://)[" + models.Client.validUrlCharacters + "]{3,1000}")))
+      && redirects.forall(redirect => redirect.matches("(http://|https://)[" + models.Client.validUrlCharacters + "]{3,255}")))
       Some(redirects)
     else
       None
