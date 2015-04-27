@@ -93,10 +93,7 @@ $(function() {
     });
 
     $('#save-redirects-button').on('click', function() {
-        currentRedirects = $('#redirects-textbox').val();
-        updateRedirects(model.clientId(), currentRedirects);
-        $('#save-redirects-button, #cancel-redirects-button')
-            .attr("disabled", true);
+        updateRedirects(model.clientId(), $('#redirects-textbox').val());
     });
 
     $('#delete-client-button').on('click', function(e) {

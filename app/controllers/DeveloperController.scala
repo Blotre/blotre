@@ -1,6 +1,6 @@
 package controllers
 
-import play.api.libs.json.Json
+import play.api.libs.json._
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
@@ -70,7 +70,7 @@ object DeveloperController extends Controller
   }}
 
   /**
-   *
+   * Regenerate the secret of a client.
    */
   def regenerateSecret(id: String) = AuthenticatedAction { implicit request => JavaContext.withContext {
     models.Client.findByIdForUser(id, request.user) map { client =>
@@ -83,18 +83,22 @@ object DeveloperController extends Controller
   /**
    * Update the redirects of a given client.
    */
-  def setRedirects(clientId: String) = AuthenticatedAction(parse.json) { implicit request => JavaContext.withContext {
+  def setRedirects(clientId: String): Action[JsValue]  = AuthenticatedAction(parse.json) { implicit request => JavaContext.withContext {
     models.Client.findByIdForUser(clientId, request.user) map { client =>
       Json.fromJson[Array[String]](request.body) map { redirects =>
-        validateRedirects(redirects) map { validatedredirects =>
-          models.Client.setRedirects(client, validatedredirects )
-          Ok("")
-        } getOrElse(UnprocessableEntity)
-      } recoverTotal { e =>
+        setRedirects(client, redirects)
+      } recoverTotal { _ =>
         UnprocessableEntity
       }
     } getOrElse(NotFound)
   }}
+
+  def setRedirects(client: models.Client, unvalidatedRedirects: Array[String]): Result =
+      validateRedirects(unvalidatedRedirects) map { validatedredirects =>
+        models.Client.setRedirects(client, validatedredirects )
+        Ok("")
+      } getOrElse(UnprocessableEntity)
+
 
   private def validateRedirects(redirects: Array[String]) =
     if (redirects.length <= models.Client.maxRedirects && redirects.forall(models.Client.isValidUrl))
