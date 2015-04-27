@@ -1,5 +1,5 @@
-# General files #
-conf
+*.prod.conf
+*.dev.conf
 
 # Project Files #
 .project

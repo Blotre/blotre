@@ -22,7 +22,6 @@ var StreamIndexViewModel = function(user, results) {
     self.query = ko.observable('');
 };
 
-
 var updateSearchResultsForQuery = function(model, query) {
     $('.list-loading').removeClass('hidden');
     $.ajax({

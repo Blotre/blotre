@@ -13,8 +13,7 @@ import scala.collection.JavaConverters._
 @Entity
 @SerialVersionUID(1)
 case class AuthCode(
-  @(Id @field)
-  var id: ObjectId,
+  @(Id @field) var id: ObjectId,
 
   var clientId: ObjectId,
   var userId: ObjectId,
@@ -93,4 +92,13 @@ object AuthCode
     updateAuthCode(client.id, user.id, Crypto.generateToken, new Date(), defaultExpiration)
     findByClient(client, user)
   }
+
+
+  /**
+   * Delete all access tokens associated with a client.
+   */
+  def deleteAllForClient(client: Client) =
+    MorphiaObject.datastore.delete(
+      MorphiaObject.datastore.createQuery(classOf[AccessToken])
+        .filter("clientId =", client.id))
 }

@@ -1,4 +1,5 @@
-define([], function() {
+define([],
+function() {
 "use-strict";
 
 var parseQueryString = function(queryString) {

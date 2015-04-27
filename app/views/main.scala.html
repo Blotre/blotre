@@ -83,20 +83,19 @@
         @articleHeader
 
         <div id="article-container" class="container @(nav + "-container")">
-            @if(flash.contains(ApplicationConstants.FLASH_ERROR_KEY)) {
-                <div class="alert alert-danger" role="alert">
+            <ul id="alerts">@if(flash.contains(ApplicationConstants.FLASH_ERROR_KEY)) {
+                <li class="alert alert-danger" role="alert">
                     <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">
                         Close</span></button>
                     @flash().get(ApplicationConstants.FLASH_ERROR_KEY)
-                </div>
-            }
-            @if(flash.contains(ApplicationConstants.FLASH_MESSAGE_KEY)) {
-                <div class="alert alert-success" role="alert">
+                </li>
+            }@if(flash.contains(ApplicationConstants.FLASH_MESSAGE_KEY)) {
+                <li class="alert alert-success" role="alert">
                     <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">
                         Close</span></button>
                     @flash().get(ApplicationConstants.FLASH_MESSAGE_KEY)
-                </div>
-            }
+                </li>
+            }</ul>
 
             @content
 
@@ -118,6 +117,14 @@
             </footer>
         </div>
 
+        <div id="loading-overlay" class="hidden">
+            <div class="centered">
+                <div class="loading-icon">
+                    <div></div>
+                </div>
+                Loading
+            </div>
+        </div>
 
         @helper.javascriptRouter("jsRoutes")(
             routes.javascript.Stream.getStream,
@@ -132,8 +139,12 @@
             routes.javascript.Stream.apiGetChildren,
             routes.javascript.Stream.apiGetChild,
             routes.javascript.Stream.apiCreateChild,
-            routes.javascript.Stream.apiDeleteChild
+            routes.javascript.Stream.apiDeleteChild,
 
+            routes.javascript.DeveloperController.index,
+            routes.javascript.DeveloperController.getClient,
+            routes.javascript.DeveloperController.deleteClient,
+            routes.javascript.DeveloperController.setRedirects
         )
         @subjectPresent() {
             @defining(Application.getLocalUser(session())) { user =>

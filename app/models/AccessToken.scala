@@ -10,20 +10,23 @@ import org.mongodb.morphia.query.Query
 import scala.annotation.meta.field
 
 
+/**
+ *
+ */
 @Entity
 @SerialVersionUID(1)
 case class AccessToken(
   @(Id @field)
-  var id: ObjectId,
+  id: ObjectId,
 
-  var clientId: ObjectId,
-  var userId: ObjectId,
+  clientId: ObjectId,
+  userId: ObjectId,
 
-  var accessToken: String,
-  var refreshToken: String,
+  accessToken: String,
+  refreshToken: String,
 
-  var issued: Date,
-  var expires: Long)
+  issued: Date,
+  expires: Long)
 {
   val scope = "rw"
 
@@ -42,7 +45,7 @@ case class AccessToken(
 
 object AccessToken
 {
-  val defaultExpiration = 60L * 60L
+  val defaultExpiration = 60 * 60 * 24 * 3
 
   /**
    * Update or create the access token for a given client and user.
@@ -101,4 +104,12 @@ object AccessToken
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("refreshToken = ", refreshToken)
       .get)
+
+  /**
+   * Delete all access tokens associated with a client.
+   */
+  def deleteAllForClient(client: Client) =
+    MorphiaObject.datastore.delete(
+      MorphiaObject.datastore.createQuery(classOf[AccessToken])
+        .filter("clientId =", client.id))
 }

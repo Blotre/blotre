@@ -2,139 +2,22 @@ package Actors
 
 import akka.actor._
 import models.User
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
-
-/**
- * Current stream status response.
- */
-case class CurrentStatusResponse(uri: String, status: models.Status)
-
-object CurrentStatusResponse
-{
-  implicit val statusWrites = new Writes[CurrentStatusResponse] {
-    def writes(x: CurrentStatusResponse): JsValue =
-      Json.obj(
-        "type" -> "StreamStatus",
-        "from" -> x.uri,
-        "status" -> x.status)
-  }
-}
-
-/**
- * Stream status update event.
- */
-case class StatusUpdatedEvent(uri: String, status: models.Status, source: Option[String] = None)
-
-object StatusUpdatedEvent
-{
-  implicit val statusWrites = new Writes[StatusUpdatedEvent] {
-    def writes(x: StatusUpdatedEvent): JsValue =
-      Json.obj(
-        "type" -> "StatusUpdated",
-        "from" -> x.uri,
-        "status" -> x.status,
-        "source" -> x.source)
-  }
-}
-
-/**
- * Stream deleted event
- */
-case class StreamDeletedEvent(uri: String, source: Option[String] = None)
-
-object StreamDeletedEvent extends
-{
-  implicit val addChildWrites = new Writes[StreamDeletedEvent] {
-    def writes(x: StreamDeletedEvent): JsValue =
-      Json.obj(
-        "type" -> "StreamDeleted",
-        "from" -> x.uri,
-        "source" -> x.source)
-  }
-}
-
-/**
- * Stream child added event.
- */
-case class ChildAddedEvent(uri: String, child: models.Stream, source: Option[String] = None)
-
-object ChildAddedEvent extends
-{
-  implicit val addChildWrites = new Writes[ChildAddedEvent] {
-    def writes(x: ChildAddedEvent): JsValue =
-      Json.obj(
-        "type" -> "ChildAdded",
-        "from" -> x.uri,
-        "child" -> x.child,
-        "source" -> x.source)
-  }
-}
-
-/**
- * Stream added as the child of a stream.
- */
-case class ParentAddedEvent(uri: String, parent: models.Stream, source: Option[String] = None)
-
-object ParentAddedEvent extends
-{
-  implicit val parentAddedEventWrites = new Writes[ParentAddedEvent] {
-    def writes(x: ParentAddedEvent): JsValue =
-      Json.obj(
-        "type" -> "ParentAdded",
-        "from" -> x.uri,
-        "parent" -> x.parent,
-        "source" -> x.source)
-  }
-}
-
-/**
- * Stream child removed event.
- */
-case class ChildRemovedEvent(uri: String, child: String, source: Option[String] = None)
-
-object ChildRemovedEvent extends
-{
-  implicit val removeChildWrites = new Writes[ChildRemovedEvent] {
-    def writes(x: ChildRemovedEvent): JsValue =
-      Json.obj(
-        "type" -> "ChildRemoved",
-        "from" -> x.uri,
-        "child" -> x.child,
-        "source" -> x.source)
-  }
-}
-
-/**
- * Stream removed as the child of a stream.
- */
-case class ParentRemovedEvent(uri: String, parent: String, source: Option[String] = None)
-
-object ParentRemovedEvent extends
-{
-  implicit val parentAddedEventWrites = new Writes[ParentRemovedEvent] {
-    def writes(x: ParentRemovedEvent): JsValue =
-      Json.obj(
-        "type" -> "ParentRemoved",
-        "from" -> x.uri,
-        "parent" -> x.parent,
-        "source" -> x.source)
-  }
-}
+import play.api.libs.json.Reads._
+import play.api.mvc.Results
 
 /**
  *
  */
-case class SocketError(error: String, correlation: Int)
+case class SocketApiSetStatus(of: String, status: controllers.Stream.ApiSetStatusData)
 
-object SocketError
+object SocketApiSetStatus
 {
-  implicit val statusWrites = new Writes[SocketError] {
-    def writes(x: SocketError): JsValue =
-      Json.obj(
-        "type" -> "Error",
-        "error" -> x.error,
-        "correlation" -> x.correlation)
-  }
+  implicit val socketApiSetStatusReads: Reads[SocketApiSetStatus] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "status").read[controllers.Stream.ApiSetStatusData]
+    )(SocketApiSetStatus.apply _)
 }
 
 /**
@@ -151,30 +34,45 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   var subscriptions = Set[String]()
   var collectionSubscriptions = Set[String]()
 
+  /**
+   * Write a result to the socket.
+   */
+  private def output[T](value: T)(implicit w: Writes[T])=
+   out ! Json.toJson(value)
+
+  /**
+   * Write an error result to the socket.
+   */
+  private def error(message: String)(implicit correlation: Int) =
+    output(SocketError(message, correlation))
+
   def receive = {
     case msg@StatusUpdatedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ChildAddedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ChildRemovedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
-    case msg@StreamDeletedEvent(uri, _) =>
-      out ! Json.toJson(msg)
+    case msg@StreamDeletedEvent(_, _) =>
+     output(msg)
 
     case msg@ParentAddedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg@ParentRemovedEvent(_, _, _) =>
-      out ! Json.toJson(msg)
+     output(msg)
 
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
         case "GetStatus" =>
           recieveGetStatusMessage(msg)
+
+        case "SetStatus" =>
+          recieveSetStatusMessage(msg)
 
         case "Subscribe" =>
           recieveSubscribeMessage(msg)
@@ -202,6 +100,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       .recoverTotal { _ =>
         error("Could not process request.")
       }
+
+  private def recieveSetStatusMessage(msg: JsValue)(implicit correlation: Int) =
+    (Json.fromJson[SocketApiSetStatus](msg)).fold(
+      valid = x =>
+        setStatus(user, x.of, x.status),
+      invalid = e =>
+        error("Could not process request."))
 
   private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
@@ -231,21 +136,38 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       error("Could not process request.")
     }
 
-  private def error(message: String)(implicit correlation: Int) =
-    out ! Json.toJson(SocketError(message, correlation))
-
+  /**
+   * Get the status of a stream.
+   */
   private def getStatus(uri: String)(implicit correlation: Int): Unit =
-    models.Stream.findByUri(uri) map { stream =>
-      out ! Json.toJson(CurrentStatusResponse(uri, stream.status))
-    } getOrElse {
+    models.Stream.findByUri(uri) map (getStatus) getOrElse {
       error("No such stream.")
     }
+
+  private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
+    output(CurrentStatusResponse(stream.uri, stream.status, correlation))
+
+  private def statusUpdate(uri: String)(implicit correlation: Int): Unit =
+    models.Stream.findByUri(uri) map (statusUpdate) getOrElse {
+      error("No such stream.")
+    }
+
+  private def statusUpdate(stream: models.Stream)(implicit correlation: Int): Unit =
+    output(StatusUpdatedEvent(stream.uri, stream.status, None))
 
   /**
    * Get the status of a stream.
    */
-  private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
-    out ! Json.toJson(StatusUpdatedEvent(stream.uri, stream.status))
+  private def setStatus(user: models.User, uri: String, status: controllers.Stream.ApiSetStatusData)(implicit correlation: Int): Unit =
+    models.Stream.findByUri(uri) map { stream =>
+      controllers.Stream.apiSetStreamStatus(user, stream, status) match {
+        case controllers.ApiSuccess(x) =>
+          output(SocketSuccess(correlation))
+
+        case controllers.ApiFailure(e) =>
+          error(e.error)
+      }
+    } getOrElse(error("Stream does not exist."))
 
   /**
    * Subscribe to a stream's updates.
@@ -257,7 +179,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
 
   private def subscribe(target: String)(implicit correlation: Int): Unit = {
     if (subscriptions.contains(target)) {
-      getStatus(target)
+      statusUpdate(target)
       return
     }
 
@@ -267,7 +189,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       models.Stream.findByUri(target) map { stream =>
         StreamSupervisor.subscribe(self, target)
         subscriptions += target
-        getStatus(stream)
+        statusUpdate(stream)
       }
     }
   }
@@ -275,7 +197,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   /**
    * Unsubscribe from a stream's updates
    */
-  private def unsubscribe(targets: List[String]) = {
+  private def unsubscribe(targets: List[String]): Unit = {
     StreamSupervisor.unsubscribe(self, targets)
     subscriptions = subscriptions -- targets
   }
@@ -284,9 +206,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
    * Subscribe to collection updates.
    */
   private def subscribeCollection(target: String)(implicit correlation: Int): Unit = {
-    if (collectionSubscriptions.contains(target)) {
+    if (collectionSubscriptions.contains(target))
       return
-    }
 
     if (collectionSubscriptions.size >= COLLECTION_SUBSCRIPTION_LIMIT) {
       error("Subscription limit exceeded.")
@@ -301,8 +222,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   /**
    * Unsubscribe from collection updates.
    */
-  private def unsubscribeCollection(uri: String) = {
+  private def unsubscribeCollection(uri: String): Unit = {
     CollectionSupervisor.unsubscribeCollection(self, uri)
+    collectionSubscriptions -= uri
   }
 }
 

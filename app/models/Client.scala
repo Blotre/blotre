@@ -15,62 +15,33 @@ import scala.collection.JavaConverters._
 @Entity
 @SerialVersionUID(1)
 case class Client(
-  @(Id @field)
-  var id: ObjectId,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
-  var name: String,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
+  @(Id @field) var id: ObjectId,
+  name: String,
   var uri: String,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
   var blurb: String,
-
   var clientSecret: String,
-
-  var created: Date,
-
-  var ownerId: ObjectId)
+  created: Date,
+  ownerId: ObjectId,
+  var redirects: String)
 {
-  def this() = this(null, "", "", "", "", new Date(0), null)
+  def this() = this(null, "", "", "", "", new Date(0), null, "")
 
   def validateCreds(secret: String) =
     this.clientSecret == secret
 }
 
-/**
- *
- */
-@Entity
-@Indexes(Array(new Index(value = "clientId, uri", unique=true)))
-@SerialVersionUID(1)
-case class ClientRedirectUri(
-  @(Id @field)
-  var id: ObjectId,
+object Client {
 
-  var clientId: ObjectId,
-
-  @Constraints.Required
-  @Constraints.MaxLength(255)
-  @Constraints.MinLength(3)
-  var uri: String,
-
-  var created: Date)
-{
-  def this() = this(null, null, "", new Date(0))
-}
-
-
-object Client
-{
   import Serializable._
+
+  val maxClientCount = 10
+
+  val maxRedirects = 10
+
+  var validUrlCharacters = """a-zA-Z0-9\-_\.~!\*'();:@&=\+$,/\?%#\[\]?"""
+
+  def isValidUrl(uri: String) =
+    uri.matches("(http://|https://)[" + validUrlCharacters + "]{3,255}")
 
   private def save[A](obj: A): Option[A] = {
     MorphiaObject.datastore.save[A](obj)
@@ -80,17 +51,16 @@ object Client
   private def clientDb(): Query[Client] =
     MorphiaObject.datastore.createQuery((classOf[Client]))
 
-  private def redirectDb(): Query[ClientRedirectUri] =
-    MorphiaObject.datastore.createQuery((classOf[ClientRedirectUri]))
-
   def normalizeUri(uri: String) =
-    uri.trim.stripSuffix("/")
+    uri.replace("[^" + validUrlCharacters + "]", "+").trim.stripSuffix("/")
 
   def createClient(name: String, uri: String, blurb: String, owner: User) =
-    save(new Client(null, name, normalizeUri(uri), blurb, Crypto.generateToken, new Date(), owner.id))
+    save(new Client(null, name, normalizeUri(uri), blurb, Crypto.generateToken, new Date(), owner.id, ""))
 
-  def addRedirectUri(client: Client, uri: String, owner: User) =
-    save(new ClientRedirectUri(null, client.id, normalizeUri(uri), new Date()))
+  def setRedirects(client: Client, redirects: Array[String]) = {
+    client.redirects = redirects.take(maxRedirects).map(normalizeUri(_)).mkString("\n")
+    save(client)
+  }
 
   def validate(clientId: String, clientSecret: String): Boolean =
     (clientDb()
@@ -127,24 +97,19 @@ object Client
     stringToObjectId(id).flatMap(x => findByIdForUser(x, user))
 
   /**
-   * Ensures that a redirect belongs to a client
+   * Ensures that a redirect belongs to a client.
    */
   def validateRedirect(client: Client, redirectUri: String): Option[Client] =
-    Option(MorphiaObject.datastore.createQuery(classOf[ClientRedirectUri])
-      .filter("clientId =", client.id)
-      .filter("uri =", normalizeUri(redirectUri))
-      .get) map { _ =>
-        client
-      }
+    if (findRedirectsForClient(client) contains redirectUri)
+      Some(client)
+    else
+      None
 
   /**
    * Get all the redirects that belong to a client.
    */
-  def findRedirectsForClient(client: Client): List[ClientRedirectUri] =
-    MorphiaObject.datastore.createQuery(classOf[ClientRedirectUri])
-      .filter("clientId =", client.id)
-      .asList()
-      .asScala.toList
+  def findRedirectsForClient(client: Client): Array[String] =
+    client.redirects.split("\n")
 
   /**
    * Lookup all clients for a given user.
@@ -154,6 +119,17 @@ object Client
       .filter("ownerId = ", user.id)
       .asList()
       .asScala.toList
+
+  /**
+   *
+   */
+  def deleteClient(client: Client): Unit = {
+    MorphiaObject.datastore.delete(
+      clientDb()
+        .filter("id =", client.id))
+    AccessToken.deleteAllForClient(client)
+    AuthCode.deleteAllForClient(client)
+  }
 }
 
 object Crypto

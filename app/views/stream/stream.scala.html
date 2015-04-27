@@ -31,6 +31,7 @@
        class="status status-header-peak status-small-header "
        style="background: @stream.status.color"
        data-bind="style: { background: color }"></a>
+    <span class="color-label" data-bind="text: color"></span>
 }
 
 @extraScripts = {
@@ -57,7 +58,6 @@
 
     <div class="stream-header">
         <div class="stream-data">
-            <span class="color-label" data-bind="text: color"></span>
             <h1 class="stream-title">
                 <a data-bind="text: stream().name" href="@routes.Stream.getStream(stream.uri)">@stream.name</a>
             </h1>
@@ -109,6 +109,9 @@
             <!-- ko template: { name: 'stream-search-result-template', foreach: children().children } --><!-- /ko -->
         </ul>
     </div>
+
+
+    <div class="centered" id="spectrum-container"></div>
 
     <script>
         window.initialStreamData = @Html(Json.toJson(stream).toString());

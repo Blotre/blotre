@@ -64,11 +64,12 @@ GET     /account/developer            controllers.DeveloperController.index()
 
 GET     /account/developer/createClient         controllers.DeveloperController.createClient()
 POST    /account/developer/createClient         controllers.DeveloperController.createClientSubmit()
-GET    /account/developer/client/:id           controllers.DeveloperController.getClient(id)
-POST    /account/developer/client/:id/regenerateSecret           controllers.DeveloperController.regenerateSecret(id)
 
-GET    /account/developer/client/:id/addRedirect           controllers.DeveloperController.addRedirect(id)
-POST    /account/developer/client/:id/addRedirect           controllers.DeveloperController.addRedirectSubmit(id)
+GET    /account/developer/client/:id                    controllers.DeveloperController.getClient(id)
+DELETE /account/developer/client/:id                    controllers.DeveloperController.deleteClient(id)
+POST   /account/developer/client/:id/regenerateSecret   controllers.DeveloperController.regenerateSecret(id)
+
+POST   /account/developer/client/:id/redirects         controllers.DeveloperController.setRedirects(id)
 
 
 # Shared pages

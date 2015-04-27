@@ -4,6 +4,7 @@ import java.util.Date
 import helper.datasources.MorphiaObject
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
+import org.mongodb.morphia.query._
 import play.api.libs.json._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
@@ -19,8 +20,7 @@ import scala.annotation.meta._
 @Indexes(Array(new Index(value = "parentId, childId", unique=true)))
 @SerialVersionUID(1)
 case class ChildStream(
-  @(Id @field)
-  id: ObjectId,
+  @(Id @field) var id: ObjectId,
   hierarchical: Boolean,
   parentId: ObjectId,
   parentName: String,
@@ -36,33 +36,26 @@ case class ChildStream(
 /**
  *
  */
+case class ChildCount(
+  @(Id @field) var id: ObjectId,
+  count: Int)
+{
+  def this() = this(null, 0)
+}
+
+/**
+ *
+ */
 @Entity
 @SerialVersionUID(1)
 case class Stream(
-  @(Id @field)
-  var id: ObjectId,
-
-  @Constraints.Required
-  @Constraints.MaxLength(64)
-  @Constraints.MinLength(1)
-  var name: String,
-
-  @Constraints.Required
-  @Constraints.MaxLength(2000)
-  @Constraints.MinLength(1)
-  @Indexed(unique=true)
-  var uri: String,
-
-  @Constraints.Required
-  var created: Date,
-
-  @Constraints.Required
+  @(Id @field) var id: ObjectId,
+  name: String,
+  @Indexed(unique=true) uri: String,
+  created: Date,
   var updated: Date,
-
-  @Embedded
-  var status: Status,
-
-  var ownerId: ObjectId)
+  @Embedded var status: Status,
+  ownerId: ObjectId)
 {
   def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null)
 
@@ -74,8 +67,14 @@ case class Stream(
 
   def getChildren() =
     Stream.getChildrenOf(this)
-}
 
+  def childCount() = {
+    val child = MorphiaObject.datastore.createQuery((classOf[ChildCount]))
+      .filter("id =", this.id)
+      .get
+    if (child != null) child.count else 0
+  }
+}
 
 object Stream
 {
@@ -117,6 +116,9 @@ object Stream
 
   private def childDb(): Query[ChildStream] =
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
+
+  private def childCountDb(): Query[ChildCount] =
+    MorphiaObject.datastore.createQuery((classOf[ChildCount]))
 
   def normalizeUri(uri: String) =
     if (uri == null) "" else uri.toLowerCase.stripSuffix("/")
@@ -192,7 +194,10 @@ object Stream
   private def createStreamWithName(name: String, uri: String, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      save(Stream(null, name, normalizeUri(uri), created, created, Status.defaultStatus(owner.id), owner.id))
+      var s = Stream(null, name, normalizeUri(uri), created, created, Status.defaultStatus(owner.id), owner.id)
+      save(s)
+      save(ChildCount(s.id, 0))
+      Some(s)
     }
 
   /**
@@ -225,7 +230,11 @@ object Stream
    */
    def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] =
     asEditable(user, parent) flatMap { parent =>
-      save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
+      val s = save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
+      MorphiaObject.datastore.update(
+        childCountDb().filter("id", parent.id),
+        MorphiaObject.datastore.createUpdateOperations((classOf[ChildCount])).inc("count"))
+      s
     }
 
   def addChild(hierarchical: Boolean, parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =

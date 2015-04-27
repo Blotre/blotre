@@ -3,20 +3,19 @@
 html,
 body {
     min-height: 100%;
-    color: #444;
+    min-width: 320px;
 }
 
 body {
     font-family: 'Lato', sans-serif;
+    color: #444;
 }
-
 
 ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 
 /**
     Body
@@ -87,6 +86,8 @@ form .info {
 @import "404";
 @import "bootbox";
 @import "header_bar";
+@import "status_header";
+@import "loading";
 @import "account/link_account";
 @import "authorize";
 @import "stream/shared";
@@ -124,47 +125,5 @@ form .error .help-inline {
 }
 
 
-
-
-
-
-.status-header {
-    position: relative;
-    height: 300px;
-    z-index: 15;
-}
-
-.status-small-header {
-    display: block;
-    height: 60px;
-    width: 100%;
-    position: fixed;
-    top:0;
-    left: 0;
-}
-
-.status-header:before{
-    content: " ";
-    position: absolute;
-    bottom: 0;
-    z-index: -1;
-    width: 100%;
-    height: 100%;
-    padding-top: 100%;
-    background: inherit;
-}
-
-.status-header-shadow {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 5px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
-}
-
-.status-header-peak {
-    z-index: 10;
-}
 
 
