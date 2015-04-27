@@ -19,7 +19,7 @@ Thumbs.db
 *.orig
 *.cache
 *.log
-
+*~
 
 # Node Files #
 node_modules
