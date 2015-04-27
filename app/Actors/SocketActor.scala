@@ -197,7 +197,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   /**
    * Unsubscribe from a stream's updates
    */
-  private def unsubscribe(targets: List[String]) = {
+  private def unsubscribe(targets: List[String]): Unit = {
     StreamSupervisor.unsubscribe(self, targets)
     subscriptions = subscriptions -- targets
   }
@@ -206,9 +206,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
    * Subscribe to collection updates.
    */
   private def subscribeCollection(target: String)(implicit correlation: Int): Unit = {
-    if (collectionSubscriptions.contains(target)) {
+    if (collectionSubscriptions.contains(target))
       return
-    }
 
     if (collectionSubscriptions.size >= COLLECTION_SUBSCRIPTION_LIMIT) {
       error("Subscription limit exceeded.")
@@ -223,8 +222,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   /**
    * Unsubscribe from collection updates.
    */
-  private def unsubscribeCollection(uri: String) = {
+  private def unsubscribeCollection(uri: String): Unit = {
     CollectionSupervisor.unsubscribeCollection(self, uri)
+    collectionSubscriptions -= uri
   }
 }
 
