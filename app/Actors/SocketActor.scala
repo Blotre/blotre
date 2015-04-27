@@ -159,13 +159,15 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: controllers.Stream.ApiSetStatusData)(implicit correlation: Int): Unit =
-    controllers.Stream.apiSetStreamStatus(user, uri, status) match {
-      case controllers.ApiSuccess(x) =>
-        output(SocketSuccess(correlation))
+    models.Stream.findByUri(uri) map { stream =>
+      controllers.Stream.apiSetStreamStatus(user, stream, status) match {
+        case controllers.ApiSuccess(x) =>
+          output(SocketSuccess(correlation))
 
-      case controllers.ApiFailure(e) =>
-        error(e.error)
-    }
+        case controllers.ApiFailure(e) =>
+          error(e.error)
+      }
+    } getOrElse(error("Stream does not exist."))
 
   /**
    * Subscribe to a stream's updates.
