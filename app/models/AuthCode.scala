@@ -93,7 +93,6 @@ object AuthCode
     findByClient(client, user)
   }
 
-
   /**
    * Delete all access tokens associated with a client.
    */
