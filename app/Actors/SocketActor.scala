@@ -10,6 +10,17 @@ import play.api.mvc.Results
 /**
  *
  */
+case class SocketApiGetStream(uri: String)
+
+object SocketApiGetStream
+{
+  implicit val socketApiGetStreamReads: Reads[SocketApiGetStream] =
+    (JsPath \ "uri").read[String].map(SocketApiGetStream.apply)
+}
+
+/**
+ *
+ */
 case class SocketApiSetStatus(of: String, status: controllers.Stream.ApiSetStatusData)
 
 object SocketApiSetStatus
@@ -23,11 +34,13 @@ object SocketApiSetStatus
 /**
  *
  */
-object SocketActor {
+object SocketActor
+{
   def props(user: User, out: ActorRef): Props = Props(new SocketActor(user, out))
 }
 
-class SocketActor(user: User, out: ActorRef) extends Actor {
+class SocketActor(user: User, out: ActorRef) extends Actor
+{
   val SUBSCRIPTION_LIMIT = 256
   val COLLECTION_SUBSCRIPTION_LIMIT = 8
 
@@ -47,27 +60,19 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     output(SocketError(message, correlation))
 
   def receive = {
-    case msg@StatusUpdatedEvent(_, _, _) =>
-     output(msg)
-
-    case msg@ChildAddedEvent(_, _, _) =>
-     output(msg)
-
-    case msg@ChildRemovedEvent(_, _, _) =>
-     output(msg)
-
-    case msg@StreamDeletedEvent(_, _) =>
-     output(msg)
-
-    case msg@ParentAddedEvent(_, _, _) =>
-     output(msg)
-
-    case msg@ParentRemovedEvent(_, _, _) =>
-     output(msg)
+    case msg: StatusUpdatedEvent => output(msg)
+    case msg: ChildAddedEvent => output(msg)
+    case msg: ChildRemovedEvent => output(msg)
+    case msg: StreamDeletedEvent => output(msg)
+    case msg: ParentAddedEvent => output(msg)
+    case msg: ParentRemovedEvent => output(msg)
 
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
+        case "GetStream" =>
+          recieveGetStreamMessage(msg)
+
         case "GetStatus" =>
           recieveGetStatusMessage(msg)
 
@@ -94,9 +99,16 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
     }
   }
 
+  private def recieveGetStreamMessage(msg: JsValue)(implicit correlation: Int) =
+    (Json.fromJson[SocketApiGetStream](msg)).fold(
+      valid = x =>
+        getStream(x.uri),
+      invalid = e =>
+        error("Could not process request."))
+
   private def recieveGetStatusMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "of").read[String]).reads(msg)
-      .map(subscribe)
+      .map(getStatus)
       .recoverTotal { _ =>
         error("Could not process request.")
       }
@@ -134,6 +146,16 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
       .map(unsubscribeCollection)
       .recoverTotal { _ =>
       error("Could not process request.")
+    }
+
+  /**
+   * Get the status of a stream.
+   */
+  private def getStream(uri: String)(implicit correlation: Int): Unit =
+    models.Stream.findByUri(uri) map { stream =>
+      output(StreamResponse(stream, correlation))
+    } getOrElse {
+      error("No such stream.")
     }
 
   /**

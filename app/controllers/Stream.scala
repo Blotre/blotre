@@ -199,15 +199,6 @@ object Stream extends Controller {
     }
   }
 
-  /**
-   * Lookup a stream by id.
-   */
-  def apiGetStream(id: String) = Action { implicit request =>
-    models.Stream.findById(id) map { stream =>
-      Ok(Json.toJson(stream))
-    } getOrElse (NotFound)
-  }
-
   val colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
 
   case class ApiSetStatusData(color: String)
@@ -223,6 +214,15 @@ object Stream extends Controller {
       (JsPath \ "uri").read[String] and
       (JsPath \ "status").readNullable[ApiSetStatusData]
     )(ApiCreateStreamData.apply _)
+
+  /**
+   * Lookup a stream by id.
+   */
+  def apiGetStream(id: String) = Action { implicit request =>
+    models.Stream.findById(id) map { stream =>
+      Ok(Json.toJson(stream))
+    } getOrElse(NotFound)
+  }
 
   /**
    * Create a new stream.

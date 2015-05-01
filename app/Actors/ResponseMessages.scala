@@ -2,6 +2,22 @@ package Actors
 
 import play.api.libs.json._
 
+
+/**
+ * Stream response.
+ */
+case class StreamResponse(stream: models.Stream, correlation: Int)
+
+object StreamResponse
+{
+  implicit val statusWrites = new Writes[StreamResponse] {
+    def writes(x: StreamResponse): JsValue =
+      Json.obj(
+        "type" -> "Stream",
+        "correlation" -> x.correlation) ++ Json.toJson(x.stream).as[JsObject]
+  }
+}
+
 /**
  * Current stream status response.
  */
@@ -13,7 +29,7 @@ object CurrentStatusResponse
     def writes(x: CurrentStatusResponse): JsValue =
       Json.obj(
         "type" -> "StreamStatus",
-        "from" -> x.uri,
+        "url" -> x.uri,
         "status" -> x.status,
         "correlation" -> x.correlation)
   }
@@ -31,23 +47,6 @@ object SocketError
       Json.obj(
         "type" -> "Error",
         "error" -> x.error,
-        "correlation" -> x.correlation)
-  }
-}
-
-/**
- *  Websocket success response message.
- *
- *  Used to indicate that an operation without an response body has completed successfully.
- */
-case class SocketSuccess(correlation: Int)
-
-object SocketSuccess
-{
-  implicit val statusWrites = new Writes[SocketSuccess] {
-    def writes(x: SocketSuccess): JsValue =
-      Json.obj(
-        "type" -> "Success",
         "correlation" -> x.correlation)
   }
 }
