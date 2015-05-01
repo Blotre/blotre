@@ -1,6 +1,7 @@
 package Actors
 
 import akka.actor._
+import controllers.{ApiSetStatusData, ApiCreateStreamData}
 import models.User
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -21,13 +22,13 @@ object SocketApiGetStream
 /**
  *
  */
-case class SocketApiSetStatus(of: String, status: controllers.Stream.ApiSetStatusData)
+case class SocketApiSetStatus(of: String, status: ApiSetStatusData)
 
 object SocketApiSetStatus
 {
   implicit val socketApiSetStatusReads: Reads[SocketApiSetStatus] = (
     (JsPath \ "of").read[String] and
-      (JsPath \ "status").read[controllers.Stream.ApiSetStatusData]
+      (JsPath \ "status").read[ApiSetStatusData]
     )(SocketApiSetStatus.apply _)
 }
 
@@ -70,6 +71,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
+        case "CreateStream" =>
+          recieveCreateStreamMessage(msg)
+
         case "GetStream" =>
           recieveGetStreamMessage(msg)
 
@@ -98,6 +102,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         error("Could not process request.")
     }
   }
+
+  private def recieveCreateStreamMessage(msg: JsValue)(implicit correlation: Int) =
+    (Json.fromJson[ApiCreateStreamData](msg)).fold(
+      valid = x =>
+        createStream(user, x.name, x.uri, x.status),
+      invalid = e =>
+        error("Could not process request."))
 
   private def recieveGetStreamMessage(msg: JsValue)(implicit correlation: Int) =
     (Json.fromJson[SocketApiGetStream](msg)).fold(
@@ -149,6 +160,18 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     }
 
   /**
+   * Try to create a new stream.
+   */
+  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int): Unit =
+    controllers.Stream.apiCreateStream(user, name, uri, status) match {
+      case controllers.ApiSuccess(stream) =>
+        output(StreamResponse(stream, correlation))
+
+      case controllers.ApiFailure(e) =>
+        error(e.error)
+    }
+
+  /**
    * Get the status of a stream.
    */
   private def getStream(uri: String)(implicit correlation: Int): Unit =
@@ -180,7 +203,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Get the status of a stream.
    */
-  private def setStatus(user: models.User, uri: String, status: controllers.Stream.ApiSetStatusData)(implicit correlation: Int): Unit =
+  private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int): Unit =
     models.Stream.findByUri(uri) map { stream =>
       controllers.Stream.apiSetStreamStatus(user, stream, status) match {
         case controllers.ApiSuccess(status) =>

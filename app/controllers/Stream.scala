@@ -15,6 +15,34 @@ import helper.ImageHelper
 /**
  *
  */
+case class ApiSetStatusData(color: String)
+
+object ApiSetStatusData
+{
+  val colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
+
+  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] = (__ \ "color").read (colorValidate).map (ApiSetStatusData.apply _)
+}
+
+/**
+ *
+ */
+case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
+
+object ApiCreateStreamData
+{
+  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.Stream.streamNamePattern.toString))
+
+  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
+    (JsPath \ "name").read[String](nameValidate) and
+      (JsPath \ "uri").read[String] and
+      (JsPath \ "status").readNullable[ApiSetStatusData]
+    )(ApiCreateStreamData.apply _)
+}
+
+/**
+ *
+ */
 object Stream extends Controller {
 
   import models.Serializable._
@@ -185,7 +213,8 @@ object Stream extends Controller {
         models.Stream.findByUri(parentUri).map(parent => (parent, child))
     }
 
-  private def getParentPath(uri: String) = {
+  private def getParentPath(inputUri: String) = {
+    val uri = models.Stream.normalizeUri(inputUri)
     val index = uri.lastIndexOf('/')
     if (index == -1 || index >= uri.length - 1)
       None
@@ -198,22 +227,6 @@ object Stream extends Controller {
         None
     }
   }
-
-  val colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
-
-  case class ApiSetStatusData(color: String)
-
-  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] = (__ \ "color").read(colorValidate).map(ApiSetStatusData.apply _)
-
-  case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
-
-  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.Stream.streamNamePattern.toString))
-
-  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
-    (JsPath \ "name").read[String](nameValidate) and
-      (JsPath \ "uri").read[String] and
-      (JsPath \ "status").readNullable[ApiSetStatusData]
-    )(ApiCreateStreamData.apply _)
 
   /**
    * Lookup a stream by id.
@@ -232,34 +245,34 @@ object Stream extends Controller {
   def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     (Json.fromJson[ApiCreateStreamData](request.body)).fold(
       valid = value => {
-        apiCreateStream(request.user, value.name, value.uri, value.status)
+        toResponse(apiCreateStream(request.user, value.name, value.uri, value.status))
       },
       invalid = e =>
         BadRequest(Json.toJson(ApiError("Could not process request", e))))
   }
 
-  def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): Result = {
+  def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] = {
     if (!name.matches(models.Stream.streamNamePattern.toString))
-      return UnprocessableEntity(Json.toJson(ApiError("Stream name is invalid.")))
+      return ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
 
     models.Stream.findByUri(uri) map { existing =>
-      UnprocessableEntity(Json.toJson(ApiError("Stream already exists.")))
+      ApiCouldNotProccessRequest(ApiError("Stream already exists."))
     } getOrElse {
       getParentFromPath(uri) map { case (parent, childName) =>
-        if (childName != name) {
-          UnprocessableEntity(Json.toJson(ApiError("Stream name and uri do not match.")))
+        if (!childName.equalsIgnoreCase(name)) {
+          ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
         } else {
           models.Stream.asEditable(user, parent) map { parent =>
             if (parent.childCount() >= models.Stream.maxChildren)
-              UnprocessableEntity(Json.toJson(ApiError("Too many children.")))
+              ApiCouldNotProccessRequest(ApiError("Too many children."))
             else
               createDescendant(user, parent, name) map { newStream =>
                 status.map(s => updateStreamStatus(newStream, s.color, user))
-                Created(Json.toJson(newStream))
-              } getOrElse (InternalServerError)
-          } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
+                ApiCreated(newStream)
+              } getOrElse (ApiInternalError())
+          } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
         }
-      } getOrElse (NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
+      } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
     }
   }
 
