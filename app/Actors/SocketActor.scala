@@ -161,8 +161,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor {
   private def setStatus(user: models.User, uri: String, status: controllers.Stream.ApiSetStatusData)(implicit correlation: Int): Unit =
     models.Stream.findByUri(uri) map { stream =>
       controllers.Stream.apiSetStreamStatus(user, stream, status) match {
-        case controllers.ApiSuccess(x) =>
-          output(SocketSuccess(correlation))
+        case controllers.ApiSuccess(status) =>
+          output(CurrentStatusResponse(stream.uri, status, correlation))
 
         case controllers.ApiFailure(e) =>
           error(e.error)

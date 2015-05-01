@@ -27,28 +27,40 @@ object ApiError
   }
 }
 
-
-abstract class ApiResult
+sealed abstract class ApiResult[+T]
 {
+  def toJson()(implicit writes: Writes[T]): JsValue
 }
 
-class ApiSuccess(val value: JsValue) extends ApiResult
+
+
+class ApiSuccess[+T](val value: T) extends ApiResult[T]
+{
+  def toJson()(implicit writes: Writes[T]) = Json.toJson(value)
+}
+
 object ApiSuccess
 {
-  def unapply(t: ApiSuccess): Option[JsValue] = Some(t.value)
+  def unapply[T](t: ApiSuccess[T]): Option[T] = Some(t.value)
 }
 
-case class ApiCreated(x: JsValue) extends ApiSuccess(x)
-case class ApiOk(x: JsValue) extends ApiSuccess(x)
+case class ApiCreated[T](x: T) extends ApiSuccess(x)
+case class ApiOk[T](x: T) extends ApiSuccess(x)
 
 
-class ApiFailure(val value: ApiError) extends ApiResult
+class ApiFailure[+T](val value: ApiError) extends ApiResult[T]
+{
+  def toJson()(implicit writes: Writes[T]) = Json.toJson(value)
+}
+
 object ApiFailure
 {
-  def unapply(t: ApiFailure): Option[ApiError] = Some(t.value)
+  def unapply[T](t: ApiFailure[T]): Option[ApiError] = Some(t.value)
 }
 
 case class ApiNotFound(x: ApiError) extends ApiFailure(x)
 case class ApiUnauthroized(x: ApiError) extends ApiFailure(x)
 case class ApiCouldNotProccessRequest(x: ApiError) extends ApiFailure(x)
 case class ApiInternalError() extends ApiFailure(ApiError("An internal server error occured."))
+
+

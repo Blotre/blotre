@@ -29,16 +29,17 @@ object Stream extends Controller {
       (p._1 + "/" + c, p._2 :+(c, (p._1 + "/" + c)))
     })._2
 
-  private def toResponse(result: ApiResult) =
+  private def toResponse[T](result: ApiResult[T])(implicit writes: Writes[T]) =
     result match {
-      case ApiCreated(x) => Created(Json.toJson(x))
-      case ApiOk(x) => Ok(Json.toJson(x))
-      case ApiSuccess(x) => Ok(Json.toJson(x))
+      case _: ApiCreated[T] => Created(result.toJson)
+      case _: ApiOk[T] => Ok(result.toJson)
+      case _: ApiSuccess[T] => Ok(result.toJson)
 
-      case ApiUnauthroized(x) => Unauthorized(Json.toJson(x))
-      case ApiNotFound(x) => NotFound(Json.toJson(x))
-      case x: ApiInternalError => InternalServerError(Json.toJson(x.value))
-      case ApiCouldNotProccessRequest(x) => UnprocessableEntity(Json.toJson(x))
+      case _: ApiUnauthroized => Unauthorized(result.toJson)
+      case _: ApiNotFound => NotFound(result.toJson)
+      case _: ApiInternalError => InternalServerError(result.toJson)
+      case _: ApiCouldNotProccessRequest => UnprocessableEntity(result.toJson)
+      case _: ApiFailure[T] => BadRequest(result.toJson)
     }
 
   /**
@@ -303,22 +304,22 @@ object Stream extends Controller {
     } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
 
-  def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): ApiResult =
+  def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): ApiResult[models.Status] =
     Json.fromJson[ApiSetStatusData](body) map { status =>
       apiSetStreamStatus(user, stream, status)
     } recoverTotal { e =>
       ApiCouldNotProccessRequest(ApiError("Could not process request.", e))
     }
 
-  def apiSetStreamStatus(user: models.User, streamId: String, status: ApiSetStatusData): ApiResult  =
+  def apiSetStreamStatus(user: models.User, streamId: String, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.findById(streamId) map { stream =>
       apiSetStreamStatus(user, stream, status)
     } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
 
-  def apiSetStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult  =
+  def apiSetStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.asEditable(user, stream) map { stream =>
       updateStreamStatus(stream, status.color, user) map { status =>
-        ApiOk(Json.toJson(status))
+        ApiOk(status)
       } getOrElse (ApiInternalError())
     } getOrElse (ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
 
@@ -405,13 +406,16 @@ object Stream extends Controller {
     } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
 
   def apiCreateChildInternal(user: models.User, parent: models.Stream, child: models.Stream): Result =
-    models.Stream.getChildById(parent.id, child.id) map { _ =>
-      Ok(Json.toJson(child))
-    } orElse {
-      addChild(user, false, parent, child) map { _ =>
-        Created(Json.toJson(child))
-      }
-    } getOrElse (InternalServerError)
+    if (parent.id == child.id)
+      UnprocessableEntity(Json.toJson(ApiError("I'm my own grandpa.")))
+    else
+      models.Stream.getChildById(parent.id, child.id) map { _ =>
+        Ok(Json.toJson(child))
+      } orElse {
+        addChild(user, false, parent, child) map { _ =>
+          Created(Json.toJson(child))
+        }
+      } getOrElse (InternalServerError)
 
   /**
    * Can a user edit a given stream?
