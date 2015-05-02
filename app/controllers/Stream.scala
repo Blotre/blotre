@@ -280,11 +280,13 @@ object Stream extends Controller {
    * Cannot delete root streams.
    */
   def apiDeleteStream(id: String): Action[Unit] = AuthorizedAction(parse.empty) { implicit request =>
-    toResponse(apiDeleteStream(request.user, id))
+    toResponse(models.Stream.findById(id) map { stream =>
+      apiDeleteStream(request.user, stream)
+    } getOrElse (ApiNotFound(ApiError("Stream does not exist."))))
   }
 
-  def apiDeleteStream(user: models.User, id: String): ApiResult[models.Stream] =
-    models.Stream.findById(id) map { stream =>
+  def apiDeleteStream(user: models.User, uri: String): ApiResult[models.Stream] =
+    models.Stream.findByUri(uri) map { stream =>
       apiDeleteStream(user, stream)
     } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
 

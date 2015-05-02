@@ -101,7 +101,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
           recieveGetStreamMessage(msg)
 
         case "DeleteStream" =>
-          recieveGetStreamMessage(msg)
+          recieveDeleteStreamMessage(msg)
 
         case "GetStatus" =>
           recieveGetStatusMessage(msg)
