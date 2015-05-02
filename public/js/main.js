@@ -100,7 +100,9 @@ var AppViewModel = function(user, stream) {
 
 AppViewModel.prototype.checkFavorite = function() {
     var self = this;
-
+    if (!self.user().userName())
+        return;
+    
     if (isHierarchical(self.user().userName(), self.stream().uri())) {
         self.favorite(FavoriteStatus.Hierarchical);
     } else {
