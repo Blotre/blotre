@@ -9,21 +9,16 @@ import org.mongodb.morphia.query.Query
 
 import scala.annotation.meta.field
 
-
-/**
- *
- */
 @Entity
-@SerialVersionUID(1)
-case class AccessToken(
+case class Token(
   @(Id @field)
   id: ObjectId,
 
   clientId: ObjectId,
   userId: ObjectId,
 
-  accessToken: String,
-  refreshToken: String,
+  token: String,
+  redirectUri: String,
 
   issued: Date,
   expires: Long)
@@ -42,6 +37,22 @@ case class AccessToken(
     User.findById(this.userId)
 }
 
+/**
+ *
+ */
+@Entity
+class AccessToken extends Token
+{
+}
+
+/**
+ *
+ */
+@Entity
+class RefreshToken extends Token
+{
+}
+
 
 object AccessToken
 {
@@ -50,7 +61,7 @@ object AccessToken
   /**
    * Update or create the access token for a given client and user.
    */
-  def updateAccessToken(clientId: ObjectId, userId: ObjectId, accessToken: String, refreshToken: String, issued: Date, expires: Long) =
+  def updateAccessToken(clientId: ObjectId, userId: ObjectId, token: String, redirectUri: String, issued: Date, expires: Long) =
     MorphiaObject.datastore.updateFirst(
       MorphiaObject.datastore.createQuery(classOf[AccessToken])
         .filter("clientId = ", clientId)
@@ -58,8 +69,8 @@ object AccessToken
       MorphiaObject.datastore.createUpdateOperations[AccessToken](classOf[AccessToken])
         .set("clientId", clientId)
         .set("userId", userId)
-        .set("accessToken", accessToken)
-        .set("refreshToken", refreshToken)
+        .set("token", token)
+        .set("redirectUri", redirectUri)
         .set("issued", issued)
         .set("expires", expires),
       true)
@@ -67,8 +78,8 @@ object AccessToken
   /**
    *
    */
-  def refreshAccessToken(client: Client, user: User): Option[AccessToken] = {
-    updateAccessToken(client.id, user.id, Crypto.generateToken, Crypto.generateToken, new Date(), defaultExpiration)
+  def refreshAccessToken(client: Client, user: User, redirectUri: String): Option[AccessToken] = {
+    updateAccessToken(client.id, user.id, Crypto.generateToken, redirectUri, new Date(), defaultExpiration)
     findToken(client.id, user)
   }
 
@@ -86,7 +97,7 @@ object AccessToken
    */
   def findByAccessToken(accessToken: String): Option[AccessToken] =
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
-      .filter("accessToken = ", accessToken)
+      .filter("token = ", accessToken)
       .get)
 
   /**
@@ -96,14 +107,6 @@ object AccessToken
     findByAccessToken(accessToken) flatMap { token =>
       if (token.isExpired) None else Some(token)
     }
-
-  /**
-   *
-   */
-  def findByRefreshToken(refreshToken: String): Option[AccessToken] =
-    Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
-      .filter("refreshToken = ", refreshToken)
-      .get)
 
   /**
    * Delete all access tokens associated with a client.

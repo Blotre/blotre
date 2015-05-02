@@ -4,6 +4,7 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json._
 import play.api.mvc._
+import play.i18n.Messages
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object OAuth2Controller extends Controller
@@ -25,29 +26,29 @@ object OAuth2Controller extends Controller
       case "code" =>
         authorizeAuthorizationCodeFlow(user, response_type, client_id, redirect_uri)
 
-      case _ => NotImplemented
+      case _ =>
+        Ok(views.html.oauth.error.render(Messages.get("blotre.authorize.error.unsupported")))
     }
   }}
 
   /**
    * Start an authorization code based flow.
    *
-   * Displays authorization UI or if previously authenticated, updates the authenitcation.
+   * Displays authorization UI or if previously authenticated, updates the authentication.
    */
-  private def authorizeAuthorizationCodeFlow(user: models.User, response_type: String, client_id: String, redirect_uri: String): Result = {
+  private def authorizeAuthorizationCodeFlow(user: models.User, response_type: String, client_id: String, redirect_uri: String): Result =
     clientForRedirect(client_id, redirect_uri) map { client =>
-      models.AuthCode.findByClient(client, user) match {
+      models.AuthCode.findByClient(client, user, redirect_uri) match {
         case Some(_) =>
-          authorizeClientForUser(client, redirect_uri, user)
+          authorizeClientForUser(user, client, redirect_uri)
 
         case None =>
           Ok(views.html.oauth.authorize.render(client, redirect_uri))
       }
     } getOrElse(NotFound)
-  }
 
   /**
-   *
+   * User has authorized of denied client.
    */
   def onAuthorize = AuthenticatedAction { implicit request => JavaContext.withContext {
     var user = Application.getLocalUser(request)
@@ -60,10 +61,10 @@ object OAuth2Controller extends Controller
         val redirectUri = value.redirectUri
         value.action match {
           case "allow" =>
-            authorizeClientForUser(clientId, redirectUri, user)
+            authorizeClientForUser(user, clientId, redirectUri)
 
           case "deny" =>
-            denyClientForUser(clientId, redirectUri, user)
+            denyClientForUser(user, clientId, redirectUri)
 
           case _ =>
             BadRequest
@@ -71,46 +72,52 @@ object OAuth2Controller extends Controller
   }}
 
   /**
-   * TODO: check redirect_uri
+   *
    */
-  def accessToken(grant_type: String, client_id: String, client_secret: String, code: String) = Action { implicit request =>
+  def accessToken(grant_type: String, client_id: String, client_secret: String, code: String, redirect_uri: String) = Action { implicit request =>
     grant_type match {
       case "authorization_code" =>
-        models.AuthCode.findByCode(code) flatMap { code =>
-          if (code.isExpired() || code.clientId != client_id)
-            None
-          else
-            Some(code)
-        } map { code =>
-          val user = models.User.findById(code.userId).get
-          models.Client.findById(client_id) flatMap { client =>
-            if (client.validateCreds(client_secret))
-              Some(client)
-            else
-              None
-          } flatMap { client =>
-            models.AccessToken.refreshAccessToken(client, user)
-          } map { token =>
-            Ok(Json.obj(
-              "access_token" -> token.accessToken,
-              "token_type" -> "bearer",
-              "expires_in" -> token.expires
-            ))
-          } getOrElse(accessTokenErrorResponse("invalid_client", ""))
-
-        } getOrElse(accessTokenErrorResponse("invalid_grant", ""))
-
+        accessTokenAuthenticationCode(client_id, client_secret, code, redirect_uri)
       case _ =>
         accessTokenErrorResponse("unsupported_grant_type", "")
     }
   }
 
+  /**
+   * Authentication code based authorization.
+   */
+  def accessTokenAuthenticationCode(client_id: String, client_secret: String, code: String, redirect_uri: String) =
+    models.AuthCode.findByCode(code, redirect_uri) flatMap { code =>
+      if (code.isExpired() || code.clientId != client_id)
+        None
+      else
+        Some(code)
+    } map { code =>
+      val user = models.User.findById(code.userId).get
+      models.Client.findById(client_id) flatMap { client =>
+        if (client.validateCreds(client_secret))
+          Some(client)
+        else
+          None
+      } flatMap { client =>
+        models.AccessToken.refreshAccessToken(client, user, redirect_uri)
+      } map { token =>
+        Ok(Json.obj(
+          "access_token" -> token.token,
+          "token_type" -> "bearer",
+          "expires_in" -> token.expires
+        ))
+      } getOrElse (accessTokenErrorResponse("invalid_client", ""))
+    } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
+
+  /**
+   *
+   */
   def accessTokenErrorResponse(error: String, errorDescription: String): Result =
     BadRequest(Json.obj(
       "error" -> error,
       "error_description" -> errorDescription
     ))
-
 
   /**
    * Lookup a given client by id and validate the requested redirect is valid.
@@ -123,21 +130,21 @@ object OAuth2Controller extends Controller
   /**
    *
    */
-  private def authorizeClientForUser(clientId: String, redirectUri: String, user: models.User): Result =
+  private def authorizeClientForUser(user: models.User, clientId: String, redirectUri: String): Result =
     clientForRedirect(clientId, redirectUri) map { client =>
-      authorizeClientForUser(client, redirectUri, user)
+      authorizeClientForUser(user, client, redirectUri)
     } getOrElse(NotFound)
 
-  private def authorizeClientForUser(client: models.Client, redirectUri: String, user: models.User): Result =
-    models.AuthCode.refreshAuthCode(client, user) map { code =>
+  private def authorizeClientForUser(user: models.User, client: models.Client, redirectUri: String): Result =
+    models.AuthCode.refreshAuthCode(client, user, redirectUri) map { code =>
       Redirect(redirectUri, Map(
-        "code" -> Seq(code.code)))
+        "code" -> Seq(code.token)))
     } getOrElse(BadRequest)
 
   /**
    *
    */
-  private def denyClientForUser(clientId: String, redirectUri: String, user: models.User): Result =
+  private def denyClientForUser(user: models.User, clientId: String, redirectUri: String): Result =
     clientForRedirect(clientId, redirectUri) map { client =>
       Redirect(redirectUri, Map(
         "error" -> Seq("access_denied"),

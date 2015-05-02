@@ -15,13 +15,8 @@ import java.net.UnknownHostException;
 
 public final class MongoDB
 {
-    /**
-     * Connects to MongoDB based on the configuration settings.
-     * <p/>
-     * If the database is not reachable, an error message is written and the
-     * application exits.
-     */
-    public static boolean connect() {
+    public static boolean connect()
+    {
         String _mongoURI = Play.application().configuration().getString("mongodb.uri");
 
         MongoClientURI mongoURI = new MongoClientURI(_mongoURI);
@@ -38,18 +33,19 @@ public final class MongoDB
             MorphiaObject.morphia = new Morphia();
             MorphiaObject.datastore = MorphiaObject.morphia.createDatastore(MorphiaObject.mongo, mongoURI.getDatabase());
 
-            //Map classes
+            // Map classes
             MorphiaObject.morphia.map(AccessToken.class);
             MorphiaObject.morphia.map(AuthCode.class);
             MorphiaObject.morphia.map(ChildCount.class);
             MorphiaObject.morphia.map(ChildStream.class);
             MorphiaObject.morphia.map(Client.class);
             MorphiaObject.morphia.map(LinkedAccount.class);
+            MorphiaObject.morphia.map(RefreshToken.class);
             MorphiaObject.morphia.map(SecurityRole.class);
-            MorphiaObject.morphia.map(UserPermission.class);
-            MorphiaObject.morphia.map(Stream.class);
             MorphiaObject.morphia.map(Status.class);
+            MorphiaObject.morphia.map(Stream.class);
             MorphiaObject.morphia.map(User.class);
+            MorphiaObject.morphia.map(UserPermission.class);
 
             MorphiaObject.datastore.ensureIndexes();
             MorphiaObject.datastore.ensureCaps();
@@ -60,10 +56,8 @@ public final class MongoDB
         return true;
     }
 
-    /**
-     * Disconnect from MongoDB.
-     */
-    public static boolean disconnect() {
+    public static boolean disconnect()
+    {
         if (MorphiaObject.mongo == null) {
             return false;
         }

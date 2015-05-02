@@ -17,7 +17,7 @@ GET     /v0/ws                          controllers.Socket.open()
 # OAuth
 GET     /v0/oauth2/authorize              controllers.OAuth2Controller.authorize(response_type: String, client_id: String, redirect_uri: String)
 POST    /v0/oauth2/authorize              controllers.OAuth2Controller.onAuthorize
-POST    /v0/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String)
+POST    /v0/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String, redirect_uri: String)
 
 
 # Stream Api

@@ -11,56 +11,29 @@ import scala.collection.JavaConverters._
 
 
 @Entity
-@SerialVersionUID(1)
-case class AuthCode(
-  @(Id @field) var id: ObjectId,
-
-  var clientId: ObjectId,
-  var userId: ObjectId,
-
-  var code: String,
-
-  var issued: Date,
-  var expires: Long)
-{
-  val scope = "rw"
-
-  def this() = this(null, null, null, "", new Date(0), 0)
-
-  def isExpired(): Boolean =
-    this.expires < ((new Date().getTime - this.issued.getTime) / 1000)
-
-  def getClient(): Option[Client] =
-    Client.findById(this.clientId)
-}
+class AuthCode extends Token
 
 object AuthCode
 {
   val defaultExpiration = 60L * 60L
 
   /**
-   * Lookup an authcode by id
-   */
-  def findById(id: ObjectId): Option[AuthCode] =
-    Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
-      .filter("id = ", id)
-      .get)
-
-  /**
    * Lookup an existing authcode by client and user.
    */
-  def findByClient(client: Client, user: User): Option[AuthCode] =
+  def findByClient(client: Client, user: User, redirectUri: String): Option[AuthCode] =
     Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
       .filter("clientId = ", client.id)
       .filter("userId = ", user.id)
+      .filter("redirectUri = ", redirectUri)
       .get)
 
   /**
    * Lookup an existing authcode by value.
    */
-  def findByCode(code: String): Option[AuthCode] =
+  def findByCode(code: String, redirectUri: String): Option[AuthCode] =
     Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
-      .filter("code = ", code)
+      .filter("token =", code)
+      .filter("redirectUri =", redirectUri)
       .get)
 
   /**
@@ -75,22 +48,26 @@ object AuthCode
   /**
    * Update or create the auth code token for a given client and user.
    */
-  private def updateAuthCode(clientId: ObjectId, userId: ObjectId, code: String, issued: Date, expires: Long) =
+  private def updateAuthCode(clientId: ObjectId, userId: ObjectId, code: String, redirectUri: String, issued: Date, expires: Long) =
     MorphiaObject.datastore.updateFirst(
       MorphiaObject.datastore.createQuery(classOf[AuthCode])
-        .filter("clientId = ", clientId)
-        .filter("userId = ", userId),
+        .filter("clientId =", clientId)
+        .filter("userId =", userId),
       MorphiaObject.datastore.createUpdateOperations[AuthCode](classOf[AuthCode])
         .set("clientId", clientId)
         .set("userId", userId)
-        .set("code", code)
+        .set("token", code)
+        .set("redirectUri", redirectUri)
         .set("issued", issued)
         .set("expires", expires),
       true)
 
-  def refreshAuthCode(client: Client, user: User): Option[AuthCode] = {
-    updateAuthCode(client.id, user.id, Crypto.generateToken, new Date(), defaultExpiration)
-    findByClient(client, user)
+  /**
+   *
+   */
+  def refreshAuthCode(client: Client, user: User, redirectUri: String): Option[AuthCode] = {
+    updateAuthCode(client.id, user.id, Crypto.generateToken, redirectUri, new Date(), defaultExpiration)
+    findByClient(client, user, redirectUri)
   }
 
   /**

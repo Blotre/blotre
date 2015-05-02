@@ -34,12 +34,16 @@ object SocketApiDeleteStream
 /**
  *
  */
-case class SocketApiGetChildren(of: String)
+case class SocketApiGetChildren(of: String, query: Option[String], limit: Option[Int], offset: Option[Int])
 
 object SocketApiGetChildren
 {
-  implicit val socketApiGetChildrenReads: Reads[SocketApiGetChildren] =
-    (JsPath \ "of").read[String].map(SocketApiGetChildren.apply)
+  implicit val socketApiGetChildrenReads: Reads[SocketApiGetChildren] = (
+    (JsPath \ "of").read[String] and
+    (JsPath \ "query").readNullable[String] and
+    (JsPath \ "limit").readNullable[Int] and
+    (JsPath \ "offset").readNullable[Int]
+    )(SocketApiGetChildren.apply _)
 }
 
 /**

@@ -1,0 +1,23 @@
+@(
+    client: models.Client,
+    message: String)
+
+@articleHeader = {
+    <div class="status status-header status-small-header"
+         style="background: #FF712C;"></div>
+}
+
+@main(Messages("blotre.authorize.clientError.title"), "authorizeClientError", articleHeader = articleHeader) {
+
+<h1>@Messages("blotre.authorize.clientError.pageTitle")</h1>
+<p class="authorize-overview">@Messages("blotre.authorize.clientError.overview")</p>
+<p class="authorize-description">@message</p>
+
+<div class="row display-table">
+    <div class="authorize-client-info col-xs-8">
+        <h3>Application</h3>
+        <p><b>Name: </b>@client.name</p>
+        <p><b>About: </b>@client.blurb</p>
+    </div>
+</div>
+}
