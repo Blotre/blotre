@@ -50,26 +50,26 @@ class CollectionActor(path: String) extends Actor
     }
 
   def receive = {
-    case msg@StatusUpdatedEvent(uri, status, _) =>
+    case StatusUpdatedEvent(uri, status, _) =>
       if (uri != path) { // Skip root stream updates
         updateChild(uri, status)
       }
 
-    case msg@ChildRemovedEvent(uri, childUri, _) =>
+    case ChildRemovedEvent(uri, childUri, _) =>
       if (uri == path) { // Only monitor root stream child changes
         removeChild(childUri)
       }
 
-    case msg@StreamDeletedEvent(uri, _) =>
+    case StreamDeletedEvent(uri, _) =>
       removeChild(uri)
 
-    case msg@ChildAddedEvent(uri, child, _) =>
+    case ChildAddedEvent(uri, child, _) =>
       if (uri == path && !state.contains(child.uri)) { // Only monitor root stream child changes
         addChild(child)
       }
 
     case GetCollectionStatus(size, offset) =>
-      sender ! updated.drop(offset).take(size)
+      sender ! updated.drop(offset).take(size).toList
 
     case _ =>
   }

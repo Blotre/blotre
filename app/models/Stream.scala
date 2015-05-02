@@ -10,6 +10,7 @@ import play.api.mvc._
 import play.api.libs.functional.syntax._
 import play.data.validation.Constraints
 import org.mongodb.morphia.query.Query
+import scala.collection.immutable._
 import scala.collection.JavaConverters._
 import scala.annotation.meta._
 

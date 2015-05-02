@@ -1,8 +1,7 @@
 package Actors
 
 import akka.actor._
-import akka.contrib.pattern.DistributedPubSubExtension
-import akka.contrib.pattern.DistributedPubSubMediator
+import akka.contrib.pattern.{DistributedPubSubExtension, DistributedPubSubMediator}
 import akka.pattern.{ask}
 import akka.util.Timeout
 import helper._
@@ -60,9 +59,9 @@ object CollectionSupervisor
   /**
    *
    */
-  def getCollectionState(uri: String, count: Int, offset: Int): Future[Seq[String]] =
+  def getCollectionState(uri: String, count: Int, offset: Int): Future[List[String]] =
     getCollection(uri) flatMap { collection =>
-      ask(collection, GetCollectionStatus(count, offset)).mapTo[Seq[String]]
+      ask(collection, GetCollectionStatus(count, offset)).mapTo[List[String]]
     }
 
   private def getStreamTopic(path: String): Option[String] = {

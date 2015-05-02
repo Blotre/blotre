@@ -3,6 +3,7 @@ package Actors
 import akka.actor._
 import controllers.{ApiSetStatusData, ApiCreateStreamData}
 import models.User
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
@@ -28,6 +29,17 @@ object SocketApiDeleteStream
 {
   implicit val socketApiDeleteStreamReads: Reads[SocketApiDeleteStream] =
     (JsPath \ "uri").read[String].map(SocketApiDeleteStream.apply)
+}
+
+/**
+ *
+ */
+case class SocketApiGetChildren(of: String)
+
+object SocketApiGetChildren
+{
+  implicit val socketApiGetChildrenReads: Reads[SocketApiGetChildren] =
+    (JsPath \ "of").read[String].map(SocketApiGetChildren.apply)
 }
 
 /**
@@ -97,6 +109,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         case "SetStatus" =>
           recieveSetStatusMessage(msg)
 
+        case "GetChildren" =>
+          recieveGetChildrenMessage(msg)
+
         case "Subscribe" =>
           recieveSubscribeMessage(msg)
 
@@ -149,6 +164,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     (Json.fromJson[SocketApiSetStatus](msg)).fold(
       valid = x =>
         setStatus(user, x.of, x.status),
+      invalid = e =>
+        error("Could not process request."))
+
+  private def recieveGetChildrenMessage(msg: JsValue)(implicit correlation: Int) =
+    (Json.fromJson[SocketApiGetChildren](msg)).fold(
+      valid = x =>
+        getChildren(x.of),
       invalid = e =>
         error("Could not process request."))
 
@@ -243,6 +265,19 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
       case controllers.ApiFailure(e) =>
         error(e.error)
+    }
+
+  /**
+   * Get the children of a stream.
+   */
+  private def getChildren(uri: String)(implicit correlation: Int): Unit =
+    controllers.Stream.apiGetChildren(uri, "") map { x => x match {
+      case controllers.ApiSuccess(children) =>
+        output(ApiChildrenResponse(uri, children, correlation))
+
+      case controllers.ApiFailure(e) =>
+        error(e.error)
+    }
     }
 
   /**

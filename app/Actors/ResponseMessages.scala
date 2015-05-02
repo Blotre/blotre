@@ -36,6 +36,23 @@ object CurrentStatusResponse
 }
 
 /**
+ * Current stream children response.
+ */
+case class ApiChildrenResponse(uri: String, children: List[models.Stream], correlation: Int)
+
+object ApiChildrenResponse
+{
+  implicit val statusWrites = new Writes[ApiChildrenResponse] {
+    def writes(x: ApiChildrenResponse): JsValue =
+      Json.obj(
+        "type" -> "StreamChildren",
+        "url" -> x.uri,
+        "children" -> x.children,
+        "correlation" -> x.correlation)
+  }
+}
+
+/**
  * Websocket error response message.
  */
 case class SocketError(error: String, correlation: Int)
