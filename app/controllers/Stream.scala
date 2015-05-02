@@ -157,9 +157,7 @@ object Stream extends Controller {
       .getOrElse(NotFound)
 
   def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request =>
-    models.Stream.findByUri(uri) map { stream =>
-      toResponse(apiSetStreamStatus(request.user, stream, request.body))
-    } getOrElse (NotFound)
+    toResponse(apiSetStreamStatus(request.user, uri, request.body))
   }
 
   /**
@@ -282,21 +280,24 @@ object Stream extends Controller {
    * Cannot delete root streams.
    */
   def apiDeleteStream(id: String): Action[Unit] = AuthorizedAction(parse.empty) { implicit request =>
-    models.Stream.findById(id) map { stream =>
-      apiDeleteStream(request.user, stream)
-    } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    toResponse(apiDeleteStream(request.user, id))
   }
 
-  def apiDeleteStream(user: models.User, stream: models.Stream): Result =
+  def apiDeleteStream(user: models.User, id: String): ApiResult[models.Stream] =
+    models.Stream.findById(id) map { stream =>
+      apiDeleteStream(user, stream)
+    } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
+
+  def apiDeleteStream(user: models.User, stream: models.Stream): ApiResult[models.Stream] =
     models.Stream.asEditable(user, stream) map { ownedStream =>
       if (ownedStream.name == ownedStream.uri) {
-        UnprocessableEntity(Json.toJson(ApiError("Cannot delete root streams.")))
+        ApiCouldNotProccessRequest(ApiError("Cannot delete root streams."))
       } else {
         deleteStream(stream)
-        Ok("")
+        ApiOk(stream)
       }
     } getOrElse {
-      Unauthorized(Json.toJson(ApiError("User does not have permission to delete stream.")))
+      ApiUnauthroized(ApiError("User does not have permission to delete stream."))
     }
 
   /**
@@ -312,14 +313,12 @@ object Stream extends Controller {
    * Set the status of a stream.
    */
   def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
-    models.Stream.findById(id) map { stream =>
-      toResponse(apiSetStreamStatus(request.user, stream, request.body))
-    } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    toResponse(apiSetStreamStatus(request.user, id, request.body))
   }
 
-  def apiSetStreamStatus(user: models.User, stream: models.Stream, body: JsValue): ApiResult[models.Status] =
+  def apiSetStreamStatus(user: models.User, id: String, body: JsValue): ApiResult[models.Status] =
     Json.fromJson[ApiSetStatusData](body) map { status =>
-      apiSetStreamStatus(user, stream, status)
+      apiSetStreamStatus(user, id, status)
     } recoverTotal { e =>
       ApiCouldNotProccessRequest(ApiError("Could not process request.", e))
     }

@@ -22,6 +22,17 @@ object SocketApiGetStream
 /**
  *
  */
+case class SocketApiDeleteStream(uri: String)
+
+object SocketApiDeleteStream
+{
+  implicit val socketApiDeleteStreamReads: Reads[SocketApiDeleteStream] =
+    (JsPath \ "uri").read[String].map(SocketApiDeleteStream.apply)
+}
+
+/**
+ *
+ */
 case class SocketApiSetStatus(of: String, status: ApiSetStatusData)
 
 object SocketApiSetStatus
@@ -77,6 +88,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         case "GetStream" =>
           recieveGetStreamMessage(msg)
 
+        case "DeleteStream" =>
+          recieveGetStreamMessage(msg)
+
         case "GetStatus" =>
           recieveGetStatusMessage(msg)
 
@@ -114,6 +128,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     (Json.fromJson[SocketApiGetStream](msg)).fold(
       valid = x =>
         getStream(x.uri),
+      invalid = e =>
+        error("Could not process request."))
+
+  private def recieveDeleteStreamMessage(msg: JsValue)(implicit correlation: Int) =
+    (Json.fromJson[SocketApiDeleteStream](msg)).fold(
+      valid = x =>
+        deleteStream(user, x.uri),
       invalid = e =>
         error("Could not process request."))
 
@@ -182,6 +203,18 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     }
 
   /**
+   * Delete a stream.
+   */
+  private def deleteStream(user: models.User, uri: String)(implicit correlation: Int): Unit =
+    controllers.Stream.apiDeleteStream(user, uri) match {
+      case controllers.ApiSuccess(stream) =>
+        output(StreamResponse(stream, correlation))
+
+      case controllers.ApiFailure(e) =>
+        error(e.error)
+    }
+
+  /**
    * Get the status of a stream.
    */
   private def getStatus(uri: String)(implicit correlation: Int): Unit =
@@ -204,15 +237,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int): Unit =
-    models.Stream.findByUri(uri) map { stream =>
-      controllers.Stream.apiSetStreamStatus(user, stream, status) match {
-        case controllers.ApiSuccess(status) =>
-          output(CurrentStatusResponse(stream.uri, status, correlation))
+    controllers.Stream.apiSetStreamStatus(user, uri, status) match {
+      case controllers.ApiSuccess(status) =>
+        output(CurrentStatusResponse(uri, status, correlation))
 
-        case controllers.ApiFailure(e) =>
-          error(e.error)
-      }
-    } getOrElse(error("Stream does not exist."))
+      case controllers.ApiFailure(e) =>
+        error(e.error)
+    }
 
   /**
    * Subscribe to a stream's updates.
