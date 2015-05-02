@@ -335,7 +335,7 @@ object Stream
       .containsIgnoreCase(query)
     q.asList()
       .asScala.toList
-      .map(x => findById(x.childId).get)
+      .map(x => findById(x.childId)).flatten
   }
 
   /**

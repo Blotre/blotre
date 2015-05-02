@@ -2,11 +2,9 @@ package Actors
 
 import akka.actor._
 import java.util.Date
-import scala.collection.mutable.ListBuffer
+import scala.collection.{mutable}
 
 case class GetCollectionStatus(size: Int, offset: Int)
-
-case class GetCollectionStatusResponse(values: Seq[String])
 
 /**
  * Manages a collection.
@@ -20,7 +18,7 @@ class CollectionActor(path: String) extends Actor
 
   private var state = Map[String, models.Status]()
 
-  private var updated = ListBuffer[String]()
+  private var updated = mutable.ListBuffer[String]()
 
   private def hasChild(childUri: String) =
     updated.contains(childUri)

@@ -59,9 +59,9 @@ object CollectionSupervisor
   /**
    *
    */
-  def getCollectionState(uri: String, count: Int, offset: Int): Future[List[String]] =
+  def getCollectionState(uri: String, limit: Int, offset: Int): Future[List[String]] =
     getCollection(uri) flatMap { collection =>
-      ask(collection, GetCollectionStatus(count, offset)).mapTo[List[String]]
+      ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
     }
 
   private def getStreamTopic(path: String): Option[String] = {

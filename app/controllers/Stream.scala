@@ -338,39 +338,31 @@ object Stream extends Controller {
   /**
    * Get children of a stream.
    *
-   * Returns either the most recent children or
+   * Returns either the most recent children or children from the query
    *
-   * TODO: normally should return list of ids which query params can expand to stream.
+   * TODO: normally should return list of ids which query params can expand to stream?
    */
-  def apiGetChildren(id: String) = Action.async { implicit request =>
-      val query = request.getQueryString("query").getOrElse("")
-      models.Stream.findById(id) map { stream =>
-        if (query.isEmpty) {
-          // Get most recently updated children
-          CollectionSupervisor.getCollectionState(stream.uri, 20, 0) map { children =>
-            Ok(Json.toJson(children.map(models.Stream.findByUri(_))))
-          }
-        } else {
-          // Lookup children using query
-          Future.successful(Ok(Json.toJson(models.Stream.getChildrenByQuery(stream, query, 20))))
-        }
-      } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
-    }
-
-  def apiGetChildren(id: String, query: String): Future[ApiResult[List[models.Stream]]] =
+  def apiGetChildren(id: String): Action[AnyContent] = Action.async { implicit request =>
+    val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
-     apiGetChildren(stream, query)
+     apiGetChildren(stream, query, 20, 0).map(toResponse(_))
+    } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
+  }
+
+  def apiGetChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
+    models.Stream.findByUri(uri) map { stream =>
+     apiGetChildren(stream, query, limit, offset)
     } getOrElse (Future.successful(ApiNotFound(ApiError("Stream does not exist."))))
 
-  def apiGetChildren(stream: models.Stream, query: String): Future[ApiResult[List[models.Stream]]] =
+  def apiGetChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
     if (query.isEmpty) {
       // Get most recently updated children
-      CollectionSupervisor.getCollectionState(stream.uri, 20, 0) map { children =>
+      CollectionSupervisor.getCollectionState(stream.uri, limit, offset) map { children =>
         ApiOk(children.map(models.Stream.findByUri(_)).flatten[models.Stream])
       }
     } else {
       // Lookup children using query
-      Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, 20)))
+      Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, limit)))
     }
 
   /**

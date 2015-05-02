@@ -170,7 +170,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   private def recieveGetChildrenMessage(msg: JsValue)(implicit correlation: Int) =
     (Json.fromJson[SocketApiGetChildren](msg)).fold(
       valid = x =>
-        getChildren(x.of),
+        getChildren(x.of, 20, 0),
       invalid = e =>
         error("Could not process request."))
 
@@ -270,8 +270,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Get the children of a stream.
    */
-  private def getChildren(uri: String)(implicit correlation: Int): Unit =
-    controllers.Stream.apiGetChildren(uri, "") map { x => x match {
+  private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int): Unit =
+    controllers.Stream.apiGetChildren(uri, "", limit, offset) map { x => x match {
       case controllers.ApiSuccess(children) =>
         output(ApiChildrenResponse(uri, children, correlation))
 
