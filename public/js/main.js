@@ -298,9 +298,17 @@ $(function(){
         model.setColor(color);
     };
 
-    var statusPicker = (function(){
+    var statusPicker = (function() {
         var currentColor = models.DEFAULT_COLOR;
         var pickedColor = models.DEFAULT_COLOR;
+        model.manager.subscribe(model.stream().uri(), {
+            'StatusUpdated': function(msg) {
+                if (msg.from === model.stream().uri()) {
+                    currentColor = msg.status.color;
+                }
+            }
+        });
+
         var statusPicker = $('.status-picker')
             .spectrum({
                 showInput: true,

@@ -91,7 +91,7 @@ object Application extends Controller
   }}
 
   /**
-   * Validate that the request url creates a valid url from the request host.
+   * Validate that the requested redirect creates a valid url from the request host.
    */
   private def getRedirect(request: RequestHeader, unvalidatedRedirect: String): Option[String] =
     try
