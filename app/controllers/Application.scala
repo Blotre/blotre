@@ -91,16 +91,35 @@ object Application extends Controller
   }}
 
   /**
+   * Validate that the request url creates a valid url from the request host.
+   */
+  private def getRedirect(request: RequestHeader, unvalidatedRedirect: String): Option[String] =
+    try
+    {
+      val url = new java.net.URI(
+        (if (request.secure) "https://" else "http://")
+          + request.host
+          + (if (unvalidatedRedirect.startsWith("/")) "" else "/")
+          + unvalidatedRedirect)
+      Some(url.toString)
+    }
+    catch
+    {
+      case e: Exception => None
+    }
+
+  /**
    * Post login handler.
    */
-  def onLogin = AuthenticatedAction { implicit request => JavaContext.withContext {
-    request.session.get("redirect") flatMap { redirect =>
-      if (redirect.startsWith("/"))
-          Some(Redirect(redirect))
-      else
-        None
-    } getOrElse(Redirect(routes.Application.index()))
-  }}
+  def onLogin = AuthenticatedAction { implicit request =>
+    request.session.get("redirect")
+      .flatMap(getRedirect(request, _))
+      .map { redirect =>
+        Redirect(redirect)
+      } getOrElse {
+        Redirect(routes.Application.index())
+      }
+  }
 
   /**
    *

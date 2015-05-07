@@ -4,7 +4,7 @@
     </a>
 </div>
 
-Blot’re (pronounced blotter) is a status oriented, IoT ready, social communications platform.
+Blot’re is a status oriented, IoT ready, social communications platform.
 
 Long story short, Blot’re is what’s happening now. The past is dead. Nobody’s got time for text. Blot’re is communication reimagined for today’s hyperconnected, always on millennials. And their toasters.
 
@@ -16,7 +16,7 @@ An analogy perhaps:
 
 But it’s so much more than just another Facebook or Twitter clone.
 
-Blot’re is the world’s first IoT ready social network. By 2016, literally everything, including your toaster, will connect to the internet. So much new data, what are we to do? Though a revolutionary context aware encoding system based on decades of machine learning, Blot’re integrates, ingests, and processes disparate data streams, outputting dense pellets of information that can be understood at a glance. All with virtually no information loss.
+Blot’re is the world’s first IoT ready social network. By 2016, literally everything, including your toaster, will connect to the internet. So much new data, what are we to do? Though a revolutionary context aware encoding system based on decades of machine learning, Blot’re integrates, ingests, and processes disparate data streams, outputting dense pellets of comprehensible information. All with *practically* no information loss.
 
 #### What people are saying
 But don’t take our word for it. Check out what people are saying:
@@ -25,7 +25,7 @@ But don’t take our word for it. Check out what people are saying:
 
 > Perfect #996515 toast once again, thanks Blot’re!!!
 
-> I adopted Blot’re early one when I saw that other cool people liked it too. But then it got too popular. Now I just like it ironically.
+> As an early adopter, I ironically liked Blot're to appear cool. But then that got too popular. Now I just like it meta ironically.
 
 
 So try Blot’re today, you’ll never look back.
@@ -34,7 +34,7 @@ So try Blot’re today, you’ll never look back.
 # API
 Hey you! You, the github lurking developer with the hot new app. Yeah you! We love you. A lot.
 
-Developers are what make Blot're great. So, to show our wholehearted love, we've build an intuitive and powerful set of APIs for you to integrate into your application. Hook your app up the the color graph today.
+Developers make Blot're great. So to show our wholehearted love, we've build an intuitive and powerful set of APIs for you to integrate into your application. Hook your app up to the the color graph today.
 
 Check out [our documentation](https://github.com/mattbierner/blotre/wiki/Api) to get started.
 
