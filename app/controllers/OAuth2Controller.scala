@@ -9,6 +9,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object OAuth2Controller extends Controller
 {
+  import models.Serializable._
+
   case class AuthorizeForm(action: String, clientId: String, redirectUri: String)
 
    val authorizeForm = Form(mapping(
@@ -74,7 +76,47 @@ object OAuth2Controller extends Controller
   /**
    *
    */
-  def accessToken(grant_type: String, client_id: String, client_secret: String, code: String, redirect_uri: String) = Action { implicit request =>
+  def redeem = TryAuthenticateAction { implicit request => JavaContext.withContext {
+    Ok(views.html.oauth.redeem.render())
+  }}
+
+  case class RedeemForm(code: String)
+
+  val redeemForm = Form(mapping(
+    "code" -> nonEmptyText
+  )(RedeemForm.apply)(RedeemForm.unapply))
+
+  def onRedeem = NoCacheAction { implicit request => JavaContext.withContext {
+    redeemForm.bindFromRequest.fold(
+      formWithErrors =>
+        BadRequest,
+
+      value => {
+        models.OneTimeCode.findByCode(value.code) map { code =>
+          Ok("")
+        } getOrElse {
+          Redirect(routes.OAuth2Controller.redeem())
+            .flashing("error" -> Messages.get("blotre.redeem.invalidCode"))
+        }
+      })
+  }}
+
+  /**
+   *
+   */
+  def createCode(client_id: String, client_secret: String) = NoCacheAction {
+    models.Client.findByIdAndSecret(client_id, client_secret) map { client =>
+       models.OneTimeCode.generateOneTimeCode(client) map { code =>
+         Ok(Json.obj(
+          "code" -> code.token))
+       } getOrElse (InternalServerError)
+    } getOrElse (NotFound)
+  }
+
+  /**
+   *
+   */
+  def accessToken(grant_type: String, client_id: String, client_secret: String, code: String, redirect_uri: String) = NoCacheAction { implicit request =>
     grant_type match {
       case "authorization_code" =>
         accessTokenAuthenticationCode(client_id, client_secret, code, redirect_uri)
@@ -105,7 +147,9 @@ object OAuth2Controller extends Controller
         Ok(Json.obj(
           "access_token" -> token.token,
           "token_type" -> "bearer",
-          "expires_in" -> token.expires
+          "expires_in" -> token.expires,
+          "user" -> Json.obj(
+            "id" -> Json.toJson(token.userId))
         ))
       } getOrElse (accessTokenErrorResponse("invalid_client", ""))
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))

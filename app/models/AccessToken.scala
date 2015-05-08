@@ -21,7 +21,7 @@ case class Token(
   redirectUri: String,
 
   issued: Date,
-  expires: Long)
+  var expires: Long)
 {
   val scope = "rw"
 
@@ -42,17 +42,12 @@ case class Token(
  */
 @Entity
 class AccessToken extends Token
-{
-}
 
 /**
  *
  */
 @Entity
 class RefreshToken extends Token
-{
-}
-
 
 object AccessToken
 {
@@ -105,7 +100,10 @@ object AccessToken
    */
   def findValidByAccessToken(accessToken: String): Option[AccessToken] =
     findByAccessToken(accessToken) flatMap { token =>
-      if (token.isExpired) None else Some(token)
+      if (token.isExpired)
+        None
+      else
+        Some(token)
     }
 
   /**

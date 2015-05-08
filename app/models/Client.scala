@@ -84,6 +84,14 @@ object Client {
   def findById(id: String): Option[Client] =
     stringToObjectId(id).flatMap(findById)
 
+  def findByIdAndSecret(id: String, secret: String): Option[Client] =
+    findById(id) flatMap { client =>
+      if (client.clientSecret == secret)
+        return Some(client)
+      else
+        None
+    }
+
   /**
    * Get a client by its id and ensure it is owned by a given user.
    */
@@ -138,4 +146,7 @@ object Crypto
     val key = java.util.UUID.randomUUID.toString
     new sun.misc.BASE64Encoder().encode(key.getBytes)
   }
+
+  def generateCode(length: Int): String =
+    (scala.util.Random.alphanumeric take length).mkString
 }

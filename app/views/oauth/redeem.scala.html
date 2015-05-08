@@ -1,0 +1,25 @@
+@()
+
+
+@import helper._
+@import com.feth.play.module.pa.views.html._
+
+@articleHeader = {
+<div class="status status-header status-small-header"
+     style="background: #FF712C;"></div>
+}
+
+@main(Messages("blotre.redeem.title"), "redeem", articleHeader = articleHeader) {
+<h1>@Messages("blotre.redeem.pageTitle")</h1>
+
+<p class="authorize-overview">@Messages("blotre.redeem.overview")</p>
+
+<div class="row">
+    @helper.form(action = routes.OAuth2Controller.onRedeem, 'class -> "authorize-redeem-form") {
+        <input type="text" name="code" />
+        <button class="btn btn-lg btn-success" type="submit">
+            <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Redeem
+        </button>
+    }
+</div>
+}
