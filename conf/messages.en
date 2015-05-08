@@ -140,6 +140,7 @@ playauthenticate.profile.password_change=Change/set a password for your account
 
 # Blot're
 blotre.meta.description=Be Color
+blotre.betaWarn=Awfully glad to be a beta.
 
 # Pages
 blotre.notFound.title=404

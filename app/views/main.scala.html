@@ -9,6 +9,7 @@
 @import be.objectify.deadbolt.java.views.html._
 @import be.objectify.deadbolt.core.utils.TemplateUtils._
 @import play.api.libs.json._
+@import play.api.Play.current
 @import util._
 
 <!DOCTYPE html>
@@ -108,10 +109,12 @@
                             <a href="https://github.com/mattbierner/blotre/wiki">Developer</a>
                         </div>
                     </div>
-
                 </nav>
                 <p id="copyright">
                     &copy; @(new Date().format("yyyy")) by <a href="http://mattbierner.com">Matt Bierner</a>
+                </p>
+                <p id="app-version">
+                    @current.configuration.getString("app.version")
                 </p>
             </footer>
         </div>
