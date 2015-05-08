@@ -26,7 +26,7 @@
         $(function() {
             var updatePreview = function() {
                 $('#stream-name-preview span')
-                    .text($('#user-name-input').val());
+                    .text($('#user-name-input').val().trim().toLowerCase());
             };
 
             $('#user-name-input')

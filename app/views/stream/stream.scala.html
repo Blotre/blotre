@@ -65,11 +65,11 @@
                  data-bind="text: stream().displayUpdated">@stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")</span>
         </div>
 
-        <nav class="stream-controls @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
+        <nav class="stream-controls @("hidden".when(Application.getLocalUser(session()) == null))"">
             <button disabled="disabled" class="stream-favorite btn-lg">
                 <span class="glyphicon glyphicon-star"></span>
             </button>
-            <div class="status-picker-control">
+            <div class="status-picker-control @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
                 @_streamColorControl(stream)
             </div>
             <button class="stream-share btn-lg" disabled>
