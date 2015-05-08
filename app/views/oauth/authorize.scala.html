@@ -12,10 +12,12 @@
 }
 
 @main(Messages("blotre.authorize.title"), "authorize", articleHeader = articleHeader) {
-    <h1>@Messages("blotre.authorize.pageTitle")</h1>
+    <div class="page-header">
+        <h1>@Messages("blotre.authorize.pageTitle")</h1>
 
-    <p class="authorize-overview">@Messages("blotre.authorize.overview", client.name)</p>
-    <p class="authorize-description">@Messages("blotre.authorize.description")</p>
+        <p class="overview">@Messages("blotre.authorize.overview", client.name)</p>
+        <p class="description">@Messages("blotre.authorize.description")</p>
+    </div>
 
     <div class="row display-table">
         <div class="authorize-client-info col-xs-8">

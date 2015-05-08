@@ -5,6 +5,9 @@
 # Home page
 GET     /                           controllers.Application.index()
 
+# Meta
+GET     /ThePolicy                     controllers.Application.policy()
+
 # Streams
 GET     /s                          controllers.Stream.index()
 GET     /s/*path                    controllers.Stream.getStream(path)

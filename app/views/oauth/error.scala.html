@@ -6,9 +6,9 @@
 }
 
 @main(Messages("blotre.authorize.error.title"), "authorizeError", articleHeader = articleHeader) {
-
-<h1>@Messages("blotre.authorize.error.pageTitle")</h1>
-<p class="authorize-overview">@Messages("blotre.authorize.clientError.overview")</p>
-<p class="authorize-description">@message</p>
-
+    <div class="page-header">
+        <h1>@Messages("blotre.authorize.error.pageTitle")</h1>
+        <p class="overview">@Messages("blotre.authorize.clientError.overview")</p>
+        <p class="description">@message</p>
+    </div>
 }

@@ -9,11 +9,18 @@
 }
 
 
-@main(Messages("playauthenticate.login.title"), "login", articleHeader = articleHeader) {
-    <div id="login" class="row">
-        <div class="login-panel">
-            <h1>@Messages("blotre.index.login.title")</h1>
-            @_providerPartial(skipCurrent=false)
-        </div>
+@main(Messages("blotre.login.title"), "login", articleHeader = articleHeader) {
+    <div class="page-header">
+        <h1>@Messages("blotre.login.title")</h1>
+    </div>
+
+    <div class="login-panel">
+        @_providerPartial(skipCurrent=false)
+    </div>
+
+    <div class="page-header">
+        <p class="overview">@Messages("blotre.login.overview")</p>
+        <p class="description">@Messages("blotre.login.description")</p>
+
     </div>
 }

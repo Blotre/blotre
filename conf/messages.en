@@ -146,6 +146,11 @@ blotre.betaWarn=Awfully glad to be a beta.
 blotre.notFound.title=404
 blotre.unauthorized.title=401
 
+# Login
+blotre.login.title=Sign up or login
+blotre.login.overview=Stay calm and sign on
+blotre.login.description=We only use these services to log you into Blot''re. If we ever like really need access to your Google or Twitter account, we''ll probably ask. Cross our hearts and hope to die.
+
 # Index
 blotre.index.title=Blot're
 blotre.index.login.title=Sign up or login
@@ -168,7 +173,7 @@ blotre.account.link.description=Linking allows you to login using multiple provi
 blotre.developer.client.error.tooManyClients=Too many clients for account. Cannot create new client.
 
 # Stream
-blotre.stream.index.title=Blot're
+blotre.stream.index.title=Blot''re
 blotre.stream.index.pageTitle=Find Color
 blotre.stream.index.noResults=No results found
 
@@ -179,7 +184,6 @@ blotre.stream.stream.noChildren=No children found
 blotre.stream.tryCreate.title=Create
 blotre.stream.tryCreate.header=Not Found
 blotre.stream.tryCreate.body=Does not exist. Would you like to create it?
-
 
 
 # Controls

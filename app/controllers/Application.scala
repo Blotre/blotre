@@ -81,6 +81,10 @@ object Application extends Controller
     }
   }}
 
+  def policy = Action { implicit request =>  JavaContext.withContext {
+    Ok(views.html.meta.policy.render())
+  }}
+
   /**
    * Login page.
    */
