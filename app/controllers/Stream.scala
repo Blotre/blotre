@@ -99,20 +99,20 @@ object Stream extends Controller {
    * json: Returns json of the stream.
    */
   def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
-    val pathAndExt = models.Stream.normalizeUri(uri).split('.')
+    val pathAndExt = uri.split('.')
     val path = pathAndExt(0)
     if (pathAndExt.length == 2 && pathAndExt(1) == "png")
-      renderStreamStatusPng(path, request)
+      renderStreamStatusPng(path)
     else {
       render {
         case Accepts.Html() =>
-          renderStream(path, request)
+          renderStream(Application.getLocalUser(request), path)
 
         case Accepts.Json() =>
           renderStreamJson(path, request)
 
         case AcceptsPng() =>
-          renderStreamStatusPng(path, request)
+          renderStreamStatusPng(path)
       }
     }
   }
@@ -123,13 +123,13 @@ object Stream extends Controller {
    *
    * Displays a try create page if the stream does not exist but the parent does.
    */
-  def renderStream(uri: String, request: Request[AnyContent]) =
+  def renderStream(user: models.User, uri: String) =
     models.Stream.findByUri(uri) match {
       case Some(s) =>
         Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri)))
 
       case _ =>
-        tryCreateDecendant(uri, Application.getLocalUser(request))
+        tryCreateDecendant(user, uri)
     }
 
   /**
@@ -147,7 +147,7 @@ object Stream extends Controller {
   /**
    * Render a stream's current status as a 1x1 PNG image.
    */
-  def renderStreamStatusPng(uri: String, request: Request[AnyContent]) =
+  def renderStreamStatusPng(uri: String) =
     models.Stream.findByUri(uri)
       .map(s => {
       val img = ImageHelper.createImage(s.status.color)
@@ -156,48 +156,30 @@ object Stream extends Controller {
     })
       .getOrElse(NotFound)
 
-  def setStreamStatus(uri: String) = AuthorizedAction(parse.json) { request =>
-    toResponse(apiSetStreamStatus(request.user, uri, request.body))
-  }
-
   /**
    * Checks if child stream can created and displays an create page.
    *
    * A child stream can only be created if its direct parent exists and
    * is owned by the current user.
    */
-  def tryCreateDecendant(uri: String, user: models.User) =
-    getParentFromPath(uri) map {
-      case (parent, child) =>
-        models.Stream.asEditable(user, parent) map { stream =>
-          Ok(views.html.stream.createChild.render(stream, child))
-        } getOrElse (Unauthorized)
+  def tryCreateDecendant(user: models.User, uri: String): Result =
+    getRawParentPath(uri) flatMap {
+      case (parentUri, childName) =>
+        models.Stream.toValidStreamName(childName) flatMap { validChildName =>
+          models.Stream.findByUri(parentUri) map { parent =>
+            models.Stream.asEditable(user, parent) map { stream =>
+              Ok(views.html.stream.createChild.render(stream, validChildName))
+            } getOrElse (Unauthorized)
+          }
+        }
     } getOrElse {
       NotFound(views.html.notFound.render(""))
     }
 
-  /**
-   *
-   */
-  def createChildStream(uri: String) = AuthenticatedAction { implicit request =>
-    val user = Application.getLocalUser(request)
-    render {
-      case Accepts.Json() =>
-        createDescendant(user, uri)
-          .map(renderStreamJson)
-          .getOrElse(BadRequest)
-
-      case Accepts.Html() =>
-        createDescendant(user, uri)
-          .map(s =>
-          Redirect(routes.Stream.getStream(s.uri)))
-          .getOrElse(BadRequest)
-    }
-  }
-
   private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
-    getParentFromPath(uri) flatMap { case (parent, child) =>
-      createDescendant(user, parent, child)
+    getParentFromPath(uri) flatMap { case (parent, childUri) =>
+      models.Stream.toValidStreamName(childUri)
+      createDescendant(user, parent, childUri)
     }
 
   private def createDescendant(user: models.User, parent: models.Stream, name: String): Option[models.Stream] =
@@ -207,24 +189,23 @@ object Stream extends Controller {
 
   private def getParentFromPath(uri: String) =
     getParentPath(uri) flatMap {
-      case (parentUri, child) =>
-        models.Stream.findByUri(parentUri).map(parent => (parent, child))
+      case (parentUri, childUri) =>
+        models.Stream.findByUri(parentUri).map(parent => (parent, childUri))
     }
 
-  private def getParentPath(inputUri: String) = {
-    val uri = models.Stream.normalizeUri(inputUri)
+  private def getRawParentPath(uri: String) = {
     val index = uri.lastIndexOf('/')
     if (index == -1 || index >= uri.length - 1)
       None
     else {
       val parent = uri.slice(0, index)
       val child = uri.slice(index + 1, uri.length)
-      if (models.Stream.isValidStreamName(child))
-        Some((parent, child))
-      else
-        None
+      Some((parent, child))
     }
   }
+
+  private def getParentPath(uri: String) =
+    getRawParentPath(models.Stream.normalizeUri(uri))
 
   /**
    * Lookup a stream by id.
@@ -250,27 +231,28 @@ object Stream extends Controller {
   }
 
   def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] = {
-    if (!name.matches(models.Stream.streamNamePattern.toString))
-      return ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
-
-    models.Stream.findByUri(uri) map { existing =>
-      ApiCouldNotProccessRequest(ApiError("Stream already exists."))
+    models.Stream.toValidStreamName(name) map { validatedName =>
+      models.Stream.findByUri(uri) map { existing =>
+        ApiCouldNotProccessRequest(ApiError("Stream already exists."))
+      } getOrElse {
+        getParentFromPath(uri) map { case (parent, childUri) =>
+          if (!(models.Stream.normalizeUri(validatedName).equalsIgnoreCase(childUri))) {
+            ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
+          } else {
+            models.Stream.asEditable(user, parent) map { parent =>
+              if (parent.childCount() >= models.Stream.maxChildren)
+                ApiCouldNotProccessRequest(ApiError("Too many children."))
+              else
+                createDescendant(user, parent, name) map { newStream =>
+                  status.map(s => updateStreamStatus(newStream, s.color, user))
+                  ApiCreated(newStream)
+                } getOrElse (ApiInternalError())
+            } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
+          }
+        } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
+      }
     } getOrElse {
-      getParentFromPath(uri) map { case (parent, childName) =>
-        if (!childName.equalsIgnoreCase(name)) {
-          ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
-        } else {
-          models.Stream.asEditable(user, parent) map { parent =>
-            if (parent.childCount() >= models.Stream.maxChildren)
-              ApiCouldNotProccessRequest(ApiError("Too many children."))
-            else
-              createDescendant(user, parent, name) map { newStream =>
-                status.map(s => updateStreamStatus(newStream, s.color, user))
-                ApiCreated(newStream)
-              } getOrElse (ApiInternalError())
-          } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
-        }
-      } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
+      ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
     }
   }
 

@@ -81,13 +81,17 @@ object Stream
 {
   import models.Serializable._
 
-  val streamNameCharacter = """[a-zA-Z0-9_\-$]"""
+  val streamNameCharacter = """[ a-zA-Z0-9_\-$]"""
 
   val streamNamePattern = (streamNameCharacter + "{1,64}").r
 
-  def isValidStreamName(name: String) =
-    name.matches(streamNamePattern.toString)
-
+  def toValidStreamName(name: String): Option[String] = {
+    val trimmed = name.trim()
+    if (trimmed.matches(streamNamePattern.toString))
+      Some(trimmed)
+    else
+      None
+  }
   val maxChildren = 1000
 
   implicit val streamReads: Reads[Stream] = (
@@ -122,7 +126,13 @@ object Stream
     MorphiaObject.datastore.createQuery((classOf[ChildCount]))
 
   def normalizeUri(uri: String) =
-    if (uri == null) "" else uri.toLowerCase.stripSuffix("/")
+    if (uri == null)
+      ""
+    else
+      uri
+        .replace(" ", "+")
+        .toLowerCase
+        .stripSuffix("/")
 
   /**
    * Given a parent Stream and a child name, get the URI of the child.

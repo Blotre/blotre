@@ -165,6 +165,8 @@ blotre.account.pageTitle=Your Account
 
 blotre.account.selectUserNameTitle=Select Your User Name
 blotre.account.selectUserNameDescription=Your user name will also be your root stream name.
+blotre.account.selectUserName.invalid=Sorry, your user name may only contain letters, spaces, and numbers.
+blotre.account.selectUserName.taken=Sorry, that user name is already taken.
 
 blotre.account.link.title=Link Account
 blotre.account.link.description=Linking allows you to login using multiple providers.

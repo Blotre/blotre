@@ -93,9 +93,9 @@ object Account extends Controller
   }}}
 
   val userNameSelectForm = Form(mapping(
-    "userName" ->  nonEmptyText(3, 100)
-      .verifying("Sorry, your user name may only contain letters and numbers", name => name.matches(models.User.userNamePattern.toString))
-      .verifying("Sorry, that name is already taken", name => models.Stream.findByUri(name).isEmpty)
+    "userName" ->  nonEmptyText(3, 64)
+      .verifying(Messages.get("blotre.account.selectUserName.invalid"), name => models.User.toValidUsername(name).isDefined)
+      .verifying(Messages.get("blotre.account.selectUserName.token"), name => models.Stream.findByUri(name).isEmpty)
   )(UserNameSelectForm.apply)(UserNameSelectForm.unapply))
 
   def selectUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {

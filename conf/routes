@@ -11,8 +11,6 @@ GET     /ThePolicy                     controllers.Application.policy()
 # Streams
 GET     /s                          controllers.Stream.index()
 GET     /s/*path                    controllers.Stream.getStream(path)
-POST    /s/*path                    controllers.Stream.setStreamStatus(path)
-PUT     /s/*path                    controllers.Stream.createChildStream(path)
 
 # WebSocket
 GET     /v0/ws                          controllers.Socket.open()

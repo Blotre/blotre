@@ -102,6 +102,14 @@ object User
 
   val userNamePattern = (Stream.streamNameCharacter + "{3,64}").r
 
+  def toValidUsername(name: String): Option[String] = {
+    val trimmed = name.trim()
+    if (trimmed.matches(userNamePattern.toString))
+      Some(trimmed)
+    else
+      None
+  }
+
   private def getDb(): Query[User] =
     MorphiaObject.datastore.createQuery((classOf[User]))
 
