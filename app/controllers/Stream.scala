@@ -180,7 +180,7 @@ object Stream extends Controller {
       }
     }
 
-  private def createDescendant(user: models.User, parent: models.Stream, name: models.ValidatedStreamName): Option[models.Stream] =
+  private def createDescendant(user: models.User, parent: models.Stream, name: models.StreamName): Option[models.Stream] =
     models.Stream.createDescendant(parent.uri, name, user) flatMap { newChild =>
       addChild(user, true, parent, newChild)
     }
@@ -203,7 +203,9 @@ object Stream extends Controller {
   }
 
   private def getParentPath(uri: String) =
-    getRawParentPath(models.Stream.normalizeUri(uri))
+    getRawParentPath(models.Stream.normalizeUri(uri).value) map { paths =>
+      (paths._1, models.Stream.normalizeUri(paths._2))
+    }
 
   /**
    * Lookup a stream by id.
@@ -234,7 +236,7 @@ object Stream extends Controller {
         ApiCouldNotProccessRequest(ApiError("Stream already exists."))
       } getOrElse {
         getParentFromPath(uri) map { case (parent, childUri) =>
-          if (!(models.Stream.normalizeUri(validatedName).equalsIgnoreCase(childUri))) {
+          if (!(models.Stream.normalizeUri(validatedName).value.equalsIgnoreCase(childUri.value))) {
             ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
           } else {
             models.Stream.asEditable(user, parent) map { parent =>

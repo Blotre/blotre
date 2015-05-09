@@ -45,9 +45,15 @@ case class ChildCount(
 }
 
 /**
- *
+ * A valid stream name.
  */
-case class ValidatedStreamName(value: String)
+case class StreamName(value: String)
+
+
+/**
+ * A valid stream uri.
+ */
+case class StreamUri(value: String)
 
 /**
  *
@@ -90,13 +96,16 @@ object Stream
 
   val streamNamePattern = (streamNameCharacter + "{1,64}").r
 
-  def toValidStreamName(name: String): Option[ValidatedStreamName] = {
+  def toValidStreamName(name: String): Option[StreamName] = {
     val trimmed = name.trim()
     if (trimmed.matches(streamNamePattern.toString))
-      Some(ValidatedStreamName(trimmed))
+      Some(StreamName(trimmed))
     else
       None
   }
+
+  def toValidStreamName(name: StreamUri): Option[StreamName] =
+    toValidStreamName(name.value.replace("+", " "))
 
   val maxChildren = 1000
 
@@ -131,22 +140,23 @@ object Stream
   private def childCountDb(): Query[ChildCount] =
     MorphiaObject.datastore.createQuery((classOf[ChildCount]))
 
-  def normalizeUri(uri: String): String =
+  def normalizeUri(uri: String): StreamUri =
     if (uri == null)
-      ""
+      StreamUri("")
     else
-      uri
+      StreamUri(uri
+        .trim()
         .replace(" ", "+")
         .toLowerCase
-        .stripSuffix("/")
+        .stripSuffix("/"))
 
-  def normalizeUri(uri: ValidatedStreamName): String =
+  def normalizeUri(uri: StreamName): StreamUri =
     normalizeUri(uri.value)
 
   /**
    * Given a parent Stream and a child name, get the URI of the child.
    */
-  def descendantUri(parent: Stream, childName: ValidatedStreamName) =
+  def descendantUri(parent: Stream, childName: StreamName): StreamUri =
     normalizeUri(parent.uri + "/" + childName.value)
 
   /**
@@ -172,10 +182,13 @@ object Stream
   /**
    * Lookup a stream using its uri.
    */
-  def findByUri(uri: String): Option[Stream] =
+  def findByUri(uri: StreamUri): Option[Stream] =
     Option(db()
-      .filter("uri = ", normalizeUri(uri))
+      .filter("uri = ", uri)
       .get())
+
+  def findByUri(uri: String): Option[Stream] =
+    findByUri(normalizeUri(uri))
 
   /**
    * Lookup streams using a search term.
@@ -206,7 +219,7 @@ object Stream
       .filter("childName =", childName)
       .get()) flatMap (entry => findById(entry.childId))
 
-  def findByParent(parent: Stream, name: ValidatedStreamName): Option[Stream] =
+  def findByParent(parent: Stream, name: StreamName): Option[Stream] =
     findByParent(parent, name.value)
 
   /**
@@ -214,10 +227,10 @@ object Stream
    *
    * Name and uri should have already been validated at this point.
    */
-  private def createStreamWithName(name: ValidatedStreamName, uri: String, owner: User): Option[Stream] =
+  private def createStreamWithName(name: StreamName, uri: StreamUri, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      var s = Stream(null, name.value, normalizeUri(uri), created, created, Status.defaultStatus(owner.id), owner.id)
+      var s = Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id)
       save(s)
       save(ChildCount(s.id, 0))
       Some(s)
@@ -228,22 +241,22 @@ object Stream
    *
    * Returns the existing child stream if it exists.
    */
-  def createRootStream(name: ValidatedStreamName, owner: User): Option[Stream] =
-    createStreamWithName(name, name.value, owner)
+  def createRootStream(name: StreamName, owner: User): Option[Stream] =
+    createStreamWithName(name, normalizeUri(name), owner)
 
   /**
    * Create a descendant of an existing stream.
    *
    * Returns the existing child if it exists.
    */
-  def createDescendant(parent: Stream, childName: ValidatedStreamName, user: User): Option[models.Stream] =
+  def createDescendant(parent: Stream, childName: StreamName, user: User): Option[models.Stream] =
     asEditable(user, parent) flatMap { stream =>
       findByParent(parent, childName) orElse {
         createStreamWithName(childName, descendantUri(parent, childName), user)
       }
     }
 
-  def createDescendant(parentUri: String, childName: ValidatedStreamName, user: User): Option[models.Stream] =
+  def createDescendant(parentUri: String, childName: StreamName, user: User): Option[models.Stream] =
     findByUri(parentUri) flatMap { parentStream =>
       createDescendant(parentStream, childName, user)
     }
