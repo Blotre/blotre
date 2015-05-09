@@ -109,7 +109,7 @@ object Stream extends Controller {
           renderStream(Application.getLocalUser(request), path)
 
         case Accepts.Json() =>
-          renderStreamJson(path, request)
+          renderStreamJson(path)
 
         case AcceptsPng() =>
           renderStreamStatusPng(path)
@@ -124,22 +124,19 @@ object Stream extends Controller {
    * Displays a try create page if the stream does not exist but the parent does.
    */
   def renderStream(user: models.User, uri: String) =
-    models.Stream.findByUri(uri) match {
-      case Some(s) =>
-        Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri)))
-
-      case _ =>
-        tryCreateDecendant(user, uri)
+    models.Stream.findByUri(uri) map { s =>
+      Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri)))
+    } getOrElse {
+      tryCreateDecendant(user, uri)
     }
 
   /**
    * Render a stream as Json.
    */
-  def renderStreamJson(uri: String, request: Request[AnyContent]): Result =
+  def renderStreamJson(uri: String): Result =
     models.Stream.findByUri(uri)
       .map(renderStreamJson)
       .getOrElse(NotFound)
-
 
   def renderStreamJson(stream: models.Stream): Result =
     Ok(Json.toJson(stream))
@@ -178,11 +175,12 @@ object Stream extends Controller {
 
   private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
     getParentFromPath(uri) flatMap { case (parent, childUri) =>
-      models.Stream.toValidStreamName(childUri)
-      createDescendant(user, parent, childUri)
+      models.Stream.toValidStreamName(childUri) flatMap { childName =>
+        createDescendant(user, parent, childName)
+      }
     }
 
-  private def createDescendant(user: models.User, parent: models.Stream, name: String): Option[models.Stream] =
+  private def createDescendant(user: models.User, parent: models.Stream, name: models.ValidatedStreamName): Option[models.Stream] =
     models.Stream.createDescendant(parent.uri, name, user) flatMap { newChild =>
       addChild(user, true, parent, newChild)
     }
@@ -243,7 +241,7 @@ object Stream extends Controller {
               if (parent.childCount() >= models.Stream.maxChildren)
                 ApiCouldNotProccessRequest(ApiError("Too many children."))
               else
-                createDescendant(user, parent, name) map { newStream =>
+                createDescendant(user, parent, validatedName) map { newStream =>
                   status.map(s => updateStreamStatus(newStream, s.color, user))
                   ApiCreated(newStream)
                 } getOrElse (ApiInternalError())

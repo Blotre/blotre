@@ -117,10 +117,11 @@ object Account extends Controller
           .flashing("error" -> "Please correct errors."),
 
       values => {
-        val requestedUserName = values.userName
-        models.Stream.createRootStream(requestedUserName, localUser) map { rootStream =>
-          models.User.setUserName(localUser, requestedUserName)
-          Redirect(routes.Application.index())
+        models.Stream.toValidStreamName(values.userName) flatMap { validatedName =>
+          models.Stream.createRootStream(validatedName, localUser) map { rootStream =>
+            models.User.setUserName(localUser, validatedName.value)
+            Redirect(routes.Application.index())
+          }
         } getOrElse {
           BadRequest(views.html.account.selectUserName.render(userNameSelectForm))
             .flashing("error" -> "Could not process request.")
