@@ -1,0 +1,19 @@
+@()
+
+@import helper._
+@import com.feth.play.module.pa.views.html._
+
+@articleHeader = {
+<div class="status status-header status-small-header"
+     style="background: #FF712C;"></div>
+}
+
+@main(Messages("blotre.redeemSuccess.title"), "redeemSuccess", articleHeader = articleHeader) {
+
+<div class="page-header">
+    <h1>@Messages("blotre.redeemSuccess.pageTitle")</h1>
+    <p class="overview">@Messages("blotre.redeemSuccess.overview")</p>
+    <p class="description">@Messages("blotre.redeemSuccess.description")</p>
+</div>
+
+}

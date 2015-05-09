@@ -213,3 +213,8 @@ blotre.redeem.title=Redeem
 blotre.redeem.pageTitle=Redeem
 blotre.redeem.overview=Please enter the case sensitive, eight letter authorization code provided by your application.
 blotre.redeem.invalidCode=The code you entered is invalid or has expired. Please try again or try generating a new code.
+
+blotre.redeemSuccess.title=Success
+blotre.redeemSuccess.pageTitle=Way to go!
+blotre.redeemSuccess.overview=You have successfully authorized the application.
+blotre.redeemSuccess.description=Check back with the application to see what step to take next.

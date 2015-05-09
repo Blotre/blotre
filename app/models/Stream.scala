@@ -230,7 +230,7 @@ object Stream
   private def createStreamWithName(name: StreamName, uri: StreamUri, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      var s = Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id)
+      val s = Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id)
       save(s)
       save(ChildCount(s.id, 0))
       Some(s)

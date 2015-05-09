@@ -19,18 +19,20 @@ class OneTimeCode(
 
   issued: Date,
   expires: Long) extends Token(id, clientId, null, token, "", issued, expires)
-{ }
+{
+  def this() = this(null, null, "", new Date(0), 0)
+}
 
 object OneTimeCode
 {
-  val defaultExpiration = 60L * 10L
+  val defaultExpiration = 60L * 20L
 
   /**
    * Lookup a one time code for a given client
    */
-  private def findByClient(client: Client): Option[OneTimeCode] =
+  private def findByClient(client: OneTimeClient): Option[OneTimeCode] =
     Option(MorphiaObject.datastore.createQuery(classOf[OneTimeCode])
-      .filter("cliendId =", client.id)
+      .filter("clientId =", client.id)
       .get)
 
   /**
@@ -49,7 +51,7 @@ object OneTimeCode
   /**
    * Generate a new one time code
    */
-  def generateOneTimeCode(client: Client): Option[OneTimeCode] = {
+  def generateOneTimeCode(client: OneTimeClient): Option[OneTimeCode] = {
     MorphiaObject.datastore.updateFirst(
       MorphiaObject.datastore.createQuery(classOf[OneTimeCode])
         .filter("clientId = ", client.id),
@@ -64,7 +66,7 @@ object OneTimeCode
   /**
    * Delete all codes associated with a client.
    */
-  def deleteAllForClient(client: Client) =
+  def deleteAllForClient(client: OneTimeClient) =
     MorphiaObject.datastore.delete(
       MorphiaObject.datastore.createQuery(classOf[OneTimeCode])
         .filter("clientId =", client.id))

@@ -16,13 +16,14 @@ GET     /s/*path                    controllers.Stream.getStream(path)
 GET     /v0/ws                          controllers.Socket.open()
 
 # OAuth
-GET     /v0/oauth2/authorize              controllers.OAuth2Controller.authorize(response_type: String, client_id: String, redirect_uri: String)
+GET     /v0/oauth2/authorize              controllers.OAuth2Controller.authorize(response_type: String, client_id: String)
 POST    /v0/oauth2/authorize              controllers.OAuth2Controller.onAuthorize
-POST    /v0/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String, redirect_uri: String)
+POST    /v0/oauth2/access_token           controllers.OAuth2Controller.accessToken(grant_type: String, client_id: String, client_secret: String, code: String)
 
 GET     /v0/oauth2/redeem                 controllers.OAuth2Controller.redeem
 POST    /v0/oauth2/redeem                 controllers.OAuth2Controller.onRedeem
-POST    /v0/oauth2/create_code            controllers.OAuth2Controller.createCode(client_id: String, client_secret: String)
+GET     /v0/oauth2/redeemSuccessful       controllers.OAuth2Controller.redeemSuccessful
+PUT     /v0/oauth2/disposable             controllers.OAuth2Controller.createDisposableClient()
 
 
 # Stream Api
