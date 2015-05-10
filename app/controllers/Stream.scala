@@ -7,6 +7,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.Play.current
+import play.utils.UriEncoding
 import scala.collection.immutable._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -150,8 +151,8 @@ object Stream extends Controller {
    */
   def tryCreateDecendant(user: models.User, uri: String): Result =
     getRawParentPath(uri) flatMap {
-      case (parentUri, childName) =>
-        models.Stream.toValidStreamName(childName) flatMap { validChildName =>
+      case (parentUri, childUri) =>
+        models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
           models.Stream.findByUri(parentUri) map { parent =>
             models.Stream.asEditable(user, parent) map { stream =>
               Ok(views.html.stream.createChild.render(stream, validChildName))
@@ -181,12 +182,13 @@ object Stream extends Controller {
     }
 
   private def getRawParentPath(uri: String) = {
-    val index = uri.lastIndexOf('/')
-    if (index == -1 || index >= uri.length - 1)
+    val decodedUri = UriEncoding.decodePath(uri, "UTF-8")
+    val index = decodedUri.lastIndexOf('/')
+    if (index == -1 || index >= decodedUri.length - 1)
       None
     else {
-      val parent = uri.slice(0, index)
-      val child = uri.slice(index + 1, uri.length)
+      val parent = decodedUri.slice(0, index)
+      val child = decodedUri.slice(index + 1, decodedUri.length)
       Some((parent, child))
     }
   }

@@ -6,9 +6,8 @@ import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
 import org.mongodb.morphia.query._
 import play.api.libs.json._
-import play.api.mvc._
 import play.api.libs.functional.syntax._
-import play.data.validation.Constraints
+import play.utils.UriEncoding
 import org.mongodb.morphia.query.Query
 import scala.collection.immutable._
 import scala.collection.JavaConverters._
@@ -141,14 +140,19 @@ object Stream
     MorphiaObject.datastore.createQuery((classOf[ChildCount]))
 
   def normalizeUri(uri: String): StreamUri =
-    if (uri == null)
-      StreamUri("")
-    else
-      StreamUri(uri
-        .trim()
-        .replace(" ", "+")
-        .toLowerCase
-        .stripSuffix("/"))
+    try
+      if (uri == null)
+        StreamUri("")
+      else
+        StreamUri(UriEncoding.decodePath(uri, "UTF-8")
+          .trim()
+          .replace(" ", "+")
+          .toLowerCase
+          .stripSuffix("/"))
+      catch {
+        case e =>
+          StreamUri("")
+      }
 
   def normalizeUri(uri: StreamName): StreamUri =
     normalizeUri(uri.value)

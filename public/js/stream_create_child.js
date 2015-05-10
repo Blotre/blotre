@@ -17,7 +17,7 @@ var AppViewModel = function(user, stream) {
 };
 
 var getTarget = function() {
-    var path = window.location.pathname.match('/s/(.+)');
+    var path = decodeURIComponent(window.location.pathname).match('/s/(.+)');
     return ((path && path[1]) || '');
 };
 
@@ -29,8 +29,11 @@ $(function(){
         var btn = $(this);
         shared.lockButton(btn);
 
-        var uri = getTarget();
-        var name = uri.slice(uri.lastIndexOf('/') + 1);
+        var rawUri = getTarget();
+        var parentIndex = rawUri.lastIndexOf('/');
+        var parent = rawUri.slice(0, parentIndex);
+        var name = rawUri.slice(parentIndex + 1).trim();
+        var uri = parent + "/" + name;
         $.ajax({
             type: "PUT",
             url: jsRoutes.controllers.Stream.apiCreateStream().url,
