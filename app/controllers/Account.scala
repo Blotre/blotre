@@ -1,7 +1,6 @@
 package controllers
 
 import com.feth.play.module.pa.PlayAuthenticate
-import controllers.Stream._
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json.Json
@@ -14,6 +13,9 @@ case class UserNameSelectForm(userName: String)
 
 case class AcceptForm(accept: Boolean)
 
+/**
+ * User account controller.
+ */
 object Account extends Controller
 {
   import models.Serializable._
@@ -22,15 +24,16 @@ object Account extends Controller
     "accept" -> boolean
   )(AcceptForm.apply)(AcceptForm.unapply))
 
+  /**
+   * Display the user's profile page.
+   */
+  def account() = AuthenticatedAction { implicit request => JavaContext.withContext {
+    Ok(views.html.account.account.render(request.user))
+  }}
 
   def link() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     Ok(views.html.account.link.render(request.user))
   }}}
-
-  def account() = AuthenticatedAction { implicit request => JavaContext.withContext {
-    val localUser = Application.getLocalUser(request)
-    Ok(views.html.account.account.render(localUser))
-  }}
 
   def askLink() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val u = PlayAuthenticate.getLinkUser(JavaHelpers.createJavaContext(request).session())
@@ -100,6 +103,9 @@ object Account extends Controller
       .verifying(Messages.get("blotre.account.selectUserName.token"), name => models.Stream.findByUri(name).isEmpty)
   )(UserNameSelectForm.apply)(UserNameSelectForm.unapply))
 
+  /**
+   * Display a form allowing the current user to select their user name.
+   */
   def selectUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected)
@@ -108,6 +114,9 @@ object Account extends Controller
       Ok(views.html.account.selectUserName.render(userNameSelectForm))
   }}}
 
+  /**
+   * Form submission for user name selection.
+   */
   def setSelectedUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected) {
@@ -135,15 +144,17 @@ object Account extends Controller
   /**
    * Display all valid authorizations for the current user.
    */
-  def authorizations() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def authorizations() = NoCache { AuthenticatedAction { implicit request =>
     render {
       case Accepts.Html() =>
-        Ok(views.html.account.authorizations.render())
+        JavaContext.withContext {
+          Ok(views.html.account.authorizations.render())
+        }
 
       case Accepts.Json() =>
         renderAuthorizationsJson(request.user)
     }
-  }}}
+  }}
 
   def renderAuthorizationsJson(user: models.User) =
     Ok(Json.toJson(
@@ -157,16 +168,13 @@ object Account extends Controller
       }))
 
   /**
-   *
+   * Revoke an access token for the current user for a given client.
    */
   def revokeAuthorization(clientId: String) = NoCache { AuthenticatedAction { implicit request =>
-    val user = request.user
-    models.AccessToken.findToken(clientId, user) map { token =>
+    models.AccessToken.findToken(clientId, request.user) map { token =>
       token.expire()
       Ok("")
-    } getOrElse {
-      NotFound
-    }
+    } getOrElse (NotFound)
   }}
 }
 

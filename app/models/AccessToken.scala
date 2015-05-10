@@ -11,6 +11,9 @@ import org.mongodb.morphia.query.Query
 import scala.annotation.meta.field
 import scala.collection.JavaConverters._
 
+/**
+ * Base class for token/code type objects.
+ */
 @Entity
 case class Token(
   @(Id @field)
@@ -38,7 +41,9 @@ case class Token(
 }
 
 /**
+ * Access and refresh token issued for client and user.
  *
+ * Only one access token per client, user pair may exist.
  */
 @Entity
 class AccessToken(
@@ -68,12 +73,32 @@ class AccessToken(
 
 object AccessToken
 {
+  /**
+   * Default expiration time of an access token.
+   */
   val defaultExpiration = 60 * 60 * 24 * 3
 
   /**
-   * Update or create the access token for a given client and user.
+   * Default expiration time of an refresh token.
    */
-  def updateAccessToken(clientId: ObjectId, userId: ObjectId, token: String, redirectUri: String, issued: Date, expires: Long) =
+  val defaultRefreshExpiration = 60 * 60 * 24 * 14
+
+  /**
+   * Update or create the access token for a client, user pair.
+   *
+   * Only one access token may exist per client, user pair.
+   */
+  private def updateAccessToken(
+    clientId: ObjectId,
+    userId: ObjectId,
+    token: String,
+    redirectUri: String,
+    issued: Date,
+    expires: Long,
+    refreshToken: String,
+    refreshTokenIssued: Date,
+    refreshTokenExpires: Long)
+  =
     MorphiaObject.datastore.updateFirst(
       MorphiaObject.datastore.createQuery(classOf[AccessToken])
         .filter("clientId = ", clientId)
@@ -84,42 +109,63 @@ object AccessToken
         .set("token", token)
         .set("redirectUri", redirectUri)
         .set("issued", issued)
-        .set("expires", expires),
+        .set("expires", expires)
+        .set("refreshToken", refreshToken)
+        .set("refreshTokenIssued", refreshTokenIssued)
+        .set("refreshTokenExpires", refreshTokenExpires),
       true)
 
   /**
-   *
+   * Update or create the access token for client, user pair.
    */
   def refreshAccessToken(client: Client, user: User, redirectUri: String): Option[AccessToken] = {
-    updateAccessToken(client.id, user.id, Crypto.generateToken, redirectUri, new Date(), defaultExpiration)
+    val issued = new Date()
+    updateAccessToken(client.id, user.id, Crypto.generateToken, redirectUri, issued, defaultExpiration, Crypto.generateToken, issued, defaultRefreshExpiration)
     findToken(client.id, user)
   }
 
   /**
+   * Lookup any token for a given client and user.
    *
+   * May be expired
+   */
+  private def findAnyToken(clientId: ObjectId, user: User): Option[AccessToken] =
+    Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
+      .filter("clientId =", clientId)
+      .filter("userId =", user.id)
+      .get)
+
+  /**
+   * Lookup the valid token for a given client and user.
    */
   def findToken(clientId: ObjectId, user: User): Option[AccessToken] =
-    Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
-      .filter("clientId = ", clientId)
-      .filter("userId = ", user.id)
-      .get)
+    findAnyToken(clientId, user) flatMap { token =>
+      if (token.isExpired)
+        None
+      else
+        Some(token)
+    }
 
   def findToken(clientId: String, user: User): Option[AccessToken] =
     stringToObjectId(clientId).flatMap(findToken(_, user))
 
   /**
+   * Lookup an access token by token value.
    *
+   * Includes expired tokens.
    */
-  def findByAccessToken(accessToken: String): Option[AccessToken] =
+  private def findAnyByAccessToken(accessToken: String): Option[AccessToken] =
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
-      .filter("token = ", accessToken)
+      .filter("token =", accessToken)
       .get)
 
   /**
+   * Lookup an access token by token value.
    *
+   * Only returns valid tokens.
    */
-  def findValidByAccessToken(accessToken: String): Option[AccessToken] =
-    findByAccessToken(accessToken) flatMap { token =>
+  def findByAccessToken(accessToken: String): Option[AccessToken] =
+    findAnyByAccessToken(accessToken) flatMap { token =>
       if (token.isExpired)
         None
       else

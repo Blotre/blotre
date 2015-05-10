@@ -136,13 +136,11 @@ object Stream extends Controller {
    * Render a stream's current status as a 1x1 PNG image.
    */
   def renderStreamStatusPng(uri: String) =
-    models.Stream.findByUri(uri)
-      .map(s => {
+    models.Stream.findByUri(uri) map { s =>
       val img = ImageHelper.createImage(s.status.color)
       noCache(Ok(ImageHelper.toPng(img)))
         .as("image/png")
-    })
-      .getOrElse(NotFound)
+    } getOrElse(NotFound)
 
   /**
    * Checks if child stream can created and displays an create page.

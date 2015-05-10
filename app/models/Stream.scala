@@ -173,7 +173,7 @@ object Stream
    */
   def findById(id: ObjectId): Option[Stream] =
     Option(db()
-      .filter("id = ", id)
+      .filter("id =", id)
       .get())
 
   def findById(id: String): Option[Stream] =
@@ -184,7 +184,7 @@ object Stream
    */
   def findByUri(uri: StreamUri): Option[Stream] =
     Option(db()
-      .filter("uri = ", uri)
+      .filter("uri =", uri.value)
       .get())
 
   def findByUri(uri: String): Option[Stream] =

@@ -17,6 +17,16 @@ import scala.concurrent._
 object Application extends Controller
 {
   /**
+   * Get the access token value from a request.
+   */
+  private def getAccessTokenFromRequest(request: RequestHeader): Option[String] =
+    request.getQueryString("access_token") orElse {
+      request.headers.get("Authorization") flatMap { authorization =>
+        """Bearer (\w+)""".r.findFirstMatchIn(authorization).map(_.group(1))
+      }
+    }
+
+  /**
    * Get the current logged in user for a session.
    */
   def getLocalUser(user: AuthUser): models.User =
@@ -36,18 +46,9 @@ object Application extends Controller
    */
   def getTokenUser(request: RequestHeader): Option[models.User] =
     getAccessTokenFromRequest(request) flatMap { access_token =>
-      models.AccessToken.findValidByAccessToken(access_token)
+      models.AccessToken.findByAccessToken(access_token)
     } flatMap { token =>
       token.getUser
-    }
-
-  private def getAccessTokenFromRequest(request: RequestHeader): Option[String] =
-    request.getQueryString("access_token") orElse {
-      request.headers.get("Authorization") flatMap { authorization =>
-        """Bearer (\w+)""".r.findFirstMatchIn(authorization) map { found =>
-          found.group(1)
-        }
-      }
     }
 
   /**
