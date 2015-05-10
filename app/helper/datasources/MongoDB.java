@@ -41,7 +41,6 @@ public final class MongoDB
             MorphiaObject.morphia.map(Client.class);
             MorphiaObject.morphia.map(LinkedAccount.class);
             MorphiaObject.morphia.map(OneTimeCode.class);
-            MorphiaObject.morphia.map(RefreshToken.class);
             MorphiaObject.morphia.map(SecurityRole.class);
             MorphiaObject.morphia.map(Status.class);
             MorphiaObject.morphia.map(Stream.class);

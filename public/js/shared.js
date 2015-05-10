@@ -17,9 +17,26 @@ var getQueryString = function() {
     return parseQueryString(window.location.search);
 };
 
+var lockButton = function(sel) {
+     sel
+        .prop("disabled", true)
+        .children('.glyphicon')
+            .addClass('glyphicon-refresh glyphicon-refresh-animate');
+};
+
+var unlockButton = function(sel) {
+    sel
+       .prop("disabled", false)
+       .children('.glyphicon')
+           .removeClass('glyphicon-refresh  glyphicon-refresh-animate');
+};
+
 return {
     'getQueryString': getQueryString,
-    'parseQueryString': parseQueryString
+    'parseQueryString': parseQueryString,
+
+    'lockButton': lockButton,
+    'unlockButton': unlockButton
 };
 
 });

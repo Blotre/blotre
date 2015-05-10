@@ -135,6 +135,9 @@
         </div>
 
         @helper.javascriptRouter("jsRoutes")(
+            routes.javascript.Account.authorizations,
+        routes.javascript.Account.revokeAuthorization,
+
             routes.javascript.Stream.index,
             routes.javascript.Stream.getStream,
 

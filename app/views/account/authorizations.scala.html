@@ -1,0 +1,36 @@
+@()
+
+
+@extraScripts = {
+
+<script type="text/html" id="authorization-template">
+    <tr class="stream-search-result">
+        <td data-bind="text: clientName"></td>
+        <td data-bind="text: issued"></td>
+        <td>
+            <button data-bind="click: $parent.revokeAuthorization">
+                <span class="glyphicon glyphicon-remove"></span>
+            </button>
+        </td>
+    </tr>
+</script>
+
+<script data-main="@routes.Assets.at("js/account_authorizations.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+}
+
+
+@main(Messages("blotre.account.authorizations.title"), "accountAuthorizations", extraScripts = extraScripts) {
+    <h1>@Messages("blotre.account.authorizations.pageTitle")</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Issued</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- ko template: { name: 'authorization-template', foreach: authorizations } --><!-- /ko -->
+        </tbody>
+    </table>
+}

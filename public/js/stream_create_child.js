@@ -1,9 +1,11 @@
 require([
     './models',
+    './shared',
     './stream_manager',
     './application_model'],
 function(
     models,
+    shared,
     stream_manager,
     application_model)
 {
@@ -19,27 +21,13 @@ var getTarget = function() {
     return ((path && path[1]) || '');
 };
 
-var lockButton = function(sel) {
-     sel
-        .prop("disabled", true)
-        .children('.glyphicon')
-            .addClass('glyphicon-refresh glyphicon-refresh-animate');
-};
-
-var unlockButton = function(sel) {
-    sel
-       .prop("disabled", false)
-       .children('.glyphicon')
-           .removeClass('glyphicon-refresh  glyphicon-refresh-animate');
-};
-
 $(function(){
     var model = new AppViewModel(
         application_model.initialUser());
 
     $('.create-child-button').click(function(e) {
         var btn = $(this);
-        lockButton(btn);
+        shared.lockButton(btn);
 
         var uri = getTarget();
         var name = uri.slice(uri.lastIndexOf('/') + 1);
@@ -52,14 +40,14 @@ $(function(){
               uri: uri
             }),
             error: function(e) {
-                unlockButton(btn);
+                shared.unlockButton(btn);
             }
         })
         .then(function(result) {
             if (result && !result.error) {
                 document.location.href = jsRoutes.controllers.Stream.getStream(result.uri).url;
             } else {
-                unlockButton(btn);
+                shared.unlockButton(btn);
             }
         });
     });

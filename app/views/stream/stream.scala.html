@@ -35,6 +35,10 @@
 }
 
 @extraScripts = {
+    <script>
+        window.initialStreamData = @Html(Json.toJson(stream).toString());
+    </script>
+
     <script type="text/html" id="stream-search-result-template">
         <li class="stream-search-result">
             <a data-bind="attr: { href: url }">
@@ -110,10 +114,5 @@
         </ul>
     </div>
 
-
     <div class="centered" id="spectrum-container"></div>
-
-    <script>
-        window.initialStreamData = @Html(Json.toJson(stream).toString());
-    </script>
 }

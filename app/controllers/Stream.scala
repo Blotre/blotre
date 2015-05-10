@@ -76,17 +76,8 @@ object Stream extends Controller {
    * Displays a list of streams for searching.
    */
   def index = Action { implicit request => JavaContext.withContext {
-    val query = request.getQueryString("query").getOrElse("")
-    val streams = if (query.isEmpty) models.Stream.findByUpdated() else models.Stream.findByQuery(query)
-    render {
-      case Accepts.Html() =>
-        Ok(views.html.stream.index.render())
-
-      case Accepts.Json() =>
-        Ok(Json.toJson(streams))
-    }
-  }
-  }
+    Ok(views.html.stream.index.render())
+  }}
 
   /**
    * Lookup a stream.

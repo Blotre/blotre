@@ -1,8 +1,10 @@
 package controllers
 
 import com.feth.play.module.pa.PlayAuthenticate
+import controllers.Stream._
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.libs.json.Json
 import play.api.mvc._
 import play.core.j.JavaHelpers
 import play.i18n.Messages
@@ -14,7 +16,7 @@ case class AcceptForm(accept: Boolean)
 
 object Account extends Controller
 {
-  import ControllerHelper._
+  import models.Serializable._
 
   private val acceptForm = Form(mapping(
     "accept" -> boolean
@@ -129,5 +131,42 @@ object Account extends Controller
       })
     }
   }}}
+
+  /**
+   * Display all valid authorizations for the current user.
+   */
+  def authorizations() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+    render {
+      case Accepts.Html() =>
+        Ok(views.html.account.authorizations.render())
+
+      case Accepts.Json() =>
+        renderAuthorizationsJson(request.user)
+    }
+  }}}
+
+  def renderAuthorizationsJson(user: models.User) =
+    Ok(Json.toJson(
+      models.AccessToken.findForUser(user) map { token =>
+        val client = (models.Client.findById(token.clientId) orElse models.OneTimeClient.findById(token.clientId)).get
+        Json.obj(
+          "clientId" -> client.id,
+          "clientName" -> client.name,
+          "clientBlurb" -> client.blurb,
+          "issued" -> token.issued)
+      }))
+
+  /**
+   *
+   */
+  def revokeAuthorization(clientId: String) = NoCache { AuthenticatedAction { implicit request =>
+    val user = request.user
+    models.AccessToken.findToken(clientId, user) map { token =>
+      token.expire()
+      Ok("")
+    } getOrElse {
+      NotFound
+    }
+  }}
 }
 

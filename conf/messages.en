@@ -171,6 +171,10 @@ blotre.account.selectUserName.taken=Sorry, that user name is already taken.
 blotre.account.link.title=Link Account
 blotre.account.link.description=Linking allows you to login using multiple providers.
 
+blotre.account.authorizations.title=Manage Authorizations
+blotre.account.authorizations.pageTitle=Authorizations
+
+
 # Developer
 blotre.developer.client.error.tooManyClients=Too many clients for account. Cannot create new client.
 

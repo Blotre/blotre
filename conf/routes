@@ -64,6 +64,8 @@ GET     /account/selectUserName            controllers.Account.selectUserName()
 POST    /account/selectUserName            controllers.Account.setSelectedUserName()
 
 GET    /account                   controllers.Account.account()
+GET    /account/authorizations    controllers.Account.authorizations()
+DELETE    /account/authorizations/:clientId    controllers.Account.revokeAuthorization(clientId)
 
 # Developer
 GET     /account/developer            controllers.DeveloperController.index()
