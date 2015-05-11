@@ -188,7 +188,7 @@ object OAuth2Controller extends Controller
         accessTokenAuthenticationCode(client_id, client_secret, request.getQueryString("code").getOrElse(""), request.getQueryString("redirect_uri").getOrElse(""))
 
       case "refresh_token" =>
-        accessTokenRefreshToken(client_id, client_secret, request.getQueryString("refresh_token").getOrElse(""), request.getQueryString("redirect_uri").getOrElse(""))
+        accessTokenRefreshToken(client_id, client_secret, request.getQueryString("refresh_token").getOrElse(""))
 
       case "https://oauth2grant.blot.re/onetime_code" =>
         accessTokenOneTimeCode(client_id, client_secret, request.getQueryString("code").getOrElse(""))
@@ -227,20 +227,20 @@ object OAuth2Controller extends Controller
     /**
    * Refresh token based authorization
    */
-  def accessTokenRefreshToken(client_id: String, client_secret: String, redirect_uri:String, refresh_token: String): Result =
+  def accessTokenRefreshToken(client_id: String, client_secret: String, refresh_token: String): Result =
     models.AccessToken.findByRefreshToken(refresh_token) map { token =>
-      accessTokenRefreshToken(client_id, client_secret, redirect_uri, token)
+      accessTokenRefreshToken(client_id, client_secret, token)
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
-  def accessTokenRefreshToken(client_id: String, client_secret: String, redirect_uri:String, refresh_token: models.AccessToken): Result =
-    (if (refresh_token.clientId == client_id && refresh_token.redirectUri == redirect_uri)
+  def accessTokenRefreshToken(client_id: String, client_secret: String, refresh_token: models.AccessToken): Result =
+    (if (refresh_token.clientId == client_id)
       models.Client.findByIdAndSecret(client_id, client_secret) map { client =>
-        accessTokenRefreshToken(client, redirect_uri, refresh_token)
+        accessTokenRefreshToken(client, refresh_token)
       }
     else
       None) getOrElse(accessTokenErrorResponse("invalid_client", ""))
 
-  def accessTokenRefreshToken(client: models.Client, redirect_uri: String, refresh_token: models.AccessToken): Result =
+  def accessTokenRefreshToken(client: models.Client, refresh_token: models.AccessToken): Result =
     models.AccessToken.refreshAccessToken(refresh_token) map { updatedToken =>
       Ok(Json.toJson(TokenResponse(updatedToken)))
     } getOrElse (accessTokenErrorResponse("invalid_client", ""))
