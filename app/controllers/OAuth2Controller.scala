@@ -201,28 +201,30 @@ object OAuth2Controller extends Controller
   /**
    * Authentication code based authorization.
    */
-  def accessTokenAuthenticationCode(client_id: String, client_secret: String, code: String, redirect_uri: String) =
+  def accessTokenAuthenticationCode(client_id: String, client_secret: String, code: String, redirect_uri: String): Result =
     models.AuthCode.findByCode(code, redirect_uri) flatMap { code =>
-      if (code.isExpired() || code.clientId != client_id)
+      if (code.isExpired() || code.clientId != client_id || code.redirectUri != redirect_uri)
         None
       else
         Some(code)
     } map { code =>
-      val user = models.User.findById(code.userId).get
-      models.Client.findByIdAndSecret(client_id, client_secret) flatMap { client =>
-        if (client.validateCreds(client_secret))
-          Some(client)
-        else
-          None
-      } flatMap { client =>
-        models.AccessToken.refreshAccessToken(client, user, redirect_uri)
-      } map { token =>
-        code.expire()
-        Ok(Json.toJson(TokenResponse(token)))
-      } getOrElse (accessTokenErrorResponse("invalid_client", ""))
+      accessTokenAuthenticationCode(client_id, client_secret, code, redirect_uri)
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
-  /**
+  def accessTokenAuthenticationCode(client_id: String, client_secret: String, code: models.AuthCode, redirect_uri: String): Result =
+    models.User.findById(code.userId) flatMap { user =>
+      models.Client.findByIdAndSecret(client_id, client_secret) map { client =>
+        accessTokenAuthenticationCode(user, client, code, redirect_uri)
+      }
+    } getOrElse (accessTokenErrorResponse("invalid_client", ""))
+
+  def accessTokenAuthenticationCode(user: models.User, client: models.Client, code: models.AuthCode, redirect_uri: String): Result =
+    models.AccessToken.refreshAccessToken(client, user, redirect_uri) map { token =>
+      code.expire()
+      Ok(Json.toJson(TokenResponse(token)))
+    } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
+
+    /**
    * Refresh token based authorization
    */
   def accessTokenRefreshToken(client_id: String, client_secret: String, redirect_uri:String, refresh_token: String): Result =
