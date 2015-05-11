@@ -234,7 +234,7 @@ object OAuth2Controller extends Controller
 
   def accessTokenRefreshToken(client_id: String, client_secret: String, refresh_token: models.AccessToken): Result =
     (if (refresh_token.clientId == client_id)
-      models.Client.findByIdAndSecret(client_id, client_secret) map { client =>
+      (models.Client.findByIdAndSecret(client_id, client_secret) orElse (models.OneTimeClient.findByIdAndSecret(client_id, client_secret))) map { client =>
         accessTokenRefreshToken(client, refresh_token)
       }
     else
