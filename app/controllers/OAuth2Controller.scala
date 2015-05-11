@@ -23,7 +23,30 @@ object DisposableClientInfo
     )(DisposableClientInfo.apply _)
 }
 
+/**
+ *
+ */
+case class TokenResponse(token: models.AccessToken)
 
+object TokenResponse
+{
+  import models.Serializable._
+
+  implicit val tokenResponseWrites = new Writes[TokenResponse] {
+    def writes(x: TokenResponse): JsValue =
+      Json.obj(
+        "access_token" -> x.token.token,
+        "token_type" -> "bearer",
+        "expires_in" -> x.token.expires,
+        "refresh_token" -> x.token.refreshToken,
+        "user" -> Json.obj(
+          "id" -> x.token.userId))
+  }
+}
+
+/**
+ *
+ */
 object OAuth2Controller extends Controller
 {
   import models.Serializable._
@@ -159,13 +182,16 @@ object OAuth2Controller extends Controller
   /**
    *
    */
-  def accessToken(grant_type: String, client_id: String, client_secret: String, code: String) = NoCacheAction { implicit request =>
+  def accessToken(grant_type: String, client_id: String, client_secret: String) = NoCacheAction { implicit request =>
     grant_type match {
       case "authorization_code" =>
-        accessTokenAuthenticationCode(client_id, client_secret, code, request.getQueryString("redirect_uri").getOrElse(""))
+        accessTokenAuthenticationCode(client_id, client_secret, request.getQueryString("code").getOrElse(""), request.getQueryString("redirect_uri").getOrElse(""))
+
+      case "refresh_token" =>
+        accessTokenRefreshToken(client_id, client_secret, request.getQueryString("refresh_token").getOrElse(""), request.getQueryString("redirect_uri").getOrElse(""))
 
       case "https://oauth2grant.blot.re/onetime_code" =>
-        accessTokenOneTimeCode(client_id, client_secret, code)
+        accessTokenOneTimeCode(client_id, client_secret, request.getQueryString("code").getOrElse(""))
 
       case _ =>
         accessTokenErrorResponse("unsupported_grant_type", "")
@@ -192,14 +218,30 @@ object OAuth2Controller extends Controller
         models.AccessToken.refreshAccessToken(client, user, redirect_uri)
       } map { token =>
         code.expire()
-        Ok(Json.obj(
-          "access_token" -> token.token,
-          "token_type" -> "bearer",
-          "expires_in" -> token.expires,
-          "user" -> Json.obj(
-            "id" -> Json.toJson(token.userId))))
+        Ok(Json.toJson(TokenResponse(token)))
       } getOrElse (accessTokenErrorResponse("invalid_client", ""))
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
+
+  /**
+   * Refresh token based authorization
+   */
+  def accessTokenRefreshToken(client_id: String, client_secret: String, redirect_uri:String, refresh_token: String): Result =
+    models.AccessToken.findByRefreshToken(refresh_token) map { token =>
+      accessTokenRefreshToken(client_id, client_secret, redirect_uri, token)
+    } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
+
+  def accessTokenRefreshToken(client_id: String, client_secret: String, redirect_uri:String, refresh_token: models.AccessToken): Result =
+    (if (refresh_token.clientId == client_id && refresh_token.redirectUri == redirect_uri)
+      models.Client.findByIdAndSecret(client_id, client_secret) map { client =>
+        accessTokenRefreshToken(client, redirect_uri, refresh_token)
+      }
+    else
+      None) getOrElse(accessTokenErrorResponse("invalid_client", ""))
+
+  def accessTokenRefreshToken(client: models.Client, redirect_uri: String, refresh_token: models.AccessToken): Result =
+    models.AccessToken.refreshAccessToken(refresh_token) map { updatedToken =>
+      Ok(Json.toJson(TokenResponse(updatedToken)))
+    } getOrElse (accessTokenErrorResponse("invalid_client", ""))
 
   /**
    * One time code code based authorization.
@@ -223,19 +265,14 @@ object OAuth2Controller extends Controller
     models.User.findById(client.userId) flatMap { user =>
       models.AccessToken.refreshAccessToken(client, user, "") map { token =>
         code.expire()
-        Ok(Json.obj(
-          "access_token" -> token.token,
-          "token_type" -> "bearer",
-          "expires_in" -> token.expires,
-          "user" -> Json.obj(
-            "id" -> Json.toJson(client.userId))))
+        Ok(Json.toJson(TokenResponse(token)))
       }
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
   /**
    *
    */
-  def accessTokenErrorResponse(error: String, errorDescription: String): Result =
+  private def accessTokenErrorResponse(error: String, errorDescription: String): Result =
     BadRequest(Json.obj(
       "error" -> error,
       "error_description" -> errorDescription

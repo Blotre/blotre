@@ -31,13 +31,22 @@ case class Token(
   def this() = this(null, null, null, "", "", new Date(0), 0)
 
   def isExpired() =
-    this.expires < ((new Date().getTime - this.issued.getTime) / 1000)
+    Token.isExpired(this.issued, this.expires)
 
   def getClient(): Option[Client] =
     Client.findById(this.clientId)
 
   def getUser(): Option[User] =
     User.findById(this.userId)
+}
+
+object Token
+{
+  /**
+   * Check if a token has expired based on the current time.
+   */
+  def isExpired(issued: Date, expiration: Long) =
+    expiration < ((new Date().getTime - issued.getTime) / 1000)
 }
 
 /**
@@ -60,8 +69,7 @@ class AccessToken(
 
   val refreshToken: String,
   val refreshTokenIssued: Date,
-  var refreshTokenExpires: Long) extends Token(id, clientId, userId, token, redirectUri, issued, _expires)
-{
+  var refreshTokenExpires: Long) extends Token(id, clientId, userId, token, redirectUri, issued, _expires) {
   def this() = this(null, null, null, "", "", new Date(0), 0, "", new Date(0), 0)
 
   def expire() = {
@@ -69,6 +77,9 @@ class AccessToken(
     this.refreshTokenExpires = 0
     MorphiaObject.datastore.save[AccessToken](this)
   }
+
+  def isRefreshTokenExpired() =
+    Token.isExpired(this.refreshTokenIssued, this.refreshTokenExpires)
 }
 
 object AccessToken
@@ -76,12 +87,12 @@ object AccessToken
   /**
    * Default expiration time of an access token.
    */
-  val defaultExpiration = 60 * 60 * 24 * 3
+  private val defaultExpiration = 60 * 60 * 24 * 3
 
   /**
    * Default expiration time of an refresh token.
    */
-  val defaultRefreshExpiration = 60 * 60 * 24 * 14
+  private val defaultRefreshExpiration = 60 * 60 * 24 * 14
 
   /**
    * Update or create the access token for a client, user pair.
@@ -118,33 +129,42 @@ object AccessToken
   /**
    * Update or create the access token for client, user pair.
    */
-  def refreshAccessToken(client: Client, user: User, redirectUri: String): Option[AccessToken] = {
+  def refreshAccessToken(clientId: ObjectId, userId: ObjectId, redirectUri: String): Option[AccessToken] = {
     val issued = new Date()
-    updateAccessToken(client.id, user.id, Crypto.generateToken, redirectUri, issued, defaultExpiration, Crypto.generateToken, issued, defaultRefreshExpiration)
-    findToken(client.id, user)
+    updateAccessToken(clientId, userId, Crypto.generateToken, redirectUri, issued, defaultExpiration, Crypto.generateToken, issued, defaultRefreshExpiration)
+    findToken(clientId, userId)
   }
+
+  def refreshAccessToken(client: Client, user: User, redirectUri: String): Option[AccessToken] =
+    refreshAccessToken(client.id, user.id, redirectUri)
+
+  def refreshAccessToken(existing: AccessToken): Option[AccessToken] =
+    refreshAccessToken(existing.clientId, existing.userId, existing.redirectUri)
 
   /**
    * Lookup any token for a given client and user.
    *
-   * May be expired
+   * May be expired.
    */
-  private def findAnyToken(clientId: ObjectId, user: User): Option[AccessToken] =
+  private def findAnyToken(clientId: ObjectId, userId: ObjectId): Option[AccessToken] =
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("clientId =", clientId)
-      .filter("userId =", user.id)
+      .filter("userId =", userId)
       .get)
 
   /**
    * Lookup the valid token for a given client and user.
    */
-  def findToken(clientId: ObjectId, user: User): Option[AccessToken] =
-    findAnyToken(clientId, user) flatMap { token =>
+  def findToken(clientId: ObjectId, userId: ObjectId): Option[AccessToken] =
+    findAnyToken(clientId, userId) flatMap { token =>
       if (token.isExpired)
         None
       else
         Some(token)
     }
+
+  def findToken(clientId: ObjectId, user: User): Option[AccessToken] =
+    findToken(clientId, user.id)
 
   def findToken(clientId: String, user: User): Option[AccessToken] =
     stringToObjectId(clientId).flatMap(findToken(_, user))
@@ -167,6 +187,29 @@ object AccessToken
   def findByAccessToken(accessToken: String): Option[AccessToken] =
     findAnyByAccessToken(accessToken) flatMap { token =>
       if (token.isExpired)
+        None
+      else
+        Some(token)
+    }
+
+  /**
+   * Lookup an access token by refresh token value.
+   *
+   * Includes expired tokens.
+   */
+  private def findAnyByRefreshToken(refreshToken: String): Option[AccessToken] =
+    Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
+      .filter("refreshToken =", refreshToken)
+      .get)
+
+  /**
+   * Lookup an access token by refresh token value.
+   *
+   * Only returns valid tokens.
+   */
+  def findByRefreshToken(refreshToken: String): Option[AccessToken] =
+    findAnyByRefreshToken(refreshToken) flatMap { token =>
+      if (token.isRefreshTokenExpired)
         None
       else
         Some(token)
