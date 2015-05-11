@@ -292,9 +292,12 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   private def subscribe(targets: List[String])(implicit correlation: Int): Unit =
     targets.foreach(subscribe)
 
-  private def subscribe(target: String)(implicit correlation: Int): Unit = {
-    if (subscriptions.contains(target)) {
-      statusUpdate(target)
+  private def subscribe(target: String)(implicit correlation: Int): Unit =
+    subscribe(models.Stream.normalizeUri(target))
+
+  private def subscribe(target: models.StreamUri)(implicit correlation: Int): Unit = {
+    if (subscriptions.contains(target.value)) {
+      statusUpdate(target.value)
       return
     }
 
@@ -302,8 +305,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       error("Subscription limit exceeded.")
     } else {
       models.Stream.findByUri(target) map { stream =>
-        StreamSupervisor.subscribe(self, target)
-        subscriptions += target
+        StreamSupervisor.subscribe(self, target.value)
+        subscriptions += target.value
         statusUpdate(stream)
       }
     }

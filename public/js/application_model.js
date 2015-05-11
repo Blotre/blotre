@@ -19,9 +19,7 @@ var AppViewModel = function(user, page) {
 
     self.manager.subscribe(user.userName(), {
         'StatusUpdated': function(msg) {
-            if (msg.from === user.userName()) {
-                self.user().status(new models.StatusModel(msg.status.color));
-            }
+            self.user().status(new models.StatusModel(msg.status.color));
         }
     });
 };

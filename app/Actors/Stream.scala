@@ -18,8 +18,11 @@ object StreamSupervisor
   lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
 
   private def getStreamTopic(path: String): Option[String] = {
-    val normalizePath = ActorHelper.normalizeName(path)
-    if (normalizePath.isEmpty) None else Some(normalizePath)
+    val normalizePath = ActorHelper.normalizeName(models.Stream.normalizeUri(path).value)
+    if (normalizePath.isEmpty)
+      None
+    else
+      Some(normalizePath)
   }
 
   def subscribe(subscriber: ActorRef, path: String): Unit =
