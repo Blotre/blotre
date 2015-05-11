@@ -58,8 +58,8 @@ class AccessToken(
   issued: Date,
   _expires: Long,
 
-  refreshToken: String,
-  refreshTokenIssued: Date,
+  val refreshToken: String,
+  val refreshTokenIssued: Date,
   var refreshTokenExpires: Long) extends Token(id, clientId, userId, token, redirectUri, issued, _expires)
 {
   def this() = this(null, null, null, "", "", new Date(0), 0, "", new Date(0), 0)

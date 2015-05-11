@@ -12,6 +12,12 @@ import scala.collection.JavaConverters._
 
 @Entity
 class AuthCode extends Token
+{
+  def expire() = {
+    this.expires = 0
+    MorphiaObject.datastore.save[AuthCode](this)
+  }
+}
 
 object AuthCode
 {

@@ -18,9 +18,14 @@ class OneTimeCode(
   token: String,
 
   issued: Date,
-  expires: Long) extends Token(id, clientId, null, token, "", issued, expires)
+  _expires: Long) extends Token(id, clientId, null, token, "", issued, _expires)
 {
   def this() = this(null, null, "", new Date(0), 0)
+
+  def expire() = {
+    this.expires = 0
+    MorphiaObject.datastore.save[OneTimeCode](this)
+  }
 }
 
 object OneTimeCode
@@ -36,16 +41,22 @@ object OneTimeCode
       .get)
 
   /**
+   * Lookup an existing, possibly expired code by value.
+   */
+  def findAllByCode(code: String): Option[OneTimeCode] =
+    Option(MorphiaObject.datastore.createQuery(classOf[OneTimeCode])
+      .filter("token =", code)
+      .get)
+
+  /**
    * Lookup an existing, non expired code by value.
    */
   def findByCode(code: String): Option[OneTimeCode] =
-    Option(MorphiaObject.datastore.createQuery(classOf[OneTimeCode])
-      .filter("token =", code)
-      .get) flatMap { existing =>
-        if (existing.isExpired)
-          None
-        else
-          Some(existing)
+    findAllByCode(code) flatMap { existing =>
+      if (existing.isExpired)
+        None
+      else
+        Some(existing)
     }
 
   /**
@@ -54,7 +65,7 @@ object OneTimeCode
   def generateOneTimeCode(client: OneTimeClient): Option[OneTimeCode] = {
     MorphiaObject.datastore.updateFirst(
       MorphiaObject.datastore.createQuery(classOf[OneTimeCode])
-        .filter("clientId = ", client.id),
+        .filter("clientId =", client.id),
       MorphiaObject.datastore.createUpdateOperations[OneTimeCode](classOf[OneTimeCode])
         .set("token", Crypto.generateCode(8))
         .set("issued", new Date())

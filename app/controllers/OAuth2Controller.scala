@@ -145,7 +145,8 @@ object OAuth2Controller extends Controller
               "blurb" -> newClient.blurb,
               "id" -> newClient.id,
               "secret" -> newClient.clientSecret,
-              "code" -> code.token))
+              "code" -> code.token,
+              "expires_in" -> code.expires))
           }
         } getOrElse {
           BadRequest(Json.toJson(ApiError("Could not process request")))
@@ -190,6 +191,7 @@ object OAuth2Controller extends Controller
       } flatMap { client =>
         models.AccessToken.refreshAccessToken(client, user, redirect_uri)
       } map { token =>
+        code.expire()
         Ok(Json.obj(
           "access_token" -> token.token,
           "token_type" -> "bearer",
@@ -200,28 +202,35 @@ object OAuth2Controller extends Controller
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
   /**
-   * Authentication code based authorization.
+   * One time code code based authorization.
    */
-  def accessTokenOneTimeCode(client_id: String, client_secret: String, code: String) =
+  def accessTokenOneTimeCode(client_id: String, client_secret: String, code: String): Result  =
     models.OneTimeCode.findByCode(code) flatMap { code =>
-      if (code.isExpired() || code.clientId != client_id)
+      if (code.clientId != client_id)
         None
       else
         Some(code)
     } map { code =>
-      models.OneTimeClient.findByIdAndSecret(client_id, client_secret) map { client =>
-        val user = models.User.findById(client.userId).get
-        models.AccessToken.refreshAccessToken(client, user, "") map { token =>
-          Ok(Json.obj(
-            "access_token" -> token.token,
-            "token_type" -> "bearer",
-            "expires_in" -> token.expires,
-            "user" -> Json.obj(
-              "id" -> Json.toJson(client.userId))))
-        } getOrElse (accessTokenErrorResponse("invalid_client", ""))
-      } getOrElse (accessTokenErrorResponse("invalid_client", ""))
+      accessTokenOneTimeCode(client_id, client_secret, code)
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
+  def accessTokenOneTimeCode(client_id: String, client_secret: String, code: models.OneTimeCode): Result =
+    models.OneTimeClient.findByIdAndSecret(client_id, client_secret) map { client =>
+      accessTokenOneTimeCode(client, code)
+    } getOrElse (accessTokenErrorResponse("invalid_client", ""))
+
+  def accessTokenOneTimeCode(client: models.OneTimeClient, code: models.OneTimeCode): Result =
+    models.User.findById(client.userId) flatMap { user =>
+      models.AccessToken.refreshAccessToken(client, user, "") map { token =>
+        code.expire()
+        Ok(Json.obj(
+          "access_token" -> token.token,
+          "token_type" -> "bearer",
+          "expires_in" -> token.expires,
+          "user" -> Json.obj(
+            "id" -> Json.toJson(client.userId))))
+      }
+    } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
   /**
    *
