@@ -150,7 +150,7 @@ object Stream
           .toLowerCase
           .stripSuffix("/"))
       catch {
-        case e =>
+        case e: Throwable =>
           StreamUri("")
       }
 
