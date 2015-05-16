@@ -45,7 +45,6 @@ object SocketApiDeleteStream
     (JsPath \ "uri").read[String].map(SocketApiDeleteStream.apply)
 }
 
-
 /**
  *
  */
@@ -83,6 +82,28 @@ object SocketApiSetStatus
     (JsPath \ "of").read[String] and
       (JsPath \ "status").read[ApiSetStatusData]
     )(SocketApiSetStatus.apply _)
+}
+
+/**
+ *
+ */
+case class SocketApiSubscribe(to: List[String])
+
+object SocketApiSubscribe
+{
+  implicit val socketApiSubscribeReads: Reads[SocketApiSubscribe] =
+    (JsPath \ "to").read[List[String]].map(SocketApiSubscribe.apply)
+}
+
+/**
+ *
+ */
+case class SocketApiSubscribeCollection(to: String)
+
+object SocketApiSubscribeCollection
+{
+  implicit val socketApiSubscribeCollectionReads: Reads[SocketApiSubscribeCollection] =
+    (JsPath \ "to").read[String].map(SocketApiSubscribeCollection.apply)
 }
 
 /**
@@ -166,16 +187,24 @@ class SocketActor(user: User, out: ActorRef) extends Actor
           }
 
         case "Subscribe" =>
-          recieveSubscribeMessage(msg)
+          recieveMessage[SocketApiSubscribe](msg) { x =>
+            subscribe(x.to)
+          }
 
         case "Unsubscribe" =>
-          recieveUnsubscribeMessage(msg)
-
+          recieveMessage[SocketApiSubscribe](msg) { x =>
+            unsubscribe(x.to)
+          }
+          
         case "SubscribeCollection" =>
-          recieveSubscribeCollectionMessage(msg)
+          recieveMessage[SocketApiSubscribeCollection](msg) { x =>
+            subscribeCollection(x.to)
+          }
 
         case "UnsubscribeCollection" =>
-          recieveUnsubscribeCollectionMessage(msg)
+          recieveMessage[SocketApiSubscribeCollection](msg) { x =>
+            unsubscribeCollection(x.to)
+          }
 
         case _ =>
           error("Unknown type.")
@@ -184,35 +213,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         error("Could not process request.")
     }
   }
-
-  private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
-    ((__ \ "to").read[List[String]]).reads(msg)
-      .map(subscribe)
-      .recoverTotal { _ =>
-        error("Could not process request.")
-      }
-
-  private def recieveUnsubscribeMessage(msg: JsValue)(implicit correlation: Int) =
-    ((__ \ "to").read[List[String]]).reads(msg)
-      .map(unsubscribe)
-      .recoverTotal { _ =>
-        error("Could not process request.")
-      }
-
-  private def recieveSubscribeCollectionMessage(msg: JsValue)(implicit correlation: Int) =
-    ((__ \ "to").read[String]).reads(msg)
-      .map(subscribeCollection)
-      .recoverTotal { _ =>
-        error("Could not process request.")
-      }
-
-  private def recieveUnsubscribeCollectionMessage(msg: JsValue)(implicit correlation: Int) =
-    ((__ \ "to").read[String]).reads(msg)
-      .map(unsubscribeCollection)
-      .recoverTotal { _ =>
-      error("Could not process request.")
-    }
-
+  
   /**
    * Try to create a new stream.
    */
@@ -294,13 +295,12 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the children of a stream.
    */
   private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int): Unit =
-    controllers.Stream.apiGetChildren(uri, "", limit, offset) map { x => x match {
+    controllers.Stream.apiGetChildren(uri, "", limit, offset) map {
       case controllers.ApiSuccess(children) =>
         output(ApiChildrenResponse(uri, children, correlation))
 
       case controllers.ApiFailure(e) =>
         error(e.error)
-    }
     }
 
   /**
