@@ -12,6 +12,20 @@ import play.api.mvc.Results
 /**
  *
  */
+case class SocketApiGetStreams(query: Option[String], limit: Option[Int], offset: Option[Int])
+
+object SocketApiGetStreams
+{
+  implicit val socketApiGetStreamsReasds: Reads[SocketApiGetStreams] = (
+    (JsPath \ "query").readNullable[String] and
+      (JsPath \ "limit").readNullable[Int] and
+      (JsPath \ "offset").readNullable[Int]
+    )(SocketApiGetStreams.apply _)
+}
+
+/**
+ *
+ */
 case class SocketApiGetStream(uri: String)
 
 object SocketApiGetStream
@@ -29,6 +43,18 @@ object SocketApiDeleteStream
 {
   implicit val socketApiDeleteStreamReads: Reads[SocketApiDeleteStream] =
     (JsPath \ "uri").read[String].map(SocketApiDeleteStream.apply)
+}
+
+
+/**
+ *
+ */
+case class SocketApiGetStatus(of: String)
+
+object SocketApiGetStatus
+{
+  implicit val socketApiGetStatusReads: Reads[SocketApiGetStatus] =
+    (JsPath \ "of").read[String].map(SocketApiGetStatus.apply)
 }
 
 /**
@@ -87,6 +113,12 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   private def error(message: String)(implicit correlation: Int) =
     output(SocketError(message, correlation))
 
+  private def recieveMessage[T](msg: JsValue)(f: T => Unit)(implicit r: Reads[T], correlation: Int) =
+    (Json.fromJson[T](msg)).fold(
+      valid = f,
+      invalid = e =>
+        error("Could not process request."))
+
   def receive = {
     case msg: StatusUpdatedEvent => output(msg)
     case msg: ChildAddedEvent => output(msg)
@@ -98,23 +130,40 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
+        case "GetStreams" =>
+          recieveMessage[SocketApiGetStreams](msg) { x =>
+            getStreams(x.query.getOrElse(""))
+          }
+
         case "CreateStream" =>
-          recieveCreateStreamMessage(msg)
+          recieveMessage[ApiCreateStreamData](msg) { x =>
+            createStream(user, x.name, x.uri, x.status)
+          }
 
         case "GetStream" =>
-          recieveGetStreamMessage(msg)
+          recieveMessage[SocketApiGetStream](msg) { x =>
+            getStream(x.uri)
+          }
 
         case "DeleteStream" =>
-          recieveDeleteStreamMessage(msg)
+          recieveMessage[SocketApiDeleteStream](msg) { x =>
+            deleteStream(user, x.uri)
+          }
 
         case "GetStatus" =>
-          recieveGetStatusMessage(msg)
+          recieveMessage[SocketApiGetStatus](msg) { x =>
+            getStatus(x.of)
+          }
 
         case "SetStatus" =>
-          recieveSetStatusMessage(msg)
+          recieveMessage[SocketApiSetStatus](msg) { x =>
+            setStatus(user, x.of, x.status)
+          }
 
         case "GetChildren" =>
-          recieveGetChildrenMessage(msg)
+          recieveMessage[SocketApiGetChildren](msg) { x =>
+            getChildren(x.of, 20, 0)
+          }
 
         case "Subscribe" =>
           recieveSubscribeMessage(msg)
@@ -135,48 +184,6 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         error("Could not process request.")
     }
   }
-
-  private def recieveCreateStreamMessage(msg: JsValue)(implicit correlation: Int) =
-    (Json.fromJson[ApiCreateStreamData](msg)).fold(
-      valid = x =>
-        createStream(user, x.name, x.uri, x.status),
-      invalid = e =>
-        error("Could not process request."))
-
-  private def recieveGetStreamMessage(msg: JsValue)(implicit correlation: Int) =
-    (Json.fromJson[SocketApiGetStream](msg)).fold(
-      valid = x =>
-        getStream(x.uri),
-      invalid = e =>
-        error("Could not process request."))
-
-  private def recieveDeleteStreamMessage(msg: JsValue)(implicit correlation: Int) =
-    (Json.fromJson[SocketApiDeleteStream](msg)).fold(
-      valid = x =>
-        deleteStream(user, x.uri),
-      invalid = e =>
-        error("Could not process request."))
-
-  private def recieveGetStatusMessage(msg: JsValue)(implicit correlation: Int) =
-    ((__ \ "of").read[String]).reads(msg)
-      .map(getStatus)
-      .recoverTotal { _ =>
-        error("Could not process request.")
-      }
-
-  private def recieveSetStatusMessage(msg: JsValue)(implicit correlation: Int) =
-    (Json.fromJson[SocketApiSetStatus](msg)).fold(
-      valid = x =>
-        setStatus(user, x.of, x.status),
-      invalid = e =>
-        error("Could not process request."))
-
-  private def recieveGetChildrenMessage(msg: JsValue)(implicit correlation: Int) =
-    (Json.fromJson[SocketApiGetChildren](msg)).fold(
-      valid = x =>
-        getChildren(x.of, 20, 0),
-      invalid = e =>
-        error("Could not process request."))
 
   private def recieveSubscribeMessage(msg: JsValue)(implicit correlation: Int) =
     ((__ \ "to").read[List[String]]).reads(msg)
@@ -226,6 +233,18 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       output(StreamResponse(stream, correlation))
     } getOrElse {
       error("No such stream.")
+    }
+
+  /**
+   *
+   */
+  private def getStreams(query: String)(implicit correlation: Int): Unit =
+    controllers.Stream.apiGetStreams(query) match {
+      case controllers.ApiSuccess(streams) =>
+        output(streams)
+
+      case controllers.ApiFailure(e) =>
+        error(e.error)
     }
 
   /**
