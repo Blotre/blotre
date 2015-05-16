@@ -1,8 +1,17 @@
 define([], function() {
 
+var slice = Function.prototype.call.bind(Array.prototype.slice);
+
 var DEFAULT_COLOR = '#777777';
 
-var slice = Function.prototype.call.bind(Array.prototype.slice);
+/**
+*/
+var normalizeUri = function(uri) {
+    return decodeURI(uri)
+        .trim()
+        .toLowerCase()
+        .replace(' ', '/');
+};
 
 /**
     Pretty prints a data.
@@ -70,6 +79,10 @@ var StreamModel = function(id, name, uri, status, updated) {
     self.displayUpdated = ko.computed(function() {
         return dateToDisplay(self.updated());
     });
+
+    self.isOwner = function(user) {
+        return self.uri().indexOf(normalizeUri(user.userName() + '/')) === 0;
+    };
 };
 
 StreamModel.fromJson = function(data) {
@@ -119,6 +132,9 @@ var Collection = function(uri) {
 
 return {
     DEFAULT_COLOR: DEFAULT_COLOR,
+
+    normalizeUri: normalizeUri,
+
     StatusModel: StatusModel,
     StreamModel: StreamModel,
     UserModel: UserModel,

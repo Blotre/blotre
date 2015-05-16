@@ -26,7 +26,7 @@ var updateSearchResultsForQuery = function(model, query) {
     $('.list-loading').removeClass('hidden');
     $.ajax({
         type: "GET",
-        url: jsRoutes.controllers.Stream.index().url,
+        url: jsRoutes.controllers.Stream.apiGetStreams().url,
         data: "query=" + query,
         headers: {
             accept: "application/json"

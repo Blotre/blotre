@@ -8,13 +8,6 @@ var socketPath = function() {
     return (secure ? 'wss' : 'ws') + '://' + window.location.host + '/v0/ws'
 };
 
-var normalizeUri = function(uri) {
-    return decodeURI(uri)
-        .trim()
-        .toLowerCase()
-        .replace(' ', '/');
-};
-
 /**
 */
 var StreamManager = function() {
@@ -72,7 +65,7 @@ StreamManager.prototype.subscribeAll = function(paths, callback) {
     var self = this;
 
     var newSubscriptions = [];
-    paths.map(normalizeUri).forEach(function(path) {
+    paths.map(models.normalizeUri).forEach(function(path) {
         var current = self.streams[path];
         if (current) {
             current.listeners.push(callback);
@@ -94,7 +87,7 @@ StreamManager.prototype.subscribeAll = function(paths, callback) {
 
 StreamManager.prototype.subscribeCollection = function(path, callback) {
     var self = this;
-    var path = normalizeUri(path);
+    var path = models.normalizeUri(path);
 
     var current = self.collections[path];
     if (current) {

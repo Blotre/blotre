@@ -199,6 +199,19 @@ object Stream extends Controller {
     }
 
   /**
+   * Lookup all streams using an optional query.
+   */
+  def apiGetStreams(): Action[AnyContent] = Action { implicit request =>
+    val query = request.getQueryString("query").getOrElse("")
+    toResponse(apiGetStreams(query))
+  }
+
+  def apiGetStreams(query: String): ApiResult[JsValue] = {
+    val streams = if (query.isEmpty) models.Stream.findByUpdated() else models.Stream.findByQuery(query)
+    ApiOk(Json.toJson(streams))
+  }
+
+  /**
    * Lookup a stream by id.
    */
   def apiGetStream(id: String) = Action { implicit request =>

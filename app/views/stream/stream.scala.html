@@ -47,7 +47,7 @@
                 <h2 data-bind="text: name"></h2>
                 <span class="stream-uri" data-bind="text: uri"></span>
             </a>
-            <div class="child-controls" data-bind="css: { hidden: !$parent.user().userName() }">
+            <div class="child-controls" data-bind="css: { hidden: !$parent.user().userName() || !isOwner($parent.user()) }">
                 <button data-bind="click: $parent.removeChildButtonClick">
                     <span class="glyphicon glyphicon-remove"></span>
                 </button>

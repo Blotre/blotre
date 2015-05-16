@@ -27,6 +27,7 @@ PUT     /v0/oauth2/disposable             controllers.OAuth2Controller.createDis
 
 
 # Stream Api
+GET     /v0/api/stream                       controllers.Stream.apiGetStreams()
 PUT     /v0/api/stream                       controllers.Stream.apiCreateStream()
 GET     /v0/api/stream/:id                   controllers.Stream.apiGetStream(id)
 DELETE  /v0/api/stream/:id                   controllers.Stream.apiDeleteStream(id)
