@@ -37,7 +37,10 @@ case class Token(
     Client.findById(this.clientId)
 
   def getUser(): Option[User] =
-    User.findById(this.userId)
+    if (isExpired())
+      None
+    else
+      User.findById(this.userId)
 }
 
 object Token
@@ -174,7 +177,7 @@ object AccessToken
    *
    * Includes expired tokens.
    */
-  private def findAnyByAccessToken(accessToken: String): Option[AccessToken] =
+  def findAnyByAccessToken(accessToken: String): Option[AccessToken] =
     Option(MorphiaObject.datastore.createQuery(classOf[AccessToken])
       .filter("token =", accessToken)
       .get)

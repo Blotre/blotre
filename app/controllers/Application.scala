@@ -19,12 +19,24 @@ object Application extends Controller
   /**
    * Get the access token value from a request.
    */
-  private def getAccessTokenFromRequest(request: RequestHeader): Option[String] =
+  private def extractAccessTokenFromRequest(request: RequestHeader): Option[String] =
     request.getQueryString("access_token") orElse {
       request.headers.get("Authorization") flatMap { authorization =>
         """Bearer (\w+)""".r.findFirstMatchIn(authorization).map(_.group(1))
       }
     }
+
+  /**
+   * Get the valid token from the request.
+   */
+  def getAccessTokenFromRequest(request: RequestHeader): Option[models.AccessToken] =
+    extractAccessTokenFromRequest(request).flatMap(models.AccessToken.findByAccessToken)
+
+  /**
+   * Get potentially expired token from request.
+   */
+  def getAnyAccessTokenFromRequest(request: RequestHeader): Option[models.AccessToken] =
+    extractAccessTokenFromRequest(request).flatMap(models.AccessToken.findAnyByAccessToken)
 
   /**
    * Get the current logged in user for a session.
@@ -45,11 +57,7 @@ object Application extends Controller
    * Get the user that is being acted on behalf of.
    */
   def getTokenUser(request: RequestHeader): Option[models.User] =
-    getAccessTokenFromRequest(request) flatMap { access_token =>
-      models.AccessToken.findByAccessToken(access_token)
-    } flatMap { token =>
-      token.getUser
-    }
+    getAccessTokenFromRequest(request).flatMap(_.getUser)
 
   /**
    * Get the acting user.

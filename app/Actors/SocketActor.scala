@@ -213,7 +213,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         error("Could not process request.")
     }
   }
-  
+
   /**
    * Try to create a new stream.
    */

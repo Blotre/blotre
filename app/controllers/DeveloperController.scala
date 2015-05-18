@@ -83,7 +83,7 @@ object DeveloperController extends Controller
   /**
    * Update the redirects of a given client.
    */
-  def setRedirects(clientId: String): Action[JsValue]  = AuthenticatedAction(parse.json) { implicit request => JavaContext.withContext {
+  def setRedirects(clientId: String): Action[JsValue] = AuthenticatedAction(parse.json) { implicit request => JavaContext.withContext {
     models.Client.findByIdForUser(clientId, request.user) map { client =>
       Json.fromJson[Array[String]](request.body) map { redirects =>
         setRedirects(client, redirects)

@@ -2,7 +2,7 @@ package controllers
 
 import play.api.mvc.Security.AuthenticatedBuilder
 import play.api.mvc._
-
+import play.api.libs.json._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -86,7 +86,14 @@ object TryAuthenticateAction extends AuthenticatedBuilder(
  * of a user.
  */
 object AuthorizedAction extends AuthenticatedBuilder(
-  request =>
-    Application.getActingUser(request),
-  implicit request =>
-    Results.Unauthorized)
+  Application.getActingUser,
+  implicit request => JavaContext.withContext {
+    Application.getAnyAccessTokenFromRequest(request) flatMap { token =>
+      if (token.isExpired)
+          Some(Results.Unauthorized(Json.obj())
+            .withHeaders("WWW-Authenticate" -> """Bearer error="invalid_token" error_description="Access token is expired""""))
+      else
+          None
+    } getOrElse {
+        Results.Unauthorized(Json.obj())
+    }})
