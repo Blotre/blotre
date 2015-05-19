@@ -26,7 +26,7 @@ object DisposableClientInfo
 /**
  *
  */
-case class TokenResponse(token: models.AccessToken)
+case class TokenResponse(token: models.AccessToken, user: Option[models.User])
 
 object TokenResponse
 {
@@ -39,8 +39,7 @@ object TokenResponse
         "token_type" -> "bearer",
         "expires_in" -> x.token.expires,
         "refresh_token" -> x.token.refreshToken,
-        "user" -> Json.obj(
-          "id" -> x.token.userId))
+        "user" -> x.user)
   }
 }
 
@@ -221,7 +220,7 @@ object OAuth2Controller extends Controller
   def accessTokenAuthenticationCode(user: models.User, client: models.Client, code: models.AuthCode, redirect_uri: String): Result =
     models.AccessToken.refreshAccessToken(client, user, redirect_uri) map { token =>
       code.expire()
-      Ok(Json.toJson(TokenResponse(token)))
+      Ok(Json.toJson(TokenResponse(token, token.getUser)))
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 
     /**
@@ -242,7 +241,7 @@ object OAuth2Controller extends Controller
 
   def accessTokenRefreshToken(client: models.Client, refresh_token: models.AccessToken): Result =
     models.AccessToken.refreshAccessToken(refresh_token) map { updatedToken =>
-      Ok(Json.toJson(TokenResponse(updatedToken)))
+      Ok(Json.toJson(TokenResponse(updatedToken, updatedToken.getUser)))
     } getOrElse (accessTokenErrorResponse("invalid_client", ""))
 
   /**
@@ -267,7 +266,7 @@ object OAuth2Controller extends Controller
     models.User.findById(client.userId) flatMap { user =>
       models.AccessToken.refreshAccessToken(client, user, "") map { token =>
         code.expire()
-        Ok(Json.toJson(TokenResponse(token)))
+        Ok(Json.toJson(TokenResponse(token, Some(user))))
       }
     } getOrElse (accessTokenErrorResponse("invalid_grant", ""))
 

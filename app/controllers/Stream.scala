@@ -234,31 +234,33 @@ object Stream extends Controller {
         BadRequest(Json.toJson(ApiError("Could not process request", e))))
   }
 
-  def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] = {
+  def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
     models.Stream.toValidStreamName(name) map { validatedName =>
-      models.Stream.findByUri(uri) map { existing =>
-        ApiCouldNotProccessRequest(ApiError("Stream already exists."))
-      } getOrElse {
-        getParentFromPath(uri) map { case (parent, childUri) =>
-          if (!(models.Stream.normalizeUri(validatedName).value.equalsIgnoreCase(childUri.value))) {
-            ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
-          } else {
-            models.Stream.asEditable(user, parent) map { parent =>
-              if (parent.childCount() >= models.Stream.maxChildren)
-                ApiCouldNotProccessRequest(ApiError("Too many children."))
-              else
-                createDescendant(user, parent, validatedName) map { newStream =>
-                  status.map(s => updateStreamStatus(newStream, s.color, user))
-                  ApiCreated(newStream)
-                } getOrElse (ApiInternalError())
-            } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
-          }
-        } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
-      }
+      getParentFromPath(uri) map { case (parent, childUri) =>
+        if (!(models.Stream.normalizeUri(validatedName).value.equalsIgnoreCase(childUri.value)))
+          ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
+        else
+          apiCreateStream(user, parent, uri, validatedName, status)
+      } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
     } getOrElse {
       ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
     }
-  }
+
+  private def apiCreateStream(user: models.User, parent: models.Stream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
+    models.Stream.asEditable(user, parent) map { parent =>
+      models.Stream.findByUri(uri) map { existing =>
+        status.map(s => updateStreamStatus(existing, s.color, user))
+        ApiOk(existing)
+      } getOrElse {
+        if (parent.childCount() >= models.Stream.maxChildren)
+          ApiCouldNotProccessRequest(ApiError("Too many children."))
+        else
+          createDescendant(user, parent, validatedName) map { newStream =>
+            status.map(s => updateStreamStatus(newStream, s.color, user))
+            ApiCreated(newStream)
+          } getOrElse (ApiInternalError())
+      }
+    } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
 
   /**
    * Delete an existing stream.
