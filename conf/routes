@@ -25,6 +25,8 @@ POST    /v0/oauth2/redeem                 controllers.OAuth2Controller.onRedeem
 GET     /v0/oauth2/redeemSuccessful       controllers.OAuth2Controller.redeemSuccessful
 PUT     /v0/oauth2/disposable             controllers.OAuth2Controller.createDisposableClient()
 
+GET     /v0/oauth2/token_info              controllers.OAuth2Controller.tokenInfo(token: String)
+POST     /v0/oauth2/revoke                 controllers.OAuth2Controller.revoke(token: String)
 
 # Stream Api
 GET     /v0/api/stream                       controllers.Stream.apiGetStreams()

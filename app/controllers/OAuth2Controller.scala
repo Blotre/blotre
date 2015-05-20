@@ -30,8 +30,6 @@ case class TokenResponse(token: models.AccessToken, user: Option[models.User])
 
 object TokenResponse
 {
-  import models.Serializable._
-
   implicit val tokenResponseWrites = new Writes[TokenResponse] {
     def writes(x: TokenResponse): JsValue =
       Json.obj(
@@ -40,6 +38,25 @@ object TokenResponse
         "expires_in" -> x.token.expires,
         "refresh_token" -> x.token.refreshToken,
         "user" -> x.user)
+  }
+}
+
+/**
+ * Token metadata response for /token_info
+ */
+case class TokenInfo(token: models.AccessToken)
+
+object TokenInfo
+{
+  import models.Serializable._
+
+  implicit val tokenResponseWrites = new Writes[TokenInfo] {
+    def writes(x: TokenInfo): JsValue =
+      Json.obj(
+        "issued" -> x.token.issued,
+        "expires_in" -> x.token.expiresIn(),
+        "client_id" -> x.token.clientId,
+        "user" -> x.token.getUser)
   }
 }
 
@@ -153,6 +170,25 @@ object OAuth2Controller extends Controller
         }
       })
   }}
+
+  /**
+   * Get metadata about a token.
+   */
+  def tokenInfo(token: String) = NoCacheAction { implicit request =>
+    (models.AccessToken.findByAccessToken(token) orElse models.AccessToken.findByRefreshToken(token)) map { token =>
+      Ok(Json.toJson(TokenInfo(token)))
+    } getOrElse(NotFound)
+  }
+
+  /**
+   * Revoke a token.
+   */
+  def revoke(token: String) = NoCacheAction { implicit request =>
+    (models.AccessToken.findByAccessToken(token) orElse models.AccessToken.findByRefreshToken(token)) map { token =>
+      token.expire()
+      Ok("")
+    } getOrElse(NotFound)
+  }
 
   /**
    *

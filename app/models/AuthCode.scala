@@ -26,21 +26,30 @@ object AuthCode
   /**
    * Lookup an existing authcode by client and user.
    */
-  def findByClient(client: Client, user: User, redirectUri: String): Option[AuthCode] =
+  private def findAnyByClient(client: Client, user: User, redirectUri: String): Option[AuthCode] =
     Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
       .filter("clientId = ", client.id)
       .filter("userId = ", user.id)
       .filter("redirectUri = ", redirectUri)
       .get)
 
+  def findByClient(client: Client, user: User, redirectUri: String): Option[AuthCode] =
+    findAnyByClient(client, user, redirectUri).filterNot(_.isExpired)
+
   /**
    * Lookup an existing authcode by value.
    */
-  def findByCode(code: String, redirectUri: String): Option[AuthCode] =
+  private def findAnyByCode(code: String, redirectUri: String): Option[AuthCode] =
     Option(MorphiaObject.datastore.createQuery(classOf[AuthCode])
       .filter("token =", code)
       .filter("redirectUri =", redirectUri)
       .get)
+
+  /**
+   * Lookup an existing authcode by value.
+   */
+  def findByCode(code: String, redirectUri: String): Option[AuthCode] =
+    findAnyByCode(code, redirectUri).filterNot(_.isExpired)
 
   /**
    * Find all auth codes for a given user.
@@ -50,6 +59,7 @@ object AuthCode
       .filter("userId =", user.id)
       .asList()
       .asScala.toList
+      .filterNot(_.isExpired)
 
   /**
    * Update or create the auth code token for a given client and user.

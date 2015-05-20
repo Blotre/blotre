@@ -30,6 +30,9 @@ case class Token(
 {
   def this() = this(null, null, null, "", "", new Date(0), 0)
 
+  def expiresIn(): Long =
+    Math.max(0, expires - ((new Date().getTime - issued.getTime) / 1000))
+
   def isExpired() =
     Token.isExpired(this.issued, this.expires)
 
@@ -72,7 +75,8 @@ class AccessToken(
 
   val refreshToken: String,
   val refreshTokenIssued: Date,
-  var refreshTokenExpires: Long) extends Token(id, clientId, userId, token, redirectUri, issued, _expires) {
+  var refreshTokenExpires: Long) extends Token(id, clientId, userId, token, redirectUri, issued, _expires)
+{
   def this() = this(null, null, null, "", "", new Date(0), 0, "", new Date(0), 0)
 
   def expire() = {
@@ -159,12 +163,7 @@ object AccessToken
    * Lookup the valid token for a given client and user.
    */
   def findToken(clientId: ObjectId, userId: ObjectId): Option[AccessToken] =
-    findAnyToken(clientId, userId) flatMap { token =>
-      if (token.isExpired)
-        None
-      else
-        Some(token)
-    }
+    findAnyToken(clientId, userId).filterNot(_.isExpired)
 
   def findToken(clientId: ObjectId, user: User): Option[AccessToken] =
     findToken(clientId, user.id)
@@ -188,12 +187,7 @@ object AccessToken
    * Only returns valid tokens.
    */
   def findByAccessToken(accessToken: String): Option[AccessToken] =
-    findAnyByAccessToken(accessToken) flatMap { token =>
-      if (token.isExpired)
-        None
-      else
-        Some(token)
-    }
+    findAnyByAccessToken(accessToken).filterNot(_.isExpired)
 
   /**
    * Lookup an access token by refresh token value.
@@ -211,12 +205,7 @@ object AccessToken
    * Only returns valid tokens.
    */
   def findByRefreshToken(refreshToken: String): Option[AccessToken] =
-    findAnyByRefreshToken(refreshToken) flatMap { token =>
-      if (token.isRefreshTokenExpired)
-        None
-      else
-        Some(token)
-    }
+    findAnyByRefreshToken(refreshToken).filterNot(_.isRefreshTokenExpired())
 
   /**
    * Delete all access tokens associated with a client.
@@ -239,5 +228,5 @@ object AccessToken
    * Get all valid access tokens for a given user.
    */
   def findForUser(user: User): Seq[AccessToken] =
-    findAllForUser(user) filter { token => !token.isExpired() }
+    findAllForUser(user).filterNot(_.isExpired)
 }

@@ -52,12 +52,7 @@ object OneTimeCode
    * Lookup an existing, non expired code by value.
    */
   def findByCode(code: String): Option[OneTimeCode] =
-    findAllByCode(code) flatMap { existing =>
-      if (existing.isExpired)
-        None
-      else
-        Some(existing)
-    }
+    findAllByCode(code).filterNot(_.isExpired)
 
   /**
    * Generate a new one time code
