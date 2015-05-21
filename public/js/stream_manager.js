@@ -27,34 +27,48 @@ var StreamManager = function() {
         });
     };
 
-    self.socket = new WebSocket(socketPath());
     self.ready = false;
-    self.socket.onopen = function(e) {
-        var targetStreams = Object.keys(self.streams);
-        if (targetStreams.length) {
-            self.socket.send(JSON.stringify({
-                "type": "Subscribe",
-                "to": targetStreams
-            }));
+
+    var openWebsocket = function() {
+        var socket = new WebSocket(socketPath());
+        socket.onopen = function(e) {
+            self.ready = true;
+            var targetStreams = Object.keys(self.streams);
+            if (targetStreams.length) {
+                socket.send(JSON.stringify({
+                    "type": "Subscribe",
+                    "to": targetStreams
+                }));
+            }
+
+            var targetCollections = Object.keys(self.streams);
+            if (targetCollections.length) {
+                targetCollections.forEach(function(x) {
+                    socket.send(JSON.stringify({
+                        "type": "SubscribeCollection",
+                        "to": x
+                    }));
+                });
+            }
+        };
+
+        socket.onmessage = function(event) {
+            console.log(event);
+            var data = JSON.parse(event.data);
+            if (data)
+                processMessage(data);
         }
 
-        var targetCollections = Object.keys(self.streams);
-        if (targetCollections.length) {
-            targetCollections.forEach(function(x) {
-                self.socket.send(JSON.stringify({
-                    "type": "SubscribeCollection",
-                    "to": x
-                }));
-            });
-        }
+        socket.onclose = function() {
+            console.log('reopen');
+            if (self.ready) {
+                self.ready = false;
+                self.socket = openWebsocket();
+            }
+        };
     };
 
-    self.socket.onmessage = function(event) {
-        console.log(event);
-        var data = JSON.parse(event.data);
-        if (data)
-            processMessage(data);
-    }
+    self.socket = openWebsocket();
 };
 
 StreamManager.prototype.subscribe = function(path, callback) {
