@@ -19,11 +19,16 @@ var FavoriteStatus = Object.freeze({
 });
 
 var isHierarchical = function(parentName, uri) {
+    parentName = models.normalizeUri(parentName);
     if (parentName === uri)
         return true;
 
     var index = uri.lastIndexOf('/');
     return (index >= 0 && parentName === uri.slice(0, index));
+};
+
+var isRootStream = function(uri) {
+    return (uri.indexOf('/') === -1);
 };
 
 /**
@@ -103,7 +108,7 @@ AppViewModel.prototype.checkFavorite = function() {
     if (!self.user().userName())
         return;
 
-    if (isHierarchical(self.user().userName(), self.stream().uri())) {
+    if (isRootStream(self.stream().uri()) || isHierarchical(self.user().userName(), self.stream().uri())) {
         self.favorite(FavoriteStatus.Hierarchical);
     } else {
         $.ajax({

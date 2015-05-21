@@ -84,11 +84,11 @@ Blot're provides OAuth2 based authorization. This allows users to authorize your
 Blot're  uses the [Play! Framework][play].
 
 ### Config
-To get your very own copy of Blot're up and running, you'll have to make just a few config changes. Not that we aren't BFFs and all. But even friends shouldn't share their client secretes.
+To get your very own copy of Blot're up and running, you'll have to make just a few config changes. Not that we aren't BFFs and all, but even friends shouldn't share their client secrets.
 
-In `conf/play-authentication/mine.conf` replace the `XXX` with your credentials. And for production you may want to chaing the `application.secret` in `conf/application.conf`. We're not saying the current one is insecure or anything, but variety is always good.
+In `conf/play-authentication/mine.conf` replace the `XXX` with your credentials. And you may want to change `application.secret` in `conf/application.conf`. We're not saying the current one is insecure or anything, but variety is always good.
 
-You can add these in `FILE.prod.conf` and `FILE.test.conf` files and Blot're will automatically pick them up.
+You can add these in `FILE.prod.conf` and `FILE.test.conf` and Blot're will automatically pick them up.
 
 ### Deployment
 
