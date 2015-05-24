@@ -156,14 +156,20 @@ object OAuth2Controller extends Controller
     "code" -> nonEmptyText
   )(RedeemForm.apply)(RedeemForm.unapply))
 
+  /**
+   * User has submitted the redeem form.
+   */
   def onRedeem = NoCacheAction { implicit request => JavaContext.withContext {
     redeemForm.bindFromRequest.fold(
       formWithErrors =>
-        BadRequest,
+        Redirect(routes.OAuth2Controller.redeem())
+          .flashing("error" -> Messages.get("blotre.redeem.invalidCode")),
 
       value => {
         models.OneTimeCode.findByCode(value.code) map { code =>
-          Redirect(routes.OAuth2Controller.authorize("disposable", code.clientId.toString).url, Map("onetime_code" -> Seq(code.token)))
+          Redirect(
+            routes.OAuth2Controller.authorize("disposable", code.clientId.toString).url,
+            Map("onetime_code" -> Seq(code.token)))
         } getOrElse {
           Redirect(routes.OAuth2Controller.redeem())
             .flashing("error" -> Messages.get("blotre.redeem.invalidCode"))
