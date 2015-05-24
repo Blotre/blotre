@@ -15,7 +15,7 @@ import play.filters.csrf._
 import scala.concurrent.Future
 import java.io.File
 
-object Global extends /*WithFilters(CSRFFilter()) with*/ GlobalSettings {
+object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
     /**
      * Load environment specific config.
      */
@@ -37,16 +37,15 @@ object Global extends /*WithFilters(CSRFFilter()) with*/ GlobalSettings {
         Logger.info("Connected to Database!")
         PlayAuthenticate.setResolver(new Resolver() {
 
-            override def login(): Call = return routes.Application.login()
+            override def login(): Call = routes.Application.login()
 
-            override def afterAuth(): Call = return routes.Application.onLogin()
+            override def afterAuth(): Call = routes.Application.onLogin()
 
-            override def afterLogout(): Call = return routes.Application.index()
+            override def afterLogout(): Call = routes.Application.index()
 
-            override def auth(provider: String): Call = {
-                return com.feth.play.module.pa.controllers.routes.Authenticate
+            override def auth(provider: String): Call =
+                com.feth.play.module.pa.controllers.routes.Authenticate
                         .authenticate(provider)
-            }
 
             override def askMerge(): play.mvc.Call =
               routes.Account.askMerge()

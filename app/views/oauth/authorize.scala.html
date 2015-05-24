@@ -27,7 +27,8 @@
             <p><b>About: </b>@client.blurb</p>
         </div>
 
-        @helper.form(action = routes.OAuth2Controller.onAuthorize, 'class -> "authorize-allow-form col-xs-4 display-cell") {
+        @form(action = routes.OAuth2Controller.onAuthorize, 'class -> "authorize-allow-form col-xs-4 display-cell") {
+            @CSRF.formField
             <input type="hidden" name="response_type" value="@response_type" />
             <input type="hidden" name="client_id" value="@client.id.toString" />
             <input type="hidden" name="extra_data" value="@extraData" />

@@ -15,7 +15,8 @@
 <p class="authorize-overview">@Messages("blotre.redeem.overview")</p>
 
 <div class="row">
-    @helper.form(action = routes.OAuth2Controller.onRedeem, 'class -> "authorize-redeem-form") {
+    @form(action = routes.OAuth2Controller.onRedeem, 'class -> "authorize-redeem-form") {
+        @CSRF.formField
         <input type="text" name="code" />
         <button class="btn btn-lg btn-success" type="submit">
             <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Redeem

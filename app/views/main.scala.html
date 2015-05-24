@@ -10,7 +10,9 @@
 @import be.objectify.deadbolt.core.utils.TemplateUtils._
 @import play.api.libs.json._
 @import play.api.Play.current
+@import helper._
 @import util._
+
 
 <!DOCTYPE html>
 <html lang="@lang().code()">
@@ -66,7 +68,7 @@
                                href="@routes.Application.login()"
                                class="navbar-right btn btn-default navbar-btn @("disabled".when(nav == "login"))">@Messages("playauthenticate.navigation.login")</a>
                         }
-                        @helper.form(action = routes.Stream.index, 'id -> "navbar-search", 'role -> "search", 'class -> "navbar-form navbar-right") {
+                        @form(action = routes.Stream.index, 'id -> "navbar-search", 'role -> "search", 'class -> "navbar-form navbar-right") {
                             <div class="input-group">
                                 <input type="text" class="form-control" placeholder="Search" name="query">
                                 <div class="input-group-btn">

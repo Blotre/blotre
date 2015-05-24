@@ -146,6 +146,9 @@ object OAuth2Controller extends Controller
     Ok(views.html.oauth.redeem.render())
   }}
 
+  /**
+   * Page displayed after a user has successfully redeemed a code.
+   */
   def redeemSuccessful = Action { implicit request => JavaContext.withContext {
     Ok(views.html.oauth.redeemSuccessful.render())
   }}
@@ -165,7 +168,7 @@ object OAuth2Controller extends Controller
         Redirect(routes.OAuth2Controller.redeem())
           .flashing("error" -> Messages.get("blotre.redeem.invalidCode")),
 
-      value => {
+      value =>
         models.OneTimeCode.findByCode(value.code) map { code =>
           Redirect(
             routes.OAuth2Controller.authorize("disposable", code.clientId.toString).url,
@@ -173,8 +176,7 @@ object OAuth2Controller extends Controller
         } getOrElse {
           Redirect(routes.OAuth2Controller.redeem())
             .flashing("error" -> Messages.get("blotre.redeem.invalidCode"))
-        }
-      })
+        })
   }}
 
   /**

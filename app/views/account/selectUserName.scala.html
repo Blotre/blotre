@@ -45,13 +45,12 @@
 @main(Messages("playauthenticate.link.account.title"), extraHead = extraHead, articleHeader = articleHeader, extraScripts = extraScripts) {
     <h1>@Messages("blotre.account.selectUserNameTitle")</h1>
 
-    @helper.form(action = routes.Account.setSelectedUserName()) {
-        <p>
-            @Messages("blotre.account.selectUserNameDescription")
-        </p>
+    @form(action = routes.Account.setSelectedUserName()) {
+        @CSRF.formField
+        <p>@Messages("blotre.account.selectUserNameDescription")</p>
         <p id="stream-name-preview">https://blore.re/s/<span style="font-weight:bold"></span></p>
 
-        @helper.inputText(userNameForm("userName"),
+        @inputText(userNameForm("userName"),
             '_label -> "User name",
             'id -> "user-name-input",
             'maxlength -> "60",

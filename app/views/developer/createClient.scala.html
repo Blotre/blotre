@@ -12,12 +12,12 @@
 
 @main(Messages("playauthenticate.login.title"), "clients", articleHeader = articleHeader) {
     <h1>Create New Client</h1>
-    @helper.form(action = routes.DeveloperController.createClientSubmit) {
-        @helper.inputText(clientForm("name"))
+    @form(action = routes.DeveloperController.createClientSubmit) {
+        @CSRF.formField
 
-        @helper.inputText(clientForm("uri"))
-
-        @helper.inputText(clientForm("blurb"))
+        @inputText(clientForm("name"))
+        @inputText(clientForm("uri"))
+        @inputText(clientForm("blurb"))
 
         <input type="submit" value="Submit" />
     }

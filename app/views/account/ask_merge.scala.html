@@ -6,7 +6,7 @@
 @import helper._
 
 @label = {
-	@Messages("playauthenticate.merge.accounts.question",aUser,bUser)
+	@Messages("playauthenticate.merge.accounts.question", aUser, bUser)
 }
 
 @main(Messages("playauthenticate.merge.accounts.title")) {
@@ -14,6 +14,7 @@
 	<h1>@Messages("playauthenticate.merge.accounts.title")</h1>
 
 	@form(routes.Account.doMerge) {
+		@CSRF.formField
 		<label>@label</label>
 
 		<button class="btn btn-lg btn-success" type="submit" name="accept" value="true">
