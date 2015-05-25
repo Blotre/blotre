@@ -51,6 +51,8 @@ class User extends Subject
 
   var rootStreamId: ObjectId = _
 
+  var streamCount: Long = _
+
   @Embedded
   var roles: java.util.List[SecurityRole] = new java.util.ArrayList[SecurityRole]()
 
@@ -101,6 +103,19 @@ object User
   import models.Serializable._
 
   val userNamePattern = (Stream.streamNameCharacter + "{3,64}").r
+
+  val streamLimit = 10000
+
+  implicit val userWrites = new Writes[User] {
+    def writes(x: User): JsValue = {
+      val rootStreamId = x.rootStream.map(x => x.id).getOrElse(new ObjectId())
+      Json.obj(
+        "id" -> x.id,
+        "userName" -> x.userName,
+        "rootStream" -> rootStreamId
+      )
+    }
+  }
 
   def toValidUsername(name: String): Option[String] = {
     val trimmed = name.trim()
@@ -222,14 +237,13 @@ object User
     MorphiaObject.datastore.save[User](currentUser)
   }
 
-  implicit val userWrites = new Writes[User] {
-    def writes(x: User): JsValue = {
-      val rootStreamId = x.rootStream.map(x => x.id).getOrElse(new ObjectId())
-      Json.obj(
-        "id" -> x.id,
-        "userName" -> x.userName,
-        "rootStream" -> rootStreamId
-      )
-    }
-  }
+  def incrementStreamCount(user: User): Unit =
+    MorphiaObject.datastore.update(
+      getDb().filter("id", user.id),
+      MorphiaObject.datastore.createUpdateOperations((classOf[User])).inc("streamCount"))
+
+  def decrementStreamCount(user: User): Unit =
+    MorphiaObject.datastore.update(
+      getDb().filter("id", user.id),
+      MorphiaObject.datastore.createUpdateOperations((classOf[User])).dec("streamCount"))
 }

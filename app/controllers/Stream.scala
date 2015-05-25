@@ -252,8 +252,10 @@ object Stream extends Controller {
         status.map(s => updateStreamStatus(existing, s.color, user))
         ApiOk(existing)
       } getOrElse {
-        if (parent.childCount() >= models.Stream.maxChildren)
+        if (parent.childCount >= models.Stream.maxChildren)
           ApiCouldNotProccessRequest(ApiError("Too many children."))
+        else if (user.streamCount >= models.User.streamLimit)
+          ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
         else
           createDescendant(user, parent, validatedName) map { newStream =>
             status.map(s => updateStreamStatus(newStream, s.color, user))
@@ -401,10 +403,10 @@ object Stream extends Controller {
    */
   def apiCreateChild(parentId: String, childId: String) = AuthorizedAction { implicit request => {
     models.Stream.findById(parentId) map { parent =>
-      if (parent.childCount <= models.Stream.maxChildren)
-        apiCreateChildInternal(request.user, parent, childId)
-      else
+      if (parent.childCount >= models.Stream.maxChildren)
         UnprocessableEntity(Json.toJson(ApiError("Too many children.")))
+      else
+        apiCreateChildInternal(request.user, parent, childId)
     } getOrElse (NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
   }}
 

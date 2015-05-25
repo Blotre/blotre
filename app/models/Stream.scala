@@ -34,16 +34,6 @@ case class ChildStream(
 }
 
 /**
- *
- */
-case class ChildCount(
-  @(Id @field) var id: ObjectId,
-  count: Int)
-{
-  def this() = this(null, 0)
-}
-
-/**
  * A valid stream name.
  */
 case class StreamName(value: String)
@@ -66,9 +56,10 @@ case class Stream(
   created: Date,
   var updated: Date,
   @Embedded var status: Status,
-  ownerId: ObjectId)
+  ownerId: ObjectId,
+  var childCount: Long)
 {
-  def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null)
+  def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null, 0)
 
   def getOwner() =
     User.findById(this.ownerId)
@@ -78,17 +69,10 @@ case class Stream(
 
   def getChildren() =
     Stream.getChildrenOf(this)
-
-  def childCount() = {
-    val child = MorphiaObject.datastore.createQuery((classOf[ChildCount]))
-      .filter("id =", this.id)
-      .get
-    if (child != null) child.count else 0
-  }
 }
 
-object Stream
-{
+object Stream {
+
   import models.Serializable._
 
   val streamNameCharacter = """[ a-zA-Z0-9_\-$]"""
@@ -108,16 +92,6 @@ object Stream
 
   val maxChildren = 1000
 
-  implicit val streamReads: Reads[Stream] = (
-    (JsPath \ "id").read[ObjectId] and
-      (JsPath \ "name").read[String] and
-      (JsPath \ "uri").read[String] and
-      (JsPath \ "created").read[Date] and
-      (JsPath \ "updated").read[Date] and
-      (JsPath \ "status").read[Status] and
-      (JsPath \ "owner").read[ObjectId]
-    )(Stream.apply _)
-
   implicit val streamWrites = new Writes[Stream] {
     def writes(x: Stream): JsValue =
       Json.obj(
@@ -136,9 +110,6 @@ object Stream
   private def childDb(): Query[ChildStream] =
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
 
-  private def childCountDb(): Query[ChildCount] =
-    MorphiaObject.datastore.createQuery((classOf[ChildCount]))
-
   def normalizeUri(uri: String): StreamUri =
     try
       if (uri == null)
@@ -150,10 +121,10 @@ object Stream
           .toLowerCase
           .stripSuffix("/"),
           "UTF-8"))
-      catch {
-        case e: Throwable =>
-          StreamUri("")
-      }
+    catch {
+      case e: Throwable =>
+        StreamUri("")
+    }
 
   def normalizeUri(uri: StreamName): StreamUri =
     normalizeUri(uri.value)
@@ -235,10 +206,9 @@ object Stream
   private def createStreamWithName(name: StreamName, uri: StreamUri, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      val s = Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id)
-      save(s)
-      save(ChildCount(s.id, 0))
-      Some(s)
+      val s = save(Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id, 0))
+      User.incrementStreamCount(owner)
+      s
     }
 
   /**
@@ -269,12 +239,12 @@ object Stream
   /**
    * Registers a new child for a given stream.
    */
-   def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] =
+  def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] =
     asEditable(user, parent) flatMap { parent =>
       val s = save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
       MorphiaObject.datastore.update(
-        childCountDb().filter("id", parent.id),
-        MorphiaObject.datastore.createUpdateOperations((classOf[ChildCount])).inc("count"))
+        db().filter("id", parent.id),
+        MorphiaObject.datastore.createUpdateOperations((classOf[Stream])).inc("childCount"))
       s
     }
 
@@ -286,16 +256,19 @@ object Stream
   /**
    * Remove an existing child.
    */
-  def removeChild(parent: Stream, child: ObjectId): Unit =
+  def removeChild(parent: Stream, child: ObjectId): Unit = {
     MorphiaObject.datastore.delete(
       childDb()
         .filter("parentId =", parent.id)
         .filter("childId =", child))
 
+    MorphiaObject.datastore.update(
+      db().filter("id", parent.id),
+      MorphiaObject.datastore.createUpdateOperations((classOf[Stream])).dec("childCount"))
+  }
+
   def removeChild(childData: ChildStream): Unit =
-    MorphiaObject.datastore.delete(
-      childDb()
-        .filter("id =", childData.id))
+    findById(childData.parentId).map(removeChild(_, childData.childId))
 
   /**
    *
@@ -323,10 +296,12 @@ object Stream
    *
    * Caller should also clean up relationships before delete.
    */
-  def deleteStream(stream: Stream): Unit =
+  def deleteStream(stream: Stream): Unit = {
     MorphiaObject.datastore.delete(
       db()
         .filter("id =", stream.id))
+    stream.getOwner.map(User.decrementStreamCount)
+  }
 
   /**
    * Remove all relationships that a stream appears in

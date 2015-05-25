@@ -36,7 +36,6 @@ public final class MongoDB
             // Map classes
             MorphiaObject.morphia.map(AccessToken.class);
             MorphiaObject.morphia.map(AuthCode.class);
-            MorphiaObject.morphia.map(ChildCount.class);
             MorphiaObject.morphia.map(ChildStream.class);
             MorphiaObject.morphia.map(Client.class);
             MorphiaObject.morphia.map(LinkedAccount.class);
