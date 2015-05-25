@@ -144,11 +144,12 @@ object Stream
       if (uri == null)
         StreamUri("")
       else
-        StreamUri(UriEncoding.decodePath(uri, "UTF-8")
+        StreamUri(UriEncoding.decodePath(uri
           .trim()
           .replace(" ", "+")
           .toLowerCase
-          .stripSuffix("/"))
+          .stripSuffix("/"),
+          "UTF-8"))
       catch {
         case e: Throwable =>
           StreamUri("")
