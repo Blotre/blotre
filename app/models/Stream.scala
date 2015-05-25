@@ -90,7 +90,7 @@ object Stream {
   def toValidStreamName(name: StreamUri): Option[StreamName] =
     toValidStreamName(name.value.replace("+", " "))
 
-  val maxChildren = 1000
+  val maxChildren = 3
 
   implicit val streamWrites = new Writes[Stream] {
     def writes(x: Stream): JsValue =
