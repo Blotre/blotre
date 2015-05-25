@@ -81,7 +81,8 @@ var StreamModel = function(id, name, uri, status, updated) {
     });
 
     self.isOwner = function(user) {
-        return self.uri().indexOf(normalizeUri(user.userName() + '/')) === 0;
+        var ownerUri = normalizeUri(user.userName());
+        return (ownerUri === self.uri() || self.uri().indexOf(ownerUri + '/') === 0);
     };
 };
 

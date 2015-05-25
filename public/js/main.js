@@ -75,6 +75,10 @@ var AppViewModel = function(user, stream) {
         });
     };
 
+    self.isParentOwner = ko.computed(function() {
+         return (!!self.stream() && stream.isOwner(self.user()));
+     });
+
     self.removeChildButtonClick = function(child, event) {
         if (isHierarchical(self.stream().uri(), child.uri())) {
             bootbox.confirm({
@@ -108,7 +112,7 @@ AppViewModel.prototype.checkFavorite = function() {
     if (!self.user().userName())
         return;
 
-    if (isRootStream(self.stream().uri()) || isHierarchical(self.user().userName(), self.stream().uri())) {
+    if (self.isParentOwner() || isHierarchical(self.user().userName(), self.stream().uri())) {
         self.favorite(FavoriteStatus.Hierarchical);
     } else {
         $.ajax({
