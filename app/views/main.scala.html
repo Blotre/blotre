@@ -20,7 +20,7 @@
         <title>@title</title>
 
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
         <meta name="description" content="@Messages("blotre.meta.description")">
 
         <link rel="stylesheet" href="@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.min.css"))">
@@ -30,7 +30,7 @@
         @extraHead
     </head>
 
-    <body>
+    <body data-bind="style: { background: color || 'auto' }">
         <header>
             <nav class="navbar navbar-default navbar-fixed-top" id="header-bar" role="navigation">
                 <div class="container-fluid trans-panel">

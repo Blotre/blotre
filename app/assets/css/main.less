@@ -1,17 +1,33 @@
 @import url(//fonts.googleapis.com/css?family=Lato:300,400,700);
 
-html,
-body {
+html {
     min-height: 100%;
-    min-width: 320px;
-
     height: 100%;
-    width: 100%;
+    min-width: 320px;
 }
 
 body {
+    position: relative;
+    min-height: 100%;
+    width: 100%;
     font-family: 'Lato', sans-serif;
     color: #444;
+}
+
+body:before {
+    content: " ";
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top:-10px;
+    display: block;
+    background: white;
+    z-index: -9999;
+}
+
+
+body > * {
+    z-index: 1
 }
 
 /**
@@ -137,7 +153,7 @@ form .error .help-inline {
 
 
 /**
-Page header
+Page Header
 */
 .page-header {
     margin: 0;
