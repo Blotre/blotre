@@ -418,7 +418,7 @@ object OAuth2Controller extends Controller
     } getOrElse {
       NotFound(views.html.oauth.error.render(Messages.get("blotre.authorize.error.noSuchClient")))
     }
-  
+
   private def denyDisposable(user: models.User,clientId: String, redirectUri: String): Result =
     Ok(views.html.oauth.error.render(Messages.get("blotre.authorize.error.disposableDeny")))
 
