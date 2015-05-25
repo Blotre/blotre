@@ -212,6 +212,9 @@ blotre.authorize.clientError.overview=An error occurred. Please try contacting t
 
 blotre.authorize.error.invalidRedirect=Redirect is not valid.
 blotre.authorize.error.unsupported=Unsupported action.
+blotre.authorize.error.noSuchClient=No matching application found. Please contact the application developer.
+blotre.authorize.error.disposableDeny=Denied the application access to your account.
+
 
 blotre.redeem.title=Redeem
 blotre.redeem.pageTitle=Redeem

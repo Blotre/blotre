@@ -80,13 +80,12 @@ object OAuth2Controller extends Controller
    * OAuth authorization page.
    */
   def authorize(response_type: String, client_id: String) = TryAuthenticateAction { implicit request => JavaContext.withContext {
-    val user = Application.getLocalUser(request)
     response_type match {
       case "code" =>
-        authorizeAuthorizationCodeFlow(user, client_id, request.getQueryString("redirect_uri").getOrElse(""))
+        authorizeAuthorizationCodeFlow(request.user, client_id, request.getQueryString("redirect_uri").getOrElse(""))
 
       case "disposable" =>
-        authorizeDisposableFlow(user, client_id, request.getQueryString("onetime_code").getOrElse(""))
+        authorizeDisposableFlow(request.user, client_id, request.getQueryString("onetime_code").getOrElse(""))
 
       case _ =>
         Ok(views.html.oauth.error.render(Messages.get("blotre.authorize.error.unsupported")))
@@ -94,15 +93,22 @@ object OAuth2Controller extends Controller
   }}
 
   /**
-   * Start an authorization code based flow.
+   * Start authorization code flow.
    *
-   * Displays authorization UI or if previously authenticated, updates the authentication.
+   * Displays UI prompting a user to authorize a given client.
    */
   private def authorizeAuthorizationCodeFlow(user: models.User, client_id: String, redirect_uri: String): Result =
     clientForRedirect(client_id, redirect_uri) map { client =>
       Ok(views.html.oauth.authorize.render("code", client, redirect_uri))
-    } getOrElse(NotFound)
+    } getOrElse {
+      NotFound(views.html.oauth.error.render(Messages.get("blotre.authorize.error.noSuchClient")))
+    }
 
+  /**
+   * Start authorization of a disposable client.
+   *
+   * Displays UI prompting a user to authorize a the disposable client.
+   */
   private def authorizeDisposableFlow(user: models.User, client_id: String, code: String): Result =
     models.OneTimeCode.findByCode(code) flatMap { code =>
       if (code.clientId == client_id) {
@@ -115,13 +121,14 @@ object OAuth2Controller extends Controller
       } else {
         None
       }
-    } getOrElse(NotFound)
+    } getOrElse {
+      NotFound(views.html.oauth.error.render(Messages.get("blotre.authorize.error.noSuchClient")))
+    }
 
   /**
-   * User has authorized of denied client.
+   * User has authorized or denied the client.
    */
-  def onAuthorize = AuthenticatedAction { implicit request => JavaContext.withContext {
-    var user = Application.getLocalUser(request)
+  def onAuthorize() = AuthenticatedAction { implicit request => JavaContext.withContext {
     authorizeForm.bindFromRequest.fold(
       formWithErrors =>
         BadRequest,
@@ -129,28 +136,14 @@ object OAuth2Controller extends Controller
       value => {
         value.action match {
           case "allow" =>
-            authorizeClientForUser(user, value.reseponse_type, value.clientId, value.extraData)
+            authorizeClientForUser(request.user, value.reseponse_type, value.clientId, value.extraData)
 
           case "deny" =>
-            denyClientForUser(user, value.reseponse_type, value.clientId, value.extraData)
+            denyClientForUser(request.user, value.reseponse_type, value.clientId, value.extraData)
 
           case _ =>
             BadRequest
         }})
-  }}
-
-  /**
-   *
-   */
-  def redeem = TryAuthenticateAction { implicit request => JavaContext.withContext {
-    Ok(views.html.oauth.redeem.render())
-  }}
-
-  /**
-   * Page displayed after a user has successfully redeemed a code.
-   */
-  def redeemSuccessful = Action { implicit request => JavaContext.withContext {
-    Ok(views.html.oauth.redeemSuccessful.render())
   }}
 
   case class RedeemForm(code: String)
@@ -160,7 +153,21 @@ object OAuth2Controller extends Controller
   )(RedeemForm.apply)(RedeemForm.unapply))
 
   /**
-   * User has submitted the redeem form.
+   * Redeem code page
+   */
+  def redeem() = TryAuthenticateAction { implicit request => JavaContext.withContext {
+    Ok(views.html.oauth.redeem.render())
+  }}
+
+  /**
+   * Page displayed after a user has successfully redeemed a code.
+   */
+  def redeemSuccessful() = Action { implicit request => JavaContext.withContext {
+    Ok(views.html.oauth.redeemSuccessful.render())
+  }}
+
+  /**
+   * Redeem form submission.
    */
   def onRedeem = NoCacheAction { implicit request => JavaContext.withContext {
     redeemForm.bindFromRequest.fold(
@@ -185,7 +192,9 @@ object OAuth2Controller extends Controller
   def tokenInfo(token: String) = NoCacheAction { implicit request =>
     (models.AccessToken.findByAccessToken(token) orElse models.AccessToken.findByRefreshToken(token)) map { token =>
       Ok(Json.toJson(TokenInfo(token)))
-    } getOrElse(NotFound)
+    } getOrElse {
+      NotFound(Json.toJson(ApiError("No such token.")))
+    }
   }
 
   /**
@@ -195,7 +204,9 @@ object OAuth2Controller extends Controller
     (models.AccessToken.findByAccessToken(token) orElse models.AccessToken.findByRefreshToken(token)) map { token =>
       token.expire()
       Ok("")
-    } getOrElse(NotFound)
+    } getOrElse {
+      NotFound(Json.toJson(ApiError("No such token.")))
+    }
   }
 
   /**
@@ -386,12 +397,29 @@ object OAuth2Controller extends Controller
     }
 
   /**
-   *
+   * User has denied access to a client.
    */
   private def denyClientForUser(user: models.User, response_type: String, clientId: String, redirectUri: String): Result =
+    response_type match {
+      case "code" =>
+        denyAuthorizeCode(user, clientId, redirectUri)
+
+      case "disposable" =>
+        denyDisposable(user, clientId, redirectUri)
+
+      case _ => BadRequest
+    }
+
+  private def denyAuthorizeCode(user: models.User,clientId: String, redirectUri: String): Result =
     clientForRedirect(clientId, redirectUri) map { client =>
       Redirect(redirectUri, Map(
         "error" -> Seq("access_denied"),
         "error_description" -> Seq("User rejected access for your application")))
-    } getOrElse(BadRequest)
+    } getOrElse {
+      NotFound(views.html.oauth.error.render(Messages.get("blotre.authorize.error.noSuchClient")))
+    }
+  
+  private def denyDisposable(user: models.User,clientId: String, redirectUri: String): Result =
+    Ok(views.html.oauth.error.render(Messages.get("blotre.authorize.error.disposableDeny")))
+
 }
