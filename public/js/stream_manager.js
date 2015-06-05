@@ -31,6 +31,7 @@ var StreamManager = function() {
 
     var openWebsocket = function() {
         var socket = new WebSocket(socketPath());
+
         socket.onopen = function(e) {
             self.ready = true;
             var targetStreams = Object.keys(self.streams);
