@@ -320,6 +320,11 @@ object Stream extends Controller {
       apiSetStreamStatus(user, stream, status)
     } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
 
+  def apiSetStreamStatusForUri(user: models.User, streamUri: String, status: ApiSetStatusData): ApiResult[models.Status]  =
+    models.Stream.findByUri(streamUri) map { stream =>
+      apiSetStreamStatus(user, stream, status)
+    } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
+
   def apiSetStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.asEditable(user, stream) map { stream =>
       updateStreamStatus(stream, status.color, user) map { status =>

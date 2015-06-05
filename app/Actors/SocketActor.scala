@@ -283,7 +283,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int): Unit =
-    controllers.Stream.apiSetStreamStatus(user, uri, status) match {
+    controllers.Stream.apiSetStreamStatusForUri(user, uri, status) match {
       case controllers.ApiSuccess(status) =>
         output(CurrentStatusResponse(uri, status, correlation))
 
