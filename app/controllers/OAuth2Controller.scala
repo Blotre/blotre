@@ -84,9 +84,6 @@ object OAuth2Controller extends Controller
       case "code" =>
         authorizeAuthorizationCodeFlow(request.user, client_id, request.getQueryString("redirect_uri").getOrElse(""))
 
-      case "disposable" =>
-        authorizeDisposableFlow(request.user, client_id, request.getQueryString("onetime_code").getOrElse(""))
-
       case _ =>
         Ok(views.html.oauth.error.render(Messages.get("blotre.authorize.error.unsupported")))
     }
@@ -129,6 +126,7 @@ object OAuth2Controller extends Controller
    * User has authorized or denied the client.
    */
   def onAuthorize() = AuthenticatedAction { implicit request => JavaContext.withContext {
+    val state = request.getQueryString("state")
     authorizeForm.bindFromRequest.fold(
       formWithErrors =>
         BadRequest,
@@ -136,10 +134,10 @@ object OAuth2Controller extends Controller
       value => {
         value.action match {
           case "allow" =>
-            authorizeClientForUser(request.user, value.reseponse_type, value.clientId, value.extraData)
+            authorizeClientForUser(request.user, value.reseponse_type, value.clientId, value.extraData, state)
 
           case "deny" =>
-            denyClientForUser(request.user, value.reseponse_type, value.clientId, value.extraData)
+            denyClientForUser(request.user, value.reseponse_type, value.clientId, value.extraData, state)
 
           case _ =>
             BadRequest
@@ -169,7 +167,7 @@ object OAuth2Controller extends Controller
   /**
    * Redeem form submission.
    */
-  def onRedeem = NoCacheAction { implicit request => JavaContext.withContext {
+  def onRedeem = AuthenticatedAction { implicit request => JavaContext.withContext {
     redeemForm.bindFromRequest.fold(
       formWithErrors =>
         Redirect(routes.OAuth2Controller.redeem())
@@ -177,9 +175,7 @@ object OAuth2Controller extends Controller
 
       value =>
         models.OneTimeCode.findByCode(value.code) map { code =>
-          Redirect(
-            routes.OAuth2Controller.authorize("disposable", code.clientId.toString).url,
-            Map("onetime_code" -> Seq(code.token)))
+          authorizeDisposableFlow(request.user, code.clientId.toString, code.token)
         } getOrElse {
           Redirect(routes.OAuth2Controller.redeem())
             .flashing("error" -> Messages.get("blotre.redeem.invalidCode"))
@@ -236,20 +232,24 @@ object OAuth2Controller extends Controller
   /**
    *
    */
-  def accessToken(grant_type: String, client_id: String, client_secret: String) = NoCacheAction { implicit request =>
-    grant_type match {
-      case "authorization_code" =>
-        accessTokenAuthenticationCode(client_id, client_secret, request.getQueryString("code").getOrElse(""), request.getQueryString("redirect_uri").getOrElse(""))
+  def accessToken = NoCacheAction(parse.urlFormEncoded) { implicit request =>
+    request.body.get("client_id").map(_.head) flatMap { client_id =>
+      request.body.get("client_secret").map(_.head) map { client_secret =>
+        request.body.get("grant_type").map(_.head) match {
+          case Some("authorization_code") =>
+            accessTokenAuthenticationCode(client_id, client_secret, request.body.get("code").map(_.head).getOrElse(""), request.body.get("redirect_uri").map(_.head).getOrElse(""))
 
-      case "refresh_token" =>
-        accessTokenRefreshToken(client_id, client_secret, request.getQueryString("refresh_token").getOrElse(""))
+          case Some("refresh_token") =>
+            accessTokenRefreshToken(client_id, client_secret, request.body.get("refresh_token").map(_.head).getOrElse(""))
 
-      case "https://oauth2grant.blot.re/onetime_code" =>
-        accessTokenOneTimeCode(client_id, client_secret, request.getQueryString("code").getOrElse(""))
+          case Some("https://oauth2grant.blot.re/onetime_code") =>
+            accessTokenOneTimeCode(client_id, client_secret, request.body.get("code").map(_.head).getOrElse(""))
 
-      case _ =>
-        accessTokenErrorResponse("unsupported_grant_type", "")
-    }
+          case _ =>
+            accessTokenErrorResponse("unsupported_grant_type", "")
+        }
+      }
+    } getOrElse(accessTokenErrorResponse("invalid_grant", ""))
   }
 
   /**
@@ -345,10 +345,10 @@ object OAuth2Controller extends Controller
   /**
    *
    */
-  private def authorizeClientForUser(user: models.User, response_type: String, clientId: String, redirectUri: String): Result =
+  private def authorizeClientForUser(user: models.User, response_type: String, clientId: String, redirectUri: String, state: Option[String]): Result =
     response_type match {
       case "code" =>
-        authorizeCodeClientForUser(user, clientId, redirectUri)
+        authorizeCodeClientForUser(user, clientId, redirectUri, state)
 
       case "disposable" =>
         authorizeDisposableClientForUser(user, clientId, redirectUri)
@@ -359,15 +359,16 @@ object OAuth2Controller extends Controller
   /**
    *
    */
-  private def authorizeCodeClientForUser(user: models.User, clientId: String, redirectUri: String): Result =
+  private def authorizeCodeClientForUser(user: models.User, clientId: String, redirectUri: String, state: Option[String]): Result =
     clientForRedirect(clientId, redirectUri) map { client =>
-      authorizeCodeClientForUser(user, client, redirectUri)
+      authorizeCodeClientForUser(user, client, redirectUri, state)
     } getOrElse(NotFound)
 
-  private def authorizeCodeClientForUser(user: models.User, client: models.Client, redirectUri: String): Result =
+  private def authorizeCodeClientForUser(user: models.User, client: models.Client, redirectUri: String, state: Option[String]): Result =
     models.AuthCode.refreshAuthCode(client, user, redirectUri) map { code =>
       Redirect(redirectUri, Map(
-        "code" -> Seq(code.token)))
+        "code" -> Seq(code.token),
+        "state" -> Seq(state.getOrElse(""))))
     } getOrElse(BadRequest)
 
   /**
@@ -399,10 +400,10 @@ object OAuth2Controller extends Controller
   /**
    * User has denied access to a client.
    */
-  private def denyClientForUser(user: models.User, response_type: String, clientId: String, redirectUri: String): Result =
+  private def denyClientForUser(user: models.User, response_type: String, clientId: String, redirectUri: String, state: Option[String]): Result =
     response_type match {
       case "code" =>
-        denyAuthorizeCode(user, clientId, redirectUri)
+        denyAuthorizeCode(user, clientId, redirectUri, state)
 
       case "disposable" =>
         denyDisposable(user, clientId, redirectUri)
@@ -410,11 +411,12 @@ object OAuth2Controller extends Controller
       case _ => BadRequest
     }
 
-  private def denyAuthorizeCode(user: models.User,clientId: String, redirectUri: String): Result =
+  private def denyAuthorizeCode(user: models.User, clientId: String, redirectUri: String, state: Option[String]): Result =
     clientForRedirect(clientId, redirectUri) map { client =>
       Redirect(redirectUri, Map(
         "error" -> Seq("access_denied"),
-        "error_description" -> Seq("User rejected access for your application")))
+        "error_description" -> Seq("User rejected access for your application"),
+        "state" -> Seq(state.getOrElse(""))))
     } getOrElse {
       NotFound(views.html.oauth.error.render(Messages.get("blotre.authorize.error.noSuchClient")))
     }

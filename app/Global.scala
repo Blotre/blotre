@@ -15,7 +15,24 @@ import play.filters.csrf._
 import scala.concurrent.Future
 import java.io.File
 
-object Global extends WithFilters(CSRFFilter()) with GlobalSettings {
+class ExcludingCSRFFilter(filter: CSRFFilter) extends EssentialFilter {
+
+    override def apply(nextFilter: EssentialAction) = new EssentialAction {
+
+        import play.api.mvc._
+
+        override def apply(rh: RequestHeader) = {
+            val chainedFilter = filter.apply(nextFilter)
+            if (rh.tags.getOrElse("ROUTE_COMMENTS", "").contains("NOCSRF")) {
+                nextFilter(rh)
+            } else {
+                chainedFilter(rh)
+            }
+        }
+    }
+}
+
+object Global extends WithFilters(new ExcludingCSRFFilter(CSRFFilter())) with GlobalSettings {
     /**
      * Load environment specific config.
      */
