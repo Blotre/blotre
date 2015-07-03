@@ -119,7 +119,7 @@ object Stream extends Controller {
     models.Stream.findByUri(uri) map { s =>
       Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri)))
     } getOrElse {
-      tryCreateDecendant(user, uri)
+      tryCreateDescendant(user, uri)
     }
 
   /**
@@ -149,7 +149,7 @@ object Stream extends Controller {
    * A child stream can only be created if its direct parent exists and
    * is owned by the current user.
    */
-  def tryCreateDecendant(user: models.User, uri: String): Result =
+  def tryCreateDescendant(user: models.User, uri: String): Result =
     getRawParentPath(uri) flatMap {
       case (parentUri, childUri) =>
         models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
@@ -206,10 +206,14 @@ object Stream extends Controller {
     toResponse(apiGetStreams(query))
   }
 
-  def apiGetStreams(query: String): ApiResult[JsValue] = {
-    val streams = if (query.isEmpty) models.Stream.findByUpdated() else models.Stream.findByQuery(query)
-    ApiOk(Json.toJson(streams))
-  }
+  def apiGetStreams(query: String): ApiResult[JsValue] =
+    ApiOk(Json.toJson(
+      if (query.isEmpty)
+        models.Stream.findByUpdated()
+      else if (query.startsWith("#"))
+        models.Stream.findByStatusQuery(query)
+      else
+        models.Stream.findByQuery(query)))
 
   /**
    * Lookup a stream by id.

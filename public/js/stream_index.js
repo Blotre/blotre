@@ -27,7 +27,9 @@ var updateSearchResultsForQuery = function(model, query) {
     $.ajax({
         type: "GET",
         url: jsRoutes.controllers.Stream.apiGetStreams().url,
-        data: "query=" + query,
+        data: {
+            'query': query
+        },
         headers: {
             accept: "application/json"
         },

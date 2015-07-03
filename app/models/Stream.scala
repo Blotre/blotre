@@ -72,7 +72,6 @@ case class Stream(
 }
 
 object Stream {
-
   import models.Serializable._
 
   val streamNameCharacter = """[ a-zA-Z0-9_\-$]"""
@@ -168,10 +167,24 @@ object Stream {
 
   /**
    * Lookup streams using a search term.
+   *
+   * TODO: order by score
    */
   def findByQuery(query: String): List[Stream] = {
     val q = db().limit(20)
     q.criteria("name")
+      .containsIgnoreCase(query)
+    q.order("-updated").asList().asScala.toList
+  }
+
+  /**
+   * Lookup streams by status.
+   *
+   * TODO: order by score
+   */
+  def findByStatusQuery(query: String): List[Stream] = {
+    val q = db().limit(20)
+    q.criteria("status.color")
       .containsIgnoreCase(query)
     q.order("-updated").asList().asScala.toList
   }
