@@ -79,6 +79,20 @@
         @articleHeader
 
         <div id="article-container" class="container @(nav + "-container")">
+            <ul id="alerts">@if(request.flash.get(ApplicationConstants.FLASH_ERROR_KEY)) {
+                <li class="alert alert-danger" role="alert">
+                    <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">
+                            Close</span></button>
+                    @request.flash.get(ApplicationConstants.FLASH_ERROR_KEY)
+                </li>
+                }@if(request.flash.get(ApplicationConstants.FLASH_MESSAGE_KEY)) {
+                <li class="alert alert-success" role="alert">
+                    <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">
+                            Close</span></button>
+                    @request.flash.get(ApplicationConstants.FLASH_MESSAGE_KEY)
+                </li>
+            }</ul>
+
             @content
 
             <footer>
