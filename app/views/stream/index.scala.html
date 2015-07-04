@@ -37,7 +37,7 @@
                 <input name="query" type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
             </div>
         }
-        <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"</p>
+        <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"></p>
         <div class="list-header list-loading">
             <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
         </div>
@@ -46,5 +46,5 @@
             <li class="no-results hidden">@Messages("blotre.stream.index.noResults")</li>
             <!-- ko template: { name: 'stream-search-result-template', foreach: results } --><!-- /ko -->
         </ul>
-    <div>
+    </div>
 }
