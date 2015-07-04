@@ -49,9 +49,9 @@ playauthenticate.change_password.success=Password has been changed successfully.
 playauthenticate.password.signup.error.passwords_not_same=Passwords do not match.
 playauthenticate.password.login.unknown_user_or_pw=Unknown user or password.
 
-playauthenticate.password.verify_signup.subject=Blot're: Complete your signup
-playauthenticate.password.verify_email.subject=Blot're: Confirm your e-mail address
-playauthenticate.password.reset_email.subject=Blot're: How to reset your password
+playauthenticate.password.verify_signup.subject=Blot''re: Complete your signup
+playauthenticate.password.verify_email.subject=Blot''re: Confirm your e-mail address
+playauthenticate.password.reset_email.subject=Blot''re: How to reset your password
 
 # play-authenticate: Additional translations
 
@@ -92,7 +92,7 @@ playauthenticate.link.account.ok=OK
 # play-authenticate: Signup folder translations
 
 playauthenticate.verify.email.title=Verify your e-mail
-playauthenticate.verify.email.requirement=Before you can use Blot're, you first need to verify your e-mail address.
+playauthenticate.verify.email.requirement=Before you can use Blot''re, you first need to verify your e-mail address.
 playauthenticate.verify.email.cta=An e-mail has been sent to the registered address. Please follow the embedded link to activate your account.
 
 playauthenticate.password.reset.title=Reset password
@@ -102,8 +102,8 @@ playauthenticate.password.forgot.title=Forgot password
 playauthenticate.password.forgot.cta=Send reset instructions
 
 playauthenticate.oauth.access.denied.title=OAuth access denied
-playauthenticate.oauth.access.denied.explanation=To use Blot're with OAuth, you must accept the connection.
-playauthenticate.oauth.access.denied.alternative=Or sign in with another provider
+playauthenticate.oauth.access.denied.explanation=To use Blot''re, you must accept the connection.
+playauthenticate.oauth.access.denied.alternative=Sign in with another provider
 
 playauthenticate.token.error.title=Token error
 playauthenticate.token.error.message=The given token has either expired or does not exist.

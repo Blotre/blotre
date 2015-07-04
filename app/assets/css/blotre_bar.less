@@ -7,13 +7,26 @@
     top: 0;
     max-height: 100%;
     z-index: 999;
-    margin-top: 50px
+    margin-top: 50px;
+}
+
+#blotre-bar:before {
+    display: block;
+    content: " ";
+    position: absolute;
+    height: 100%;
+    width: 40px;
+    right: 0;
+    top: 0;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+    z-index: -9;
 }
 
 #blotre-bar li {
     display: block;
     float: right;
     clear: both;
+
 }
 
 #blotre-bar .stream {
@@ -23,6 +36,7 @@
     background: white;
     color: inherit;
     text-decoration: none;
+
 }
 
 #blotre-bar .status {
@@ -33,9 +47,16 @@
 }
 
 #blotre-bar .stream-name {
-    display: none;
-    padding: 0 0.6em;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;
+    text-overflow: ellipsis;
     vertical-align: middle;
+}
+
+#blotre-bar .stream:hover {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
 }
 
 #blotre-bar .stream:hover .status {
@@ -43,7 +64,8 @@
 }
 
 #blotre-bar .stream:hover .stream-name {
-    display: inline-block;
+    width: auto;
+    padding: 0 0.6em;
     min-width: 40px;
 }
 
