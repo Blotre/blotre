@@ -1,6 +1,9 @@
-@(userNameForm: play.api.data.Form[UserNameSelectForm])
+@(
+    userNameForm: play.api.data.Form[UserNameSelectForm])(implicit request: Request[AnyContent])
 
 @import helper._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @extraHead = {
     <style>

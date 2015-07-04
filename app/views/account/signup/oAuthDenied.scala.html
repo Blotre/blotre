@@ -1,4 +1,7 @@
-@(providerKey: String)
+@(providerKey: String)(implicit request: RequestHeader)
+
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @main(Messages("playauthenticate.oauth.access.denied.title")) {
 

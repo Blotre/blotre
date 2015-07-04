@@ -12,10 +12,10 @@ object ApiError
     new ApiError(error, Some(details))
 
   def apply(error: String, e: Seq[(JsPath, Seq[ValidationError])]): ApiError =
-    ApiError(error, JsError.toFlatJson(e))
+    ApiError(error, JsError.toJson(e))
 
   def apply(error: String, e: JsError): ApiError =
-    ApiError(error, JsError.toFlatJson(e))
+    ApiError(error, JsError.toJson(e))
 
 
   implicit val apiErrorWrites = new Writes[ApiError] {

@@ -76,9 +76,9 @@ object Stream extends Controller {
    *
    * Displays a list of streams for searching.
    */
-  def index = Action { implicit request => JavaContext.withContext {
-    Ok(views.html.stream.index.render())
-  }}
+  def index = Action { implicit request =>
+    Ok(views.html.stream.index.render(request))
+  }
 
   /**
    * Lookup a stream.
@@ -90,7 +90,7 @@ object Stream extends Controller {
    *
    * json: Returns json of the stream.
    */
-  def getStream(uri: String) = Action { implicit request => JavaContext.withContext {
+  def getStream(uri: String) = Action { implicit request =>
     val pathAndExt = uri.split('.')
     val path = pathAndExt(0)
     if (pathAndExt.length == 2 && pathAndExt(1) == "png")
@@ -108,16 +108,15 @@ object Stream extends Controller {
       }
     }
   }
-  }
 
   /**
    * Render a stream as html.
    *
    * Displays a try create page if the stream does not exist but the parent does.
    */
-  def renderStream(user: models.User, uri: String) =
+  def renderStream(user: models.User, uri: String)(implicit request: RequestHeader) =
     models.Stream.findByUri(uri) map { s =>
-      Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri)))
+      Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri), request))
     } getOrElse {
       tryCreateDescendant(user, uri)
     }
@@ -149,18 +148,18 @@ object Stream extends Controller {
    * A child stream can only be created if its direct parent exists and
    * is owned by the current user.
    */
-  def tryCreateDescendant(user: models.User, uri: String): Result =
+  def tryCreateDescendant(user: models.User, uri: String)(implicit request: RequestHeader): Result =
     getRawParentPath(uri) flatMap {
       case (parentUri, childUri) =>
         models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
           models.Stream.findByUri(parentUri) map { parent =>
             models.Stream.asEditable(user, parent) map { stream =>
-              Ok(views.html.stream.createChild.render(stream, validChildName))
+              Ok(views.html.stream.createChild.render(stream, validChildName, request))
             } getOrElse (Unauthorized)
           }
         }
     } getOrElse {
-      NotFound(views.html.notFound.render(""))
+      NotFound(views.html.notFound.render(request))
     }
 
   private def createDescendant(user: models.User, uri: String): Option[models.Stream] =

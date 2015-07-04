@@ -31,6 +31,7 @@ import MyUsernamePasswordAuthProvider._
 //remove if not needed
 
 import scala.collection.JavaConversions._
+import com.google.inject.Inject
 
 object MyUsernamePasswordAuthProvider
 {
@@ -85,7 +86,7 @@ object MyUsernamePasswordAuthProvider
   private def generateToken(): String = UUID.randomUUID().toString
 }
 
-class MyUsernamePasswordAuthProvider(app: Application) extends
+class MyUsernamePasswordAuthProvider @Inject() (app: Application) extends
 UsernamePasswordAuthProvider[String,
   MyLoginUsernamePasswordAuthUser,
   MyUsernamePasswordAuthUser,

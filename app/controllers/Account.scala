@@ -27,23 +27,23 @@ object Account extends Controller
   /**
    * Display the user's profile page.
    */
-  def account() = AuthenticatedAction { implicit request => JavaContext.withContext {
-    Ok(views.html.account.account.render(request.user))
+  def account() = AuthenticatedAction { implicit request =>  {
+    Ok(views.html.account.account.render(request.user, request))
   }}
 
-  def link() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
-    Ok(views.html.account.link.render(request.user))
+  def link() = NoCache { AuthenticatedAction { implicit request => {
+    Ok(views.html.account.link.render(request.user, request))
   }}}
 
-  def askLink() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def askLink() = NoCache { AuthenticatedAction { implicit request => {
     val u = PlayAuthenticate.getLinkUser(JavaHelpers.createJavaContext(request).session())
     if (u == null)
       Redirect(routes.Application.index())
     else
-      Ok(views.html.account.ask_link.render(acceptForm, u))
+      Ok(views.html.account.ask_link.render(acceptForm, u, request))
   }}}
 
-  def doLink() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def doLink() = NoCache { AuthenticatedAction { implicit request =>  {
     val ctx = JavaHelpers.createJavaContext(request)
     val u = PlayAuthenticate.getLinkUser(ctx.session())
     if (u == null) {
@@ -51,7 +51,7 @@ object Account extends Controller
     } else {
       acceptForm.bindFromRequest().fold(
         formWithErrors =>
-          BadRequest(views.html.account.ask_link.render(formWithErrors, u)),
+          BadRequest(views.html.account.ask_link.render(formWithErrors, u, request)),
 
         values => {
           val link = values.accept
@@ -64,16 +64,16 @@ object Account extends Controller
     }
   }}}
 
-  def askMerge() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def askMerge() = NoCache { AuthenticatedAction { implicit request =>  {
     val aUser = PlayAuthenticate.getUser(JavaHelpers.createJavaContext(request).session())
     val bUser = PlayAuthenticate.getMergeUser(JavaHelpers.createJavaContext(request).session())
     if (bUser == null)
       Redirect(routes.Application.index())
     else
-      Ok(views.html.account.ask_merge.render(acceptForm, aUser, bUser))
+      Ok(views.html.account.ask_merge.render(acceptForm, aUser, bUser, request))
   }}}
 
-  def doMerge() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def doMerge() = NoCache { AuthenticatedAction { implicit request =>  {
     val ctx = JavaHelpers.createJavaContext(request)
 
     val aUser = PlayAuthenticate.getUser(JavaHelpers.createJavaContext(request).session())
@@ -83,7 +83,7 @@ object Account extends Controller
     } else {
       acceptForm.bindFromRequest().fold(
         formWithErrors =>
-          BadRequest(views.html.account.ask_merge.render(formWithErrors, aUser, bUser)),
+          BadRequest(views.html.account.ask_merge.render(formWithErrors, aUser, bUser, request)),
 
       values => {
         val merge = values.accept
@@ -106,25 +106,25 @@ object Account extends Controller
   /**
    * Display a form allowing the current user to select their user name.
    */
-  def selectUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def selectUserName() = NoCache { AuthenticatedAction { implicit request =>  {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected)
       Redirect(routes.Application.index())
     else
-      Ok(views.html.account.selectUserName.render(userNameSelectForm))
+      Ok(views.html.account.selectUserName.render(userNameSelectForm, request))
   }}}
 
   /**
    * Form submission for user name selection.
    */
-  def setSelectedUserName() = NoCache { AuthenticatedAction { implicit request => JavaContext.withContext {
+  def setSelectedUserName() = NoCache { AuthenticatedAction { implicit request =>  {
     val localUser = Application.getLocalUser(request)
     if (localUser.userNameSelected) {
       Redirect(routes.Application.index())
     } else {
      userNameSelectForm.bindFromRequest().fold(
        formWithErrors =>
-        BadRequest(views.html.account.selectUserName.render(formWithErrors))
+        BadRequest(views.html.account.selectUserName.render(formWithErrors, request))
           .flashing("error" -> "Please correct errors."),
 
       values => {
@@ -134,7 +134,7 @@ object Account extends Controller
             Redirect(routes.Application.index())
           }
         } getOrElse {
-          BadRequest(views.html.account.selectUserName.render(userNameSelectForm))
+          BadRequest(views.html.account.selectUserName.render(userNameSelectForm, request))
             .flashing("error" -> "Could not process request.")
         }
       })
@@ -147,8 +147,8 @@ object Account extends Controller
   def authorizations() = NoCache { AuthenticatedAction { implicit request =>
     render {
       case Accepts.Html() =>
-        JavaContext.withContext {
-          Ok(views.html.account.authorizations.render())
+         {
+          Ok(views.html.account.authorizations.render(request))
         }
 
       case Accepts.Json() =>

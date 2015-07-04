@@ -1,6 +1,7 @@
 package providers;
 
 import com.feth.play.module.pa.providers.password.DefaultUsernamePasswordAuthUser;
+import com.google.inject.Inject;
 
 public class MyLoginUsernamePasswordAuthUser extends
 		DefaultUsernamePasswordAuthUser {
@@ -21,6 +22,7 @@ public class MyLoginUsernamePasswordAuthUser extends
 	 * 
 	 * @param email
 	 */
+	@Inject
 	public MyLoginUsernamePasswordAuthUser(final String email) {
 		this(null, email);
 	}

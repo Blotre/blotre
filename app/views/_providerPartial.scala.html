@@ -1,11 +1,17 @@
 @(skipCurrent: Boolean = true)
 
-@import com.feth.play.module.pa.views.html._
+@import com.feth.play.module.pa.providers.AuthProvider.Registry
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 <ul class="providers">
-	@forProviders(skipCurrent) { p =>
-		<li>
-			<a href="@p.getUrl()">@Messages("blotre.auth.provider." + p.getKey())@_providerIcon(p.getKey())</a>
-		</li>
+	@defining(Registry.getProviders()) { providers =>
+		@if(providers != null && providers.size() > 0) {
+		@for(p <- providers) {
+				<li>
+					<a href="@p.getUrl()">@Messages("blotre.auth.provider." + p.getKey())@_providerIcon(p.getKey())</a>
+				</li>
+			}
+		}
 	}
 </ul>

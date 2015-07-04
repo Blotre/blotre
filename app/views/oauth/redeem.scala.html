@@ -1,8 +1,8 @@
-@()
-
+@(implicit request: RequestHeader)
 
 @import helper._
-@import com.feth.play.module.pa.views.html._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @articleHeader = {
 <div class="status status-header status-small-header"
@@ -16,7 +16,7 @@
 
 <div class="row">
     @form(action = routes.OAuth2Controller.onRedeem, 'class -> "authorize-redeem-form") {
-        @CSRF.formField
+        @helper.CSRF.formField
         <input type="text" name="code" />
         <button class="btn btn-lg btn-success" type="submit">
             <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Redeem

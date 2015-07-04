@@ -6,7 +6,7 @@ object JavaContext {
   import play.mvc.Http
   import play.core.j.JavaHelpers
 
-  def withContext[Status](block: => Status)(implicit header: RequestHeader): Status = {
+  def withContext[Status](block: => Status)(implicit header: Request[AnyContent]): Status = {
     try {
       Http.Context.current.set(JavaHelpers.createJavaContext(header))
       block

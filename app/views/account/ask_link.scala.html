@@ -1,8 +1,10 @@
 @(
 	acceptForm: play.api.data.Form[AcceptForm],
-	newAccount: com.feth.play.module.pa.user.AuthUser)
+	newAccount: com.feth.play.module.pa.user.AuthUser)(implicit request: Request[AnyContent])
 
 @import helper._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @label = {
 	@_providerIcon(newAccount.getProvider()) @Messages("playauthenticate.link.account.question",newAccount)
@@ -15,6 +17,7 @@
 	@form(routes.Account.doLink) {
 		@CSRF.formField
 		<label>@label</label>
+		<button class="btn btn-lg btn-success" type="submit" name="accept" value="true">
 		<button class="btn btn-lg btn-success" type="submit" name="accept" value="true">
 			<span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Allow
 		</button>

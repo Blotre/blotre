@@ -1,14 +1,14 @@
 @(
-    clientForm: play.api.data.Form[CreateClientForm])
+    clientForm: play.api.data.Form[CreateClientForm])(implicit request: Request[AnyContent])
 
 @import helper._
-@import com.feth.play.module.pa.views.html._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @articleHeader = {
 <div class="status status-header status-small-header"
      style="background: #FF712C;"></div>
 }
-
 
 @main(Messages("playauthenticate.login.title"), "clients", articleHeader = articleHeader) {
     <h1>Create New Client</h1>

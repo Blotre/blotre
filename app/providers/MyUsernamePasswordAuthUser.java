@@ -4,6 +4,7 @@ import providers.MyUsernamePasswordAuthProvider.MySignup;
 
 import com.feth.play.module.pa.providers.password.UsernamePasswordAuthUser;
 import com.feth.play.module.pa.user.NameIdentity;
+import com.google.inject.Inject;
 
 public class MyUsernamePasswordAuthUser extends UsernamePasswordAuthUser
 		implements NameIdentity {
@@ -12,6 +13,7 @@ public class MyUsernamePasswordAuthUser extends UsernamePasswordAuthUser
 	private static final long serialVersionUID = 1L;
 	private final String name;
 
+	@Inject
 	public MyUsernamePasswordAuthUser(final MySignup signup) {
 		super(signup.password(), signup.email());
 		this.name = signup.name();

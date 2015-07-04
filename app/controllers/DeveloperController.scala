@@ -20,28 +20,28 @@ object DeveloperController extends Controller
     "blurb" ->  nonEmptyText(3, 255)
   )(CreateClientForm.apply)(CreateClientForm.unapply))
 
-  def index() = AuthenticatedAction { implicit request => JavaContext.withContext {
+  def index() = AuthenticatedAction { implicit request =>  {
     val user = Application.getLocalUser(request)
     val clients = models.Client.findForUser(user)
-    Ok(views.html.developer.index.render(clients))
+    Ok(views.html.developer.index.render(clients, request))
   }}
 
-  def createClient() = AuthenticatedAction { implicit request => JavaContext.withContext {
-    Ok(views.html.developer.createClient.render(createClientForm))
+  def createClient() = AuthenticatedAction { implicit request =>  {
+    Ok(views.html.developer.createClient.render(createClientForm, request))
   }}
 
   /**
    * Create a new client for the current user from a form submission.
    */
-  def createClientSubmit() = AuthenticatedAction { implicit request => JavaContext.withContext {
+  def createClientSubmit() = AuthenticatedAction { implicit request =>  {
     val user = Application.getLocalUser(request)
     createClientForm.bindFromRequest.fold(
       formWithErrors =>
-        Ok(views.html.developer.createClient.render(formWithErrors)),
+        Ok(views.html.developer.createClient.render(formWithErrors, request)),
 
       value =>
         if (models.Client.findForUser(user).length >= models.Client.maxClientCount)
-          Ok(views.html.developer.createClient.render(createClientForm.fillAndValidate(value)))
+          Ok(views.html.developer.createClient.render(createClientForm.fillAndValidate(value), request))
             .flashing("error" -> Messages.get("blotre.developer.client.error.tooManyClients"))
         else
           models.Client.createClient(value.name, value.uri, value.blurb, user) map { _ =>
@@ -52,17 +52,17 @@ object DeveloperController extends Controller
   /**
    * Render client information page.
    */
-  def getClient(id: String) = AuthenticatedAction { implicit request => JavaContext.withContext {
+  def getClient(id: String) = AuthenticatedAction { implicit request =>  {
     val user = Application.getLocalUser(request)
     models.Client.findByIdForUser(id, user) map { client =>
-      Ok(views.html.developer.client.render(client))
+      Ok(views.html.developer.client.render(client, request))
     } getOrElse(NotFound)
   }}
 
   /**
    * Delete an existing client.
    */
-  def deleteClient(id: String) = AuthenticatedAction { implicit request => JavaContext.withContext {
+  def deleteClient(id: String) = AuthenticatedAction { implicit request =>  {
     models.Client.findByIdForUser(id, request.user) map { client =>
       models.Client.deleteClient(client)
       Ok("")
@@ -72,7 +72,7 @@ object DeveloperController extends Controller
   /**
    * Regenerate the secret of a client.
    */
-  def regenerateSecret(id: String) = AuthenticatedAction { implicit request => JavaContext.withContext {
+  def regenerateSecret(id: String) = AuthenticatedAction { implicit request =>  {
     models.Client.findByIdForUser(id, request.user) map { client =>
       models.Client.regenerateSecret(client) map { client =>
         Redirect(routes.DeveloperController.getClient(client.id.toString))
@@ -83,7 +83,7 @@ object DeveloperController extends Controller
   /**
    * Update the redirects of a given client.
    */
-  def setRedirects(clientId: String): Action[JsValue] = AuthenticatedAction(parse.json) { implicit request => JavaContext.withContext {
+  def setRedirects(clientId: String): Action[JsValue] = AuthenticatedAction(parse.json) { implicit request =>  {
     models.Client.findByIdForUser(clientId, request.user) map { client =>
       Json.fromJson[Array[String]](request.body) map { redirects =>
         setRedirects(client, redirects)

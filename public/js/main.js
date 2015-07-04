@@ -263,7 +263,9 @@ var updateSearchResultsForQuery = function(model, query) {
     $.ajax({
         type: "GET",
         url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url,
-        data: "query=" + query,
+        data: {
+            query: query
+        },
         headers: {
             accept: "application/json"
         },

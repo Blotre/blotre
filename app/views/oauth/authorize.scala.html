@@ -1,11 +1,11 @@
 @(
     response_type: String,
     client: models.Client,
-    extraData: String)
-
+    extraData: String)(implicit request: RequestHeader)
 
 @import helper._
-@import com.feth.play.module.pa.views.html._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @articleHeader = {
     <div class="status status-header status-small-header"

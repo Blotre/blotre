@@ -35,7 +35,7 @@ object Application extends Controller
   /**
    * Get potentially expired token from request.
    */
-  def getAnyAccessTokenFromRequest(request: RequestHeader): Option[models.AccessToken] =
+  def getAnyAccessTokenFromRequest(request:RequestHeader): Option[models.AccessToken] =
     extractAccessTokenFromRequest(request).flatMap(models.AccessToken.findAnyByAccessToken)
 
   /**
@@ -79,29 +79,29 @@ object Application extends Controller
    *
    * Redirects to the select user name page if a user has not selected a user name.
    */
-  def index = Action.async { implicit request => JavaContext.withContext {
+  def index = Action.async { implicit request =>
     val localUser = getLocalUser(request)
     if (localUser == null) {
-      Future.successful(Ok(views.html.index.render()))
+      Future.successful(Ok(views.html.index.render(request)))
     } else if (localUser.userName == null || localUser.userName.isEmpty()) {
       Future.successful(Redirect(routes.Account.selectUserName()))
     } else {
       controllers.Stream.getStream(localUser.userName).apply(request)
     }
-  }}
+  }
 
-  def policy = Action { implicit request =>  JavaContext.withContext {
-    Ok(views.html.meta.policy.render())
-  }}
+  def policy = Action { implicit request =>
+    Ok(views.html.meta.policy.render(request))
+  }
 
   /**
    * Login page.
    */
-  def login = Action { implicit request => JavaContext.withContext {
-    Ok(views.html.login.render(MyUsernamePasswordAuthProvider.LOGIN_FORM))
+  def login = Action { implicit request =>
+    Ok(views.html.login.render(MyUsernamePasswordAuthProvider.LOGIN_FORM, request))
       .withSession(
         "redirect" -> request.getQueryString("redirect").getOrElse(""))
-  }}
+  }
 
   /**
    * Validate that the requested redirect creates a valid url from the request host.
@@ -137,16 +137,16 @@ object Application extends Controller
   /**
    *
    */
-  def notFound = Action { implicit request => JavaContext.withContext {
-    NotFound(views.html.notFound.render(""))
-  }}
+  def notFound = Action { implicit request =>
+    NotFound(views.html.notFound.render(request))
+  }
 
   /**
    *
    */
-  def unauthorized = Action { implicit request => JavaContext.withContext {
-    Unauthorized(views.html.unauthorized.render(""))
-  }}
+  def unauthorized = Action { implicit request =>
+    Unauthorized(views.html.unauthorized.render(request))
+  }
 
   def formatTimestamp(t: Long): String =
     new SimpleDateFormat("yyyy-dd-MM HH:mm:ss").format(new Date(t))

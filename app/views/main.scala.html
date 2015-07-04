@@ -4,18 +4,14 @@
     extraHead: Html = Html(""),
     navHeader: Html = Html(""),
     articleHeader: Html = Html(""),
-    extraScripts: Html = Html(""))(content: Html)
+    extraScripts: Html = Html(""))(content: Html)(implicit request: RequestHeader)
 
-@import be.objectify.deadbolt.java.views.html._
-@import be.objectify.deadbolt.core.utils.TemplateUtils._
 @import play.api.libs.json._
 @import play.api.Play.current
-@import helper._
-@import util._
-
+@import play.api.i18n.Messages.Implicits._
 
 <!DOCTYPE html>
-<html lang="@lang().code()">
+<html>
     <head>
         <title>@title</title>
 
@@ -50,9 +46,8 @@
                     </div>
 
                     <div id="header-collapsed" class="collapse navbar-collapse">
-                        @subjectPresentOr() {
+                        @_userOr { user =>
                             <ul class="nav navbar-nav navbar-right">
-                            @defining(Application.getLocalUser(session())) { user =>
                                 <li class="dropdown">
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-user"></i> @user.name <span class="caret"></span></a>
                                     <ul class="dropdown-menu" role="menu">
@@ -61,14 +56,13 @@
                                         <li><a href="@com.feth.play.module.pa.controllers.routes.Authenticate.logout()"><i class="icon-off"></i> @Messages("playauthenticate.navigation.logout")</a></li>
                                     </ul>
                                 </li>
-                            }
                             </ul>
                         } {
                             <a id="navbar-login"
                                href="@routes.Application.login()"
                                class="navbar-right btn btn-default navbar-btn @("disabled".when(nav == "login"))">@Messages("playauthenticate.navigation.login")</a>
                         }
-                        @form(action = routes.Stream.index, 'id -> "navbar-search", 'role -> "search", 'class -> "navbar-form navbar-right") {
+                        @helper.form(action = routes.Stream.index, 'id -> "navbar-search", 'role -> "search", 'class -> "navbar-form navbar-right") {
                             <div class="input-group">
                                 <input type="text" class="form-control" placeholder="Search" name="query">
                                 <div class="input-group-btn">
@@ -85,20 +79,6 @@
         @articleHeader
 
         <div id="article-container" class="container @(nav + "-container")">
-            <ul id="alerts">@if(flash.contains(ApplicationConstants.FLASH_ERROR_KEY)) {
-                <li class="alert alert-danger" role="alert">
-                    <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">
-                        Close</span></button>
-                    @flash().get(ApplicationConstants.FLASH_ERROR_KEY)
-                </li>
-            }@if(flash.contains(ApplicationConstants.FLASH_MESSAGE_KEY)) {
-                <li class="alert alert-success" role="alert">
-                    <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">
-                        Close</span></button>
-                    @flash().get(ApplicationConstants.FLASH_MESSAGE_KEY)
-                </li>
-            }</ul>
-
             @content
 
             <footer>
@@ -119,13 +99,19 @@
                     </div>
                 </nav>
                 <p id="copyright">
-                    &copy; @(new Date().format("yyyy")) by <a href="http://mattbierner.com">Matt Bierner</a>
+                    &copy; @(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)) by <a href="http://mattbierner.com">Matt Bierner</a>
                 </p>
                 <p id="app-version">
                     @current.configuration.getString("app.version")
                 </p>
             </footer>
         </div>
+
+        @_userOr { user =>
+            <ul id="blotre-bar">
+                <!-- ko template: { name: 'blotre-bar-template', foreach: favorites().children } --><!-- /ko -->
+            </ul>
+        } { }
 
         <div id="loading-overlay" class="hidden">
             <div class="centered">
@@ -138,7 +124,7 @@
 
         @helper.javascriptRouter("jsRoutes")(
             routes.javascript.Account.authorizations,
-        routes.javascript.Account.revokeAuthorization,
+            routes.javascript.Account.revokeAuthorization,
 
             routes.javascript.Stream.index,
             routes.javascript.Stream.getStream,
@@ -158,14 +144,13 @@
             routes.javascript.DeveloperController.getClient,
             routes.javascript.DeveloperController.deleteClient,
             routes.javascript.DeveloperController.setRedirects
-        )
-        @subjectPresent() {
-            @defining(Application.getLocalUser(session())) { user =>
-                <script>
-                    window.initialUserData = @Html(Json.toJson(user).toString());
-                </script>
-            }
-        }
+        )(request)
+
+        @_userOr { user =>
+            <script>
+                window.initialUserData = @Html(Json.toJson(user).toString());
+            </script>
+        } { }
 
         <script>
             @Html(org.webjars.RequireJS.getSetupJavaScript(routes.WebJarAssets.at("").url))
@@ -175,6 +160,16 @@
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("knockout.js"))"></script>
         <script src="@routes.Assets.at("js/spectrum.js")"></script>
         <script src="@routes.Assets.at("js/bootbox.min.js")"></script>
+
+         <script type="text/html" id="blotre-bar-template">
+            <li class="blotre-bar-stream">
+                <a class="stream" data-bind="attr: { href: url }">
+                    <span class="status"  data-bind="style: { 'background': color }"></span>
+                    <span class="stream-name" data-bind="text: name"></span>
+                </a>
+            </li>
+        </script>
+
         @extraScripts
     </body>
 </html>

@@ -1,12 +1,12 @@
 @(
     stream: models.Stream,
-    children: scala.collection.immutable.List[models.Stream] = scala.collection.immutable.List(),
-    uriPath: scala.collection.immutable.Seq[(String, String)])
+    children: scala.collection.immutable.List[models.Stream],
+    uriPath: scala.collection.immutable.Seq[(String, String)])(implicit request: RequestHeader)
 
 @import play.api.libs.json._
 @import helper._
-@import be.objectify.deadbolt.java.views.html._
-@import be.objectify.deadbolt.core.utils.TemplateUtils._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @extraHead = {
     <link id="favicon"
@@ -69,11 +69,11 @@
                  data-bind="text: stream().displayUpdated">@stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")</span>
         </div>
 
-        <nav class="stream-controls @("hidden".when(Application.getLocalUser(session()) == null))"">
+        <nav class="stream-controls @("hidden".when(Application.getLocalUser(request) == null))"">
             <button disabled="disabled" class="stream-favorite btn-lg">
                 <span class="glyphicon glyphicon-star"></span>
             </button>
-            <div class="status-picker-control @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
+            <div class="status-picker-control @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(request))))">
                 @_streamColorControl(stream)
             </div>
             <button class="stream-share btn-lg" disabled>
@@ -93,7 +93,7 @@
         }
         <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"</p>
 
-        <div class="create-child clearfix @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(session()))))">
+        <div class="create-child clearfix @("hidden".when(!controllers.Stream.canUpdateStreamStatus(stream, Application.getLocalUser(request))))">
             <div class="hidden" id="create-child-name-input">
                 <input class="form-control" type="text" name="name" placeholder="Name" />
             </div>
@@ -108,6 +108,9 @@
             <div class="error hidden"></div>
         </div>
 
+        <div class="list-header list-loading">
+            <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+        </div>
         <ul class="stream-children" id="stream-search-results">
             <li class="no-results hidden">@Messages("blotre.stream.stream.noChildren")</li>
             <!-- ko template: { name: 'stream-search-result-template', foreach: children().children } --><!-- /ko -->

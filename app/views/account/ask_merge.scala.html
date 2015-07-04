@@ -1,9 +1,11 @@
 @(
     acceptForm: play.api.data.Form[AcceptForm],
     aUser: com.feth.play.module.pa.user.AuthUser,
-	bUser: com.feth.play.module.pa.user.AuthUser)
+	bUser: com.feth.play.module.pa.user.AuthUser)(implicit request: Request[AnyContent])
 
 @import helper._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @label = {
 	@Messages("playauthenticate.merge.accounts.question", aUser, bUser)

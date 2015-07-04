@@ -2,6 +2,12 @@ import com.feth.play.module.pa.PlayAuthenticate
 import com.feth.play.module.pa.PlayAuthenticate.Resolver
 import com.feth.play.module.pa.exceptions.AccessDeniedException
 import com.feth.play.module.pa.exceptions.AuthException
+import play.Application
+import play.ApplicationLoader
+import play.Configuration
+import play.{Mode};
+import play.inject.guice.GuiceApplicationBuilder
+import play.inject.guice.GuiceApplicationLoader
 import com.typesafe.config.ConfigFactory
 import controllers.{JavaContext, routes}
 import helper.datasources.MongoDB
@@ -32,23 +38,30 @@ class ExcludingCSRFFilter(filter: CSRFFilter) extends EssentialFilter {
     }
 }
 
-object Global extends WithFilters(new ExcludingCSRFFilter(CSRFFilter())) with GlobalSettings {
-    /**
-     * Load environment specific config.
-     */
-    override def onLoadConfig(config: Configuration, path: File, classLoader: ClassLoader, mode: Mode.Mode): Configuration = {
-        val localConfig = Configuration(ConfigFactory.load(s"application.${mode.toString.toLowerCase}.conf"))
-        super.onLoadConfig(config ++ localConfig, path, classLoader, mode)
+class CustomApplicationLoader extends GuiceApplicationLoader {
+    override def builder(context: ApplicationLoader.Context): GuiceApplicationBuilder = {
+        val extra = new Configuration(loadConfig(context.environment.mode))
+        initialBuilder
+            .in(context.environment)
+            .loadConfig(extra.withFallback(context.initialConfiguration()))
+            .overrides(overrides(context): _*)
     }
 
+    def loadConfig(mode: Mode) = {
+        val extraConfFile = s"application.${mode.toString.toLowerCase}.conf"
+        val confFileName = if (getClass.getResource(extraConfFile) != null) extraConfFile else "application.conf"
+        ConfigFactory.load(confFileName)
+    }
+}
+
+
+object Global extends WithFilters(new ExcludingCSRFFilter(CSRFFilter())) with GlobalSettings {
     override def onHandlerNotFound(request: RequestHeader) = {
         implicit val h = request
-        JavaContext.withContext {
-            Future.successful(NotFound(views.html.notFound.render(request.uri)))
-        }
+        Future.successful(NotFound(views.html.notFound.render(h)))
     }
 
-    override def onStart(app: Application) {
+    override def onStart(app: play.api.Application): Unit = {
         Logger.info("Application started!")
         MongoDB.connect()
         Logger.info("Connected to Database!")
@@ -80,7 +93,7 @@ object Global extends WithFilters(new ExcludingCSRFFilter(CSRFFilter())) with Gl
         initialData()
     }
 
-    override def onStop(app: Application) {
+    override def onStop(app: play.api.Application): Unit = {
         Logger.info("Appplication stopped!")
         MongoDB.disconnect()
     }

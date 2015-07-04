@@ -1,3 +1,7 @@
+@(implicit request: RequestHeader)
+
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @main(Messages("playauthenticate.user.exists.title")) {
 	<h1>@Messages("playauthenticate.user.exists.title")</h1>

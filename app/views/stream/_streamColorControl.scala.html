@@ -1,21 +1,16 @@
 @(
-    stream: models.Stream)
+    stream: models.Stream)(implicit request: RequestHeader)
 
 @import helper._
-@import be.objectify.deadbolt.java.views.html._
-@import be.objectify.deadbolt.core.utils.TemplateUtils._
-
 @if(stream != null) {
-    @subjectPresentOr() {
-        @defining(Application.getLocalUser(session())) { user =>
-            <div class="status-picker-form">
-                <input class="status-picker hidden"
-                       name="color"
-                       type="text"
-                       value="@stream.status.color"
-                       data-bind="value: color" />
-            </div>
-        }
+    @_userOr { user =>
+        <div class="status-picker-form">
+            <input class="status-picker hidden"
+                   name="color"
+                   type="text"
+                   value="@stream.status.color"
+                   data-bind="value: color" />
+        </div>
     } {
         <div class="status-picker-form">
             <div class="sp-replacer" data-bind="style: { background: color }" /></div>

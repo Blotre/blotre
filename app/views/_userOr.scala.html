@@ -1,0 +1,9 @@
+@(con: models.User => Html)(alt: Html)(implicit request: RequestHeader)
+
+@defining(Application.getLocalUser(request)) { user =>
+    @if(user != null) {
+        @con(user)
+    } else {
+        @alt
+    }
+}

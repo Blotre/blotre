@@ -1,11 +1,9 @@
-@(
-    parent: models.Stream,
-    childName: models.StreamName)
+@(parent: models.Stream, childName: models.StreamName)(implicit request: play.api.mvc.RequestHeader)
 
 @import play.api.libs.json._
 @import helper._
-@import be.objectify.deadbolt.java.views.html._
-@import be.objectify.deadbolt.core.utils.TemplateUtils._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @articleHeader = {
 <div class="status status-header status-small-header"

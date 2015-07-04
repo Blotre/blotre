@@ -45,9 +45,7 @@ object AuthenticatedAction extends AuthenticatedBuilder(
   request =>
     Option(Application.getLocalUser(request)),
   implicit request =>
-    JavaContext.withContext {
-      Results.Unauthorized(views.html.unauthorized.render(""))
-    })
+      Results.Unauthorized(views.html.unauthorized.render(request)))
 
 /**
  * Authenticate
@@ -58,9 +56,7 @@ case class Authenticated[A](action: Action[A]) extends Action[A]
     Option(Application.getLocalUser(request)) map { user =>
       action(AuthRequest(user, request))
     } getOrElse {
-      Future.successful(JavaContext.withContext({
-        Results.Unauthorized(views.html.unauthorized.render(""))
-      })(request))
+      Future.successful(Results.Unauthorized(views.html.unauthorized.render(request)))
     }
 
   lazy val parser = action.parser
@@ -87,7 +83,7 @@ object TryAuthenticateAction extends AuthenticatedBuilder(
  */
 object AuthorizedAction extends AuthenticatedBuilder(
   Application.getActingUser,
-  implicit request => JavaContext.withContext {
+  implicit request => {
     Application.getAnyAccessTokenFromRequest(request) flatMap { token =>
       if (token.isExpired)
           Some(Results.Unauthorized(Json.obj())

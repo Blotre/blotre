@@ -1,6 +1,8 @@
-@(localUser: models.User)
+@(localUser: models.User)(implicit request: Request[AnyContent])
 
 @import com.feth.play.module.pa.views.html._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
 
 @main(Messages("blotre.account.pageTitle"), "account") {
 
@@ -16,11 +18,11 @@
             <br/>
         }
     @defining(localUser.getProviders()) { providers =>
-        @if(providers.size() > 0) {
-        @if(providers.size() ==1) {
+        @if(providers.size > 0) {
+        @if(providers.size ==1) {
             @Messages("playauthenticate.profile.providers_one")
         } else {
-            @Messages("playauthenticate.profile.providers_many",providers.size().toString())
+            @Messages("playauthenticate.profile.providers_many",providers.size.toString())
         }
         @for(p <- providers) {
             @_providerIcon(p)

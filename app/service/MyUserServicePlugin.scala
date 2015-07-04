@@ -1,13 +1,14 @@
 package service
 
-import models.User
-import play.Application
+
 import com.feth.play.module.pa.user.AuthUser
 import com.feth.play.module.pa.user.AuthUserIdentity
 import com.feth.play.module.pa.service.UserServicePlugin
+import models.User
+import play.Application
+import com.google.inject.Inject
 
-
-class MyUserServicePlugin(app: Application) extends UserServicePlugin(app)
+class MyUserServicePlugin @Inject() (app: Application) extends UserServicePlugin(app)
 {
 	override def save(authUser: AuthUser): AnyRef = {
 		val isLinked = User.existsByAuthUserIdentity(authUser)
