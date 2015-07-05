@@ -9,7 +9,7 @@ import play.{Mode};
 import play.inject.guice.GuiceApplicationBuilder
 import play.inject.guice.GuiceApplicationLoader
 import com.typesafe.config.ConfigFactory
-import controllers.{JavaContext, routes}
+import controllers.routes
 import helper.datasources.MongoDB
 import helper.datasources.MorphiaObject
 import models.SecurityRole

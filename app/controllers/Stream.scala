@@ -152,10 +152,10 @@ object Stream extends Controller {
     getRawParentPath(uri) flatMap {
       case (parentUri, childUri) =>
         models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
-          models.Stream.findByUri(parentUri) map { parent =>
+          models.Stream.findByUri(parentUri) flatMap { parent =>
             models.Stream.asEditable(user, parent) map { stream =>
               Ok(views.html.stream.createChild.render(stream, validChildName, request))
-            } getOrElse (Unauthorized)
+            }
           }
         }
     } getOrElse {
