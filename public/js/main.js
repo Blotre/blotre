@@ -112,7 +112,8 @@ AppViewModel.prototype.checkFavorite = function() {
     if (!self.user().userName())
         return;
 
-    if (self.isParentOwner() || isHierarchical(self.user().userName(), self.stream().uri())) {
+    // If the current stream is the user's root stream of a direct child, it cannot be favorited.
+    if (self.stream().id() === self.user().rootStream() || isHierarchical(self.user().userName(), self.stream().uri())) {
         self.favorite(FavoriteStatus.Hierarchical);
     } else {
         $.ajax({
