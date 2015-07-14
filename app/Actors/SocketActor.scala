@@ -123,10 +123,17 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   var collectionSubscriptions = Set[String]()
 
   /**
-   * Write a result to the socket.
+   * Write a value to the socket.
    */
-  private def output[T](value: T)(implicit w: Writes[T])=
+  private def output[T](value: => T)(implicit w: Writes[T]) =
    out ! Json.toJson(value)
+
+  /**
+   * Write a success message to the socket.
+   */
+  private def ack[T](value: => T)(implicit w: Writes[T], acknowledge: Boolean) =
+    if (acknowledge)
+      output(value)
 
   /**
    * Write an error result to the socket.
@@ -150,6 +157,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
     case msg: JsValue =>
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
+      implicit val acknowledge = (msg \ "acknowledge").asOpt[String].getOrElse("") != "error"
+
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
         case "GetStreams" =>
           recieveMessage[SocketApiGetStreams](msg) { x =>
@@ -217,10 +226,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Try to create a new stream.
    */
-  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int): Unit =
+  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
     controllers.Stream.apiCreateStream(user, name, uri, status) match {
       case controllers.ApiSuccess(stream) =>
-        output(StreamResponse(stream, correlation))
+        ack(StreamResponse(stream, correlation))
 
       case controllers.ApiFailure(e) =>
         error(e.error)
@@ -229,9 +238,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Get the status of a stream.
    */
-  private def getStream(uri: String)(implicit correlation: Int): Unit =
+  private def getStream(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     models.Stream.findByUri(uri) map { stream =>
-      output(StreamResponse(stream, correlation))
+      ack(StreamResponse(stream, correlation))
     } getOrElse {
       error("No such stream.")
     }
@@ -239,10 +248,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    *
    */
-  private def getStreams(query: String)(implicit correlation: Int): Unit =
+  private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     controllers.Stream.apiGetStreams(query) match {
       case controllers.ApiSuccess(streams) =>
-        output(streams)
+        ack(streams)
 
       case controllers.ApiFailure(e) =>
         error(e.error)
@@ -251,10 +260,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Delete a stream.
    */
-  private def deleteStream(user: models.User, uri: String)(implicit correlation: Int): Unit =
+  private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     controllers.Stream.apiDeleteStream(user, uri) match {
       case controllers.ApiSuccess(stream) =>
-        output(StreamResponse(stream, correlation))
+        ack(StreamResponse(stream, correlation))
 
       case controllers.ApiFailure(e) =>
         error(e.error)
@@ -263,29 +272,29 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Get the status of a stream.
    */
-  private def getStatus(uri: String)(implicit correlation: Int): Unit =
+  private def getStatus(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     models.Stream.findByUri(uri) map (getStatus) getOrElse {
       error("No such stream.")
     }
 
-  private def getStatus(stream: models.Stream)(implicit correlation: Int): Unit =
-    output(CurrentStatusResponse(stream.uri, stream.status, correlation))
+  private def getStatus(stream: models.Stream)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    ack(CurrentStatusResponse(stream.uri, stream.status, correlation))
 
-  private def statusUpdate(uri: String)(implicit correlation: Int): Unit =
+  private def statusUpdate(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     models.Stream.findByUri(uri) map (statusUpdate) getOrElse {
       error("No such stream.")
     }
 
-  private def statusUpdate(stream: models.Stream)(implicit correlation: Int): Unit =
-    output(StatusUpdatedEvent(stream.uri, stream.status, None))
+  private def statusUpdate(stream: models.Stream)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    ack(StatusUpdatedEvent(stream.uri, stream.status, None))
 
   /**
    * Get the status of a stream.
    */
-  private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int): Unit =
+  private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
     controllers.Stream.apiSetStreamStatusForUri(user, uri, status) match {
       case controllers.ApiSuccess(status) =>
-        output(CurrentStatusResponse(uri, status, correlation))
+        ack(CurrentStatusResponse(uri, status, correlation))
 
       case controllers.ApiFailure(e) =>
         error(e.error)
@@ -294,10 +303,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Get the children of a stream.
    */
-  private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int): Unit =
+  private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
     controllers.Stream.apiGetChildren(uri, "", limit, offset) map {
       case controllers.ApiSuccess(children) =>
-        output(ApiChildrenResponse(uri, children, correlation))
+        ack(ApiChildrenResponse(uri, children, correlation))
 
       case controllers.ApiFailure(e) =>
         error(e.error)
@@ -316,7 +325,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
   private def subscribe(target: models.StreamUri)(implicit correlation: Int): Unit = {
     if (subscriptions.contains(target.value)) {
-      statusUpdate(target.value)
+      statusUpdate(target.value)(correlation, true)
       return
     }
 
@@ -326,7 +335,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       models.Stream.findByUri(target) map { stream =>
         StreamSupervisor.subscribe(self, target.value)
         subscriptions += target.value
-        statusUpdate(stream)
+        statusUpdate(stream)(correlation, true)
       }
     }
   }
