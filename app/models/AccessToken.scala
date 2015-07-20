@@ -58,7 +58,7 @@ object Token
 /**
  * Access and refresh token issued for client and user.
  *
- * Only one access token per client, user pair may exist.
+ * Only one access token per client/user pair may exist.
  */
 @Entity
 class AccessToken(
@@ -94,7 +94,7 @@ object AccessToken
   /**
    * Default expiration time of an access token.
    */
-  private val defaultExpiration = 60 * 60 * 24 * 3
+  private val defaultExpiration = 60 * 60 * 2
 
   /**
    * Default expiration time of an refresh token.
@@ -102,9 +102,9 @@ object AccessToken
   private val defaultRefreshExpiration = 60 * 60 * 24 * 14
 
   /**
-   * Update or create the access token for a client, user pair.
+   * Update or create the access token for a client/user pair.
    *
-   * Only one access token may exist per client, user pair.
+   * Only one access token may exist per client/user pair.
    */
   private def updateAccessToken(
     clientId: ObjectId,

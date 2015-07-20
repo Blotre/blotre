@@ -80,16 +80,16 @@ object TryAuthenticateAction extends AuthenticatedBuilder(
 /**
  * Action that that requires an active user or client acting on behalf
  * of a user.
+ *
+ * Sets a special `WWW-Authenticate` response to indicate when the access token has expired.
  */
 object AuthorizedAction extends AuthenticatedBuilder(
   Application.getActingUser,
   implicit request => {
-    Application.getAnyAccessTokenFromRequest(request) flatMap { token =>
-      if (token.isExpired)
-          Some(Results.Unauthorized(Json.obj())
-            .withHeaders("WWW-Authenticate" -> """Bearer error="invalid_token" error_description="Access token is expired""""))
-      else
-          None
+    import ApiError._
+    Application.getAnyAccessTokenFromRequest(request).filter(_.isExpired) map { _ =>
+      Results.Unauthorized(Json.toJson(ApiError("Access token is expired.")))
+        .withHeaders("WWW-Authenticate" -> """Bearer error="invalid_token" error_description="Access token is expired"""")
     } getOrElse {
-        Results.Unauthorized(Json.obj())
+      Results.Unauthorized(Json.toJson(ApiError("Action requires authorization.")))
     }})
