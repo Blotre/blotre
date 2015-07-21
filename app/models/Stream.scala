@@ -89,6 +89,14 @@ object Stream {
   def toValidStreamName(name: StreamUri): Option[StreamName] =
     toValidStreamName(name.value.replace("+", " "))
 
+  /**
+   *
+   */
+  def toValidQuery(query: String): Option[String] =
+    toValidStreamName(query) map { query =>
+      query.value.replaceAllLiterally("$", "\\$")
+    }
+
   val maxChildren = 1000
 
   implicit val streamWrites = new Writes[Stream] {
@@ -170,12 +178,15 @@ object Stream {
    *
    * TODO: order by score
    */
-  def findByQuery(query: String): List[Stream] = {
-    val q = db().limit(20)
-    q.criteria("name")
-      .containsIgnoreCase(query)
-    q.order("-updated").asList().asScala.toList
-  }
+  def findByQuery(query: String): List[Stream] =
+    toValidQuery(query) map { safeQuery =>
+      val q = db().limit(20)
+      q.criteria("name")
+        .containsIgnoreCase(safeQuery)
+      q.order("-updated").asList().asScala.toList
+    } getOrElse {
+      List()
+    }
 
   /**
    * Lookup streams by status.

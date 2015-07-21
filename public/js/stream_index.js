@@ -22,8 +22,12 @@ var StreamIndexViewModel = function(user, results) {
     self.query = ko.observable(undefined);
 };
 
+var normalizeQuery = function(query) {
+    return decodeURI(query).replace(/\+/g, ' ').trim();
+};
+
 var updateSearchResultsForQuery = function(model, query) {
-    query = query.trim();
+    query = normalizeQuery(query);
     $('.list-loading').removeClass('hidden');
     $.ajax({
         type: "GET",
@@ -46,13 +50,14 @@ var updateSearchResultsForQuery = function(model, query) {
 };
 
 var updateSearchResults = function(model) {
-    var query = $('#stream-search-form input').val();
-    return updateSearchResultsForQuery(model, query);
+    return updateSearchResultsForQuery(
+        model,
+        normalizeQuery($('#stream-search-form input').val()));
 };
 
 var getQueryFromQueryString = function() {
     var qs = shared.getQueryString()['query'];
-    return (qs ? decodeURI(qs[0]) : '');
+    return (qs ? normalizeQuery(qs[0]) : '');
 };
 
 var updateFromQueryString = function(model) {
@@ -91,7 +96,6 @@ $(function(){
             return;
         var path = window.location.origin + window.location.pathname;
         var url = (query ? path + "?query=" + encodeURIComponent(query) : path);
-        console.log('push', currentQuery, '|', query);
         window.history.pushState({ query: query }, '', url);
     });
 
