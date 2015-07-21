@@ -7,6 +7,7 @@ import akka.util.Timeout
 import helper._
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
+import play.api.Logger
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,47 +15,53 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case class GetCollection(uri: String)
 case class GetCollectionResponse(actor: ActorRef)
 
-/**
- * Subscription to a collection.
- */
-class CollectionSubscription(supervisor: ActorRef, out: ActorRef) extends Actor
-{
-  import akka.contrib.pattern.DistributedPubSubMediator._
-
-  def receive = {
-    case x: SubscribeAck => supervisor forward x
-    case x => out forward x
-  }
-}
-
-object CollectionSubscription
-{
-  def props(supervisor: ActorRef, out: ActorRef): Props = Props(new CollectionSubscription(supervisor, out))
-}
-
 
 /**
- * Manages collection actors.
+ * Manages all collections in the system.
  *
- * Each collection in the system is represented by an actor.
+ * Attempts to kill collections that are no longer referenced.
  */
 class CollectionSupervisor extends Actor
 {
   import akka.contrib.pattern.DistributedPubSubMediator._
 
-  var subscriptions: Map[String, Set[ActorRef]] = Map()
+  private lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
+
+  private var subscriptions: Map[String, Set[ActorRef]] = Map()
+
+  /**
+   * Topic used to register a collection.
+   */
+  private def getTopic(path: String): Option[String] = {
+    val normalizePath = ActorHelper.normalizeName(path)
+    if (normalizePath.isEmpty) None else Some("@collection/" + normalizePath)
+  }
 
   def receive = {
-    case SubscribeAck(Subscribe(path, _, subscriber)) =>
+    case Subscribe(path, group, subscriber) =>
       onSubscribe(path, subscriber)
+      getTopic(path) map { topic =>
+        mediator ! Subscribe(topic, group, subscriber)
+      }
 
-    case UnsubscribeAck(Unsubscribe(path, _, subscriber)) =>
+    case Unsubscribe(path, group, subscriber) =>
       onUnsubscribe(path, subscriber)
+      getTopic(path) map { topic =>
+        mediator ! Unsubscribe(topic, group, subscriber)
+      }
+
+    case Publish(path, msg, toEachGroup) =>
+      getTopic(path) map { topic =>
+        mediator ! Publish(topic, msg, toEachGroup)
+      }
 
     case GetCollection(uri) =>
       sender ! GetCollectionResponse(getOrCreateChild(uri))
   }
 
+  /**
+   * Get an existing child value or create a new one.
+   */
   private def getOrCreateChild(uri: String) = {
     val name = ActorHelper.normalizeName(uri)
     context.child(name) getOrElse (context.actorOf(CollectionActor.props(uri), name = name))
@@ -63,8 +70,10 @@ class CollectionSupervisor extends Actor
   /**
    * Invoked when a subscriber has been successfully registered.
    */
-  private def onSubscribe(path: String, subscriber: ActorRef): Unit =
+  private def onSubscribe(path: String, subscriber: ActorRef): Unit = {
+    getOrCreateChild(path) // ensure child exists
     subscriptions += ((path, subscriptions.getOrElse(path, Set()) + subscriber))
+  }
 
   /**
    * Invoked when a subscriber has been successfully unregistered.
@@ -77,6 +86,7 @@ class CollectionSupervisor extends Actor
     subscriptions += ((path, collectionSubscribers))
 
     if (collectionSubscribers.size == 0) {
+      subscriptions -= path
       tryRemoveChild(path)
     }
   }
@@ -85,26 +95,29 @@ class CollectionSupervisor extends Actor
     context.system.scheduler.scheduleOnce(5 seconds) {
       subscriptions.get(path) map { subscribers =>
         if (subscribers.size == 0) {
-          context.child(path) map { _ ! PoisonPill }
+          removeChild(path)
         }
+      } orElse {
+        removeChild(path)
       }
     }
+
+  private def removeChild(path: String) = {
+    Logger.info("kill"+ path)
+    context.child(path) map {
+      _ ! PoisonPill
+    }
+  }
+
 }
 
 object CollectionSupervisor
 {
-  lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
-
   def props(): Props = Props(new CollectionSupervisor())
 
   lazy val supervisor = Akka.system.actorOf(props())
 
   implicit val timeout = Timeout(5 seconds)
-
-  private def getTopic(path: String): Option[String] = {
-    val normalizePath = ActorHelper.normalizeName(path)
-    if (normalizePath.isEmpty) None else Some("@collection/" + normalizePath)
-  }
 
   /**
    * Get the actor for a collection.
@@ -127,25 +140,17 @@ object CollectionSupervisor
    * Subscribe an actor to a collection's events.
    */
   def subscribeCollection(subscriber: ActorRef, path: String): Unit =
-    getTopic(path) map { topic =>
-      mediator ! DistributedPubSubMediator.Subscribe(
-        topic,
-        Akka.system.actorOf(Props(new CollectionSubscription(supervisor, subscriber))))
-    }
+      supervisor ! DistributedPubSubMediator.Subscribe(path, subscriber)
 
   /**
    * Unsubscribe an actor from a collection's events.
    */
   def unsubscribeCollection(subscriber: ActorRef, path: String): Unit =
-    getTopic(path) map { topic =>
-      mediator ! DistributedPubSubMediator.Unsubscribe(topic, supervisor)
-    }
+    supervisor ! DistributedPubSubMediator.Unsubscribe(path, subscriber)
 
   /**
-   * Send a message to for a collection.
+   * Broadcast an event for a collection.
    */
   def broadcast[A](path: String, event: A): Unit =
-    getTopic(path) map { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, event)
-    }
+    supervisor ! DistributedPubSubMediator.Publish(path, event)
 }

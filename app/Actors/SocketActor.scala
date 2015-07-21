@@ -7,7 +7,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
-import play.api.mvc.Results
+import play.api.Logger
 
 /**
  *
@@ -121,6 +121,11 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
   var subscriptions = Set[String]()
   var collectionSubscriptions = Set[String]()
+
+  override def postStop() {
+    Logger.info("Shutting down socket")
+    collectionSubscriptions.foreach(CollectionSupervisor.unsubscribeCollection(self, _))
+  }
 
   /**
    * Write a value to the socket.
