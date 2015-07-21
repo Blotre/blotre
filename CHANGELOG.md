@@ -8,3 +8,4 @@
 * Provided better json response on APIs hit without any authentication (vs wrong authentication).
 ** Message is still generic but tells what went wrong, either no token or token expired.
 * Reduced default lifetime of access tokens to two hours.
+* Kill stream actors after timeout if no subscribers are left.
