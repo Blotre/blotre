@@ -103,12 +103,10 @@ class CollectionSupervisor extends Actor
     }
 
   private def removeChild(path: String) = {
-    Logger.info("kill"+ path)
     context.child(path) map {
       _ ! PoisonPill
     }
   }
-
 }
 
 object CollectionSupervisor

@@ -121,9 +121,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
   var subscriptions = Set[String]()
   var collectionSubscriptions = Set[String]()
-
+  
   override def postStop() {
-    Logger.info("Shutting down socket")
     collectionSubscriptions.foreach(CollectionSupervisor.unsubscribeCollection(self, _))
   }
 
