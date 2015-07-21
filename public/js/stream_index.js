@@ -19,10 +19,11 @@ var StreamIndexViewModel = function(user, results) {
 
     self.user = ko.observable(user);
     self.results = ko.observableArray(results);
-    self.query = ko.observable('');
+    self.query = ko.observable(undefined);
 };
 
 var updateSearchResultsForQuery = function(model, query) {
+    query = query.trim();
     $('.list-loading').removeClass('hidden');
     $.ajax({
         type: "GET",
@@ -49,15 +50,17 @@ var updateSearchResults = function(model) {
     return updateSearchResultsForQuery(model, query);
 };
 
-var updateFromQueryString = function(model) {
+var getQueryFromQueryString = function() {
     var qs = shared.getQueryString()['query'];
-    var query = (qs ? qs[0] : '');
+    return (qs ? decodeURI(qs[0]) : '');
+};
+
+var updateFromQueryString = function(model) {
+    var query = getQueryFromQueryString();
     $('#stream-search-form input').val(query);
     updateSearchResultsForQuery(model, query);
 };
 
-/**
-*/
 $(function(){
     var model = new StreamIndexViewModel(
         application_model.initialUser(),
@@ -83,17 +86,20 @@ $(function(){
     });
 
     model.query.subscribe(function(query) {
-        var qs = shared.getQueryString()['query'];
-        if (qs && qs[0] === query)
+        var currentQuery = (window.history.state ? window.history.state.query : undefined);
+        if (query === currentQuery)
             return;
         var path = window.location.origin + window.location.pathname;
         var url = (query ? path + "?query=" + encodeURIComponent(query) : path);
-        window.history.pushState({path: url}, '', url)
+        console.log('push', currentQuery, '|', query);
+        window.history.pushState({ query: query }, '', url);
     });
 
     window.onpopstate = function(e) {
-      updateFromQueryString(model);
+        updateFromQueryString(model);
     };
+
+    window.history.replaceState({ query: getQueryFromQueryString() }, '', window.location.href);
 
     updateFromQueryString(model);
 

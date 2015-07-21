@@ -87,8 +87,6 @@ object Stream extends Controller {
    * png - Render 1x1 image of the current status.
    *
    * html - View of the stream.
-   *
-   * json: Returns json of the stream.
    */
   def getStream(uri: String) = Action { implicit request =>
     val pathAndExt = uri.split('.')
@@ -99,9 +97,6 @@ object Stream extends Controller {
       render {
         case Accepts.Html() =>
           renderStream(Application.getLocalUser(request), path)
-
-        case Accepts.Json() =>
-          renderStreamJson(path)
 
         case AcceptsPng() =>
           renderStreamStatusPng(path)
@@ -120,17 +115,6 @@ object Stream extends Controller {
     } getOrElse {
       tryCreateDescendant(user, uri)
     }
-
-  /**
-   * Render a stream as Json.
-   */
-  def renderStreamJson(uri: String): Result =
-    models.Stream.findByUri(uri)
-      .map(renderStreamJson)
-      .getOrElse(NotFound)
-
-  def renderStreamJson(stream: models.Stream): Result =
-    Ok(Json.toJson(stream))
 
   /**
    * Render a stream's current status as a 1x1 PNG image.
@@ -205,14 +189,16 @@ object Stream extends Controller {
     toResponse(apiGetStreams(query))
   }
 
-  def apiGetStreams(query: String): ApiResult[JsValue] =
+  def apiGetStreams(query: String): ApiResult[JsValue] = {
+    val queryValue = query.trim()
     ApiOk(Json.toJson(
-      if (query.isEmpty)
+      if (queryValue.isEmpty)
         models.Stream.findByUpdated()
-      else if (query.startsWith("#"))
+      else if (queryValue.startsWith("#"))
         models.Stream.findByStatusQuery(query)
       else
-        models.Stream.findByQuery(query)))
+        models.Stream.findByQuery(queryValue)))
+  }
 
   /**
    * Lookup a stream by id.
