@@ -17,9 +17,13 @@ object Color
   val pattern = """#[0-9a-fA-F]{6}""".r
 
   val default = Color("#aaaaaa")
+  val none = Color("#000000")
 
   def readColor = Reads.StringReads.filter(ValidationError("Color is not valid."))(_.matches(Color.pattern.toString))
 
+  /**
+   * Try to create a color from a string.
+   */
   def fromString(value: String): Option[Color] =
     if (value.matches(pattern.toString))
       Some(Color(value.toLowerCase))
@@ -37,7 +41,7 @@ class Status(
   val created: Date,
   val posterId: ObjectId)
 {
-  def this() = this("#000000", new Date(), null)
+  def this() = this(Color.none.value, new Date(), null)
 
   def GetColor() = this.color
 }
@@ -54,7 +58,6 @@ object Status
 
   def defaultStatus(poster: ObjectId): Status =
     apply(Color.default, new Date(), poster)
-
 
   implicit val statusReads: Reads[Status] =
     ((JsPath \ "color").read[String](Color.readColor) and

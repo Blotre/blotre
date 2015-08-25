@@ -84,7 +84,7 @@ object Stream {
 
   val streamNamePattern = (streamNameCharacter + "{1,64}").r
 
-  val tagNamePattern = ("(?!a-fA-F0-9){6}$)" + streamNameCharacter + "{1,32}").r
+  val tagNamePattern = ("(?![a-fA-F0-9]{6}$)" + streamNameCharacter + "{1,32}").r
 
   def toValidStreamName(name: String): Option[StreamName] = {
     val trimmed = name.trim()
