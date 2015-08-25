@@ -41,6 +41,32 @@ object ApiCreateStreamData
     )(ApiCreateStreamData.apply _)
 }
 
+object StreamHelper
+{
+  def getParentFromPath(uri: String) =
+    getParentPath(uri) flatMap {
+      case (parentUri, childUri) =>
+        models.Stream.findByUri(parentUri).map(parent => (parent, childUri))
+    }
+
+  def getRawParentPath(uri: String) = {
+    val decodedUri = UriEncoding.decodePath(uri, "UTF-8")
+    val index = decodedUri.lastIndexOf('/')
+    if (index == -1 || index >= decodedUri.length - 1)
+      None
+    else {
+      val parent = decodedUri.slice(0, index)
+      val child = decodedUri.slice(index + 1, decodedUri.length)
+      Some((parent, child))
+    }
+  }
+
+  def getParentPath(uri: String) =
+    getRawParentPath(models.Stream.normalizeUri(uri).value) map { paths =>
+      (paths._1, models.Stream.normalizeUri(paths._2))
+    }
+}
+
 /**
  *
  */
@@ -62,7 +88,7 @@ object StreamApiController extends Controller {
     }
 
   private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
-    getParentFromPath(uri) flatMap { case (parent, childUri) =>
+    StreamHelper.getParentFromPath(uri) flatMap { case (parent, childUri) =>
       models.Stream.toValidStreamName(childUri) flatMap { childName =>
         createDescendant(user, parent, childName)
       }
@@ -71,29 +97,6 @@ object StreamApiController extends Controller {
   private def createDescendant(user: models.User, parent: models.Stream, name: models.StreamName): Option[models.Stream] =
     models.Stream.createDescendant(parent.uri, name, user) flatMap { newChild =>
       addChild(user, true, parent, newChild)
-    }
-
-  private def getParentFromPath(uri: String) =
-    getParentPath(uri) flatMap {
-      case (parentUri, childUri) =>
-        models.Stream.findByUri(parentUri).map(parent => (parent, childUri))
-    }
-
-  private def getRawParentPath(uri: String) = {
-    val decodedUri = UriEncoding.decodePath(uri, "UTF-8")
-    val index = decodedUri.lastIndexOf('/')
-    if (index == -1 || index >= decodedUri.length - 1)
-      None
-    else {
-      val parent = decodedUri.slice(0, index)
-      val child = decodedUri.slice(index + 1, decodedUri.length)
-      Some((parent, child))
-    }
-  }
-
-  private def getParentPath(uri: String) =
-    getRawParentPath(models.Stream.normalizeUri(uri).value) map { paths =>
-      (paths._1, models.Stream.normalizeUri(paths._2))
     }
 
   /**
@@ -140,7 +143,7 @@ object StreamApiController extends Controller {
 
   def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
     models.Stream.toValidStreamName(name) map { validatedName =>
-      getParentFromPath(uri) map { case (parent, childUri) =>
+      StreamHelper.getParentFromPath(uri) map { case (parent, childUri) =>
         if (!(models.Stream.normalizeUri(validatedName).value.equalsIgnoreCase(childUri.value)))
           ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
         else

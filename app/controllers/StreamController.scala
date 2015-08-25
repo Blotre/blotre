@@ -1,24 +1,14 @@
 package controllers
 
-import Actors.{CollectionSupervisor, StreamSupervisor}
-import play.api.data.validation._
 import play.api.mvc._
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
-import play.api.libs.json.Reads._
-import play.api.Play.current
-import play.utils.UriEncoding
 import scala.collection.immutable._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import helper.ImageHelper
 
 /**
- *
+ * Stream object controller.
  */
 object Stream extends Controller {
 
-  import models.Serializable._
   import ControllerHelper._
 
   val AcceptsPng = Accepting("image/png")
@@ -92,7 +82,7 @@ object Stream extends Controller {
    * is owned by the current user.
    */
   def tryCreateDescendant(user: models.User, uri: String)(implicit request: RequestHeader): Result =
-    getRawParentPath(uri) flatMap {
+    StreamHelper.getRawParentPath(uri) flatMap {
       case (parentUri, childUri) =>
         models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
           models.Stream.findByUri(parentUri) flatMap { parent =>
@@ -104,40 +94,4 @@ object Stream extends Controller {
     } getOrElse {
       NotFound(views.html.notFound.render(request))
     }
-
-  private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
-    getParentFromPath(uri) flatMap { case (parent, childUri) =>
-      models.Stream.toValidStreamName(childUri) flatMap { childName =>
-        createDescendant(user, parent, childName)
-      }
-    }
-
-  private def createDescendant(user: models.User, parent: models.Stream, name: models.StreamName): Option[models.Stream] =
-    models.Stream.createDescendant(parent.uri, name, user) flatMap { newChild =>
-      StreamApiController.addChild(user, true, parent, newChild)
-    }
-
-  private def getParentFromPath(uri: String) =
-    getParentPath(uri) flatMap {
-      case (parentUri, childUri) =>
-        models.Stream.findByUri(parentUri).map(parent => (parent, childUri))
-    }
-
-  private def getRawParentPath(uri: String) = {
-    val decodedUri = UriEncoding.decodePath(uri, "UTF-8")
-    val index = decodedUri.lastIndexOf('/')
-    if (index == -1 || index >= decodedUri.length - 1)
-      None
-    else {
-      val parent = decodedUri.slice(0, index)
-      val child = decodedUri.slice(index + 1, decodedUri.length)
-      Some((parent, child))
-    }
-  }
-
-  private def getParentPath(uri: String) =
-    getRawParentPath(models.Stream.normalizeUri(uri).value) map { paths =>
-      (paths._1, models.Stream.normalizeUri(paths._2))
-    }
 }
-
