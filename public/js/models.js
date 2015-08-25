@@ -53,13 +53,14 @@ StatusModel.fromJson = function(data) {
 
 /**
 */
-var StreamModel = function(id, name, uri, status, updated) {
+var StreamModel = function(id, name, uri, status, updated, tags) {
     var self = this;
     self.id = ko.observable(id);
     self.name = ko.observable(name || '');
     self.uri = ko.observable(uri || '');
     self.status = ko.observable(status || StatusModel.empty());
     self.updated = ko.observable(updated);
+    self.tags = ko.observableArray(tags || []);
 
     self.url = ko.computed(function() {
         return jsRoutes.controllers.Stream.getStream(self.uri()).url;

@@ -1,7 +1,7 @@
 package Actors
 
 import akka.actor._
-import controllers.{ApiSetStatusData, ApiCreateStreamData}
+import controllers.{ApiSetStatusData, ApiCreateStreamData, StreamApiController}
 import models.User
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
@@ -231,7 +231,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Try to create a new stream.
    */
   private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
-    controllers.Stream.apiCreateStream(user, name, uri, status) match {
+    StreamApiController.apiCreateStream(user, name, uri, status) match {
       case controllers.ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
@@ -253,7 +253,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    *
    */
   private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    controllers.Stream.apiGetStreams(query) match {
+    StreamApiController.apiGetStreams(query) match {
       case controllers.ApiSuccess(streams) =>
         ack(streams)
 
@@ -265,7 +265,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Delete a stream.
    */
   private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    controllers.Stream.apiDeleteStream(user, uri) match {
+    StreamApiController.apiDeleteStream(user, uri) match {
       case controllers.ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
@@ -296,7 +296,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    controllers.Stream.apiSetStreamStatusForUri(user, uri, status) match {
+    StreamApiController.apiSetStreamStatusForUri(user, uri, status) match {
       case controllers.ApiSuccess(status) =>
         ack(CurrentStatusResponse(uri, status, correlation))
 
@@ -308,7 +308,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the children of a stream.
    */
   private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    controllers.Stream.apiGetChildren(uri, "", limit, offset) map {
+    StreamApiController.apiGetChildren(uri, "", limit, offset) map {
       case controllers.ApiSuccess(children) =>
         ack(ApiChildrenResponse(uri, children, correlation))
 

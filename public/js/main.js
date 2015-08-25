@@ -66,7 +66,7 @@ var AppViewModel = function(user, stream) {
     self.deleteStream = function(child) {
         $.ajax({
             type: "DELETE",
-            url: jsRoutes.controllers.Stream.apiDeleteStream(child.id()).url,
+            url: jsRoutes.controllers.StreamApiController.apiDeleteStream(child.id()).url,
             error: function(e) {
 
             }
@@ -95,7 +95,7 @@ var AppViewModel = function(user, stream) {
         } else {
              $.ajax({
                 type: "DELETE",
-                url: jsRoutes.controllers.Stream.apiDeleteChild(self.stream().id(), child.id()).url,
+                url: jsRoutes.controllers.StreamApiController.apiDeleteChild(self.stream().id(), child.id()).url,
                 error: function(e) {
 
                 }
@@ -118,7 +118,7 @@ AppViewModel.prototype.checkFavorite = function() {
     } else {
         $.ajax({
             type: "GET",
-            url: jsRoutes.controllers.Stream.apiGetChild(self.user().rootStream(), self.stream().id()).url,
+            url: jsRoutes.controllers.StreamApiController.apiGetChild(self.user().rootStream(), self.stream().id()).url,
             error: function(e) {
                 if (e.status === 404) {
                     self.favorite(FavoriteStatus.No);
@@ -210,7 +210,7 @@ var createChildStream = function(model, stream, user, name) {
 
     $.ajax({
         type: "PUT",
-        url: jsRoutes.controllers.Stream.apiCreateStream().url,
+        url: jsRoutes.controllers.StreamApiController.apiCreateStream().url,
         contentType: 'application/json',
         data: JSON.stringify({
           name: name,
@@ -236,7 +236,7 @@ var addFavorite = function(model, targetStreamId, childId) {
     disableFavoriteButton();
     $.ajax({
         type: "PUT",
-        url: jsRoutes.controllers.Stream.apiCreateChild(targetStreamId, childId).url,
+        url: jsRoutes.controllers.StreamApiController.apiCreateChild(targetStreamId, childId).url,
         error: function(error) {
             model.favorite(FavoriteStatus.Unknown);
         }
@@ -249,7 +249,7 @@ var removeFavorite = function(model, targetStreamId, childId) {
     disableFavoriteButton();
     $.ajax({
         type: "DELETE",
-        url: jsRoutes.controllers.Stream.apiDeleteChild(targetStreamId, childId).url,
+        url: jsRoutes.controllers.StreamApiController.apiDeleteChild(targetStreamId, childId).url,
         error: function(error) {
             model.favorite(FavoriteStatus.Unknown);
         }
@@ -263,7 +263,7 @@ var updateSearchResultsForQuery = function(model, query) {
     $('.no-results').addClass('hidden');
     $.ajax({
         type: "GET",
-        url: jsRoutes.controllers.Stream.apiGetChildren(model.stream().id()).url,
+        url: jsRoutes.controllers.StreamApiController.apiGetChildren(model.stream().id()).url,
         data: {
             query: query
         },
@@ -299,7 +299,7 @@ $(function(){
 
         $.ajax({
             type: "POST",
-            url: jsRoutes.controllers.Stream.apiSetStreamStatus(stream.id()).url,
+            url: jsRoutes.controllers.StreamApiController.apiSetStreamStatus(stream.id()).url,
             contentType: 'application/json',
             data: JSON.stringify({
                 color: color

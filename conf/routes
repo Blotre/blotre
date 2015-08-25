@@ -31,16 +31,16 @@ GET     /v0/oauth2/token_info              controllers.OAuth2Controller.tokenInf
 POST     /v0/oauth2/revoke                 controllers.OAuth2Controller.revoke(token: String)
 
 # Stream Api
-GET     /v0/api/stream                       controllers.Stream.apiGetStreams()
-PUT     /v0/api/stream                       controllers.Stream.apiCreateStream()
-GET     /v0/api/stream/:id                   controllers.Stream.apiGetStream(id)
-DELETE  /v0/api/stream/:id                   controllers.Stream.apiDeleteStream(id)
-GET     /v0/api/stream/:id/status            controllers.Stream.apiGetStreamStatus(id)
-POST    /v0/api/stream/:id/status            controllers.Stream.apiSetStreamStatus(id)
-GET     /v0/api/stream/:id/children          controllers.Stream.apiGetChildren(id)
-GET     /v0/api/stream/:id/children/:child   controllers.Stream.apiGetChild(id, child)
-PUT     /v0/api/stream/:id/children/:child   controllers.Stream.apiCreateChild(id, child)
-DELETE  /v0/api/stream/:id/children/:child   controllers.Stream.apiDeleteChild(id, child)
+GET     /v0/api/stream                       controllers.StreamApiController.apiGetStreams()
+PUT     /v0/api/stream                       controllers.StreamApiController.apiCreateStream()
+GET     /v0/api/stream/:id                   controllers.StreamApiController.apiGetStream(id)
+DELETE  /v0/api/stream/:id                   controllers.StreamApiController.apiDeleteStream(id)
+GET     /v0/api/stream/:id/status            controllers.StreamApiController.apiGetStreamStatus(id)
+POST    /v0/api/stream/:id/status            controllers.StreamApiController.apiSetStreamStatus(id)
+GET     /v0/api/stream/:id/children          controllers.StreamApiController.apiGetChildren(id)
+GET     /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiGetChild(id, child)
+PUT     /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiCreateChild(id, child)
+DELETE  /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiDeleteChild(id, child)
 
 # User Api
 GET     /v0/api/user/:id                   controllers.User.apiGetUser(id)

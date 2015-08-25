@@ -36,7 +36,7 @@ $(function(){
         var uri = parent + "/" + name;
         $.ajax({
             type: "PUT",
-            url: jsRoutes.controllers.Stream.apiCreateStream().url,
+            url: jsRoutes.controllers.StreamApiController.apiCreateStream().url,
             contentType: 'application/json',
             data: JSON.stringify({
               name: name,
@@ -48,7 +48,7 @@ $(function(){
         })
         .then(function(result) {
             if (result && !result.error) {
-                document.location.href = jsRoutes.controllers.Stream.getStream(result.uri).url;
+                document.location.href = jsRoutes.controllers.StreamApiController.getStream(result.uri).url;
             } else {
                 shared.unlockButton(btn);
             }

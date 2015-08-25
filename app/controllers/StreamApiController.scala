@@ -11,7 +11,6 @@ import play.utils.UriEncoding
 import scala.collection.immutable._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import helper.ImageHelper
 
 /**
  *
@@ -45,19 +44,9 @@ object ApiCreateStreamData
 /**
  *
  */
-object Stream extends Controller {
+object StreamApiController extends Controller {
 
   import models.Serializable._
-  import ControllerHelper._
-
-  val AcceptsPng = Accepting("image/png")
-
-  def uriMap(uri: String): Seq[(String, String)] =
-    (uri
-      .split('/')
-      .foldLeft(("", Seq[(String, String)]())) { (p, c) =>
-      (p._1 + "/" + c, p._2 :+(c, (p._1 + "/" + c)))
-    })._2
 
   private def toResponse[T](result: ApiResult[T])(implicit writes: Writes[T]) =
     result match {
@@ -70,81 +59,6 @@ object Stream extends Controller {
       case _: ApiInternalError => InternalServerError(result.toJson)
       case _: ApiCouldNotProccessRequest => UnprocessableEntity(result.toJson)
       case _: ApiFailure[T] => BadRequest(result.toJson)
-    }
-
-  /**
-   * Stream root index page.
-   *
-   * Displays a list of streams for searching.
-   */
-  def index = Action { implicit request =>
-    Ok(views.html.stream.index.render(request))
-  }
-
-  /**
-   * Lookup a stream.
-   *
-   * Supports:
-   * png - Render 1x1 image of the current status.
-   *
-   * html - View of the stream.
-   */
-  def getStream(uri: String) = Action { implicit request =>
-    val pathAndExt = uri.split('.')
-    val path = pathAndExt(0)
-    if (pathAndExt.length == 2 && pathAndExt(1) == "png")
-      renderStreamStatusPng(path)
-    else {
-      render {
-        case Accepts.Html() =>
-          renderStream(Application.getLocalUser(request), path)
-
-        case AcceptsPng() =>
-          renderStreamStatusPng(path)
-      }
-    }
-  }
-
-  /**
-   * Render a stream as html.
-   *
-   * Displays a try create page if the stream does not exist but the parent does.
-   */
-  def renderStream(user: models.User, uri: String)(implicit request: RequestHeader) =
-    models.Stream.findByUri(uri) map { s =>
-      Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri), request))
-    } getOrElse {
-      tryCreateDescendant(user, uri)
-    }
-
-  /**
-   * Render a stream's current status as a 1x1 PNG image.
-   */
-  def renderStreamStatusPng(uri: String) =
-    models.Stream.findByUri(uri) map { s =>
-      val img = ImageHelper.createImage(s.status.color)
-      noCache(Ok(ImageHelper.toPng(img)))
-        .as("image/png")
-    } getOrElse(NotFound)
-
-  /**
-   * Checks if child stream can created and displays an create page.
-   *
-   * A child stream can only be created if its direct parent exists and
-   * is owned by the current user.
-   */
-  def tryCreateDescendant(user: models.User, uri: String)(implicit request: RequestHeader): Result =
-    getRawParentPath(uri) flatMap {
-      case (parentUri, childUri) =>
-        models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
-          models.Stream.findByUri(parentUri) flatMap { parent =>
-            models.Stream.asEditable(user, parent) map { stream =>
-              Ok(views.html.stream.createChild.render(stream, validChildName, request))
-            }
-          }
-        }
-    } getOrElse {
-      NotFound(views.html.notFound.render(request))
     }
 
   private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
@@ -332,13 +246,13 @@ object Stream extends Controller {
   def apiGetChildren(id: String): Action[AnyContent] = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
-     apiGetChildren(stream, query, 20, 0).map(toResponse(_))
+      apiGetChildren(stream, query, 20, 0).map(toResponse(_))
     } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
   }
 
   def apiGetChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
     models.Stream.findByUri(uri) map { stream =>
-     apiGetChildren(stream, query, limit, offset)
+      apiGetChildren(stream, query, limit, offset)
     } getOrElse (Future.successful(ApiNotFound(ApiError("Stream does not exist."))))
 
   def apiGetChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
@@ -449,7 +363,7 @@ object Stream extends Controller {
       s.status
     }
 
-  private def addChild(user: models.User, heirarchical: Boolean, parent: models.Stream, child: models.Stream): Option[models.Stream] =
+  def addChild(user: models.User, heirarchical: Boolean, parent: models.Stream, child: models.Stream): Option[models.Stream] =
     if (parent.childCount < models.Stream.maxChildren)
       models.Stream.addChild(heirarchical, parent, child.id, user) map { newChildData =>
         StreamSupervisor.addChild(parent, child)

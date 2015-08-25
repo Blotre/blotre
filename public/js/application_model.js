@@ -34,13 +34,12 @@ var AppViewModel = function(user, page) {
         }
     });
 
-
     if (!user || !user.rootStream())
         return;
 
     $.ajax({
         type: "GET",
-        url: jsRoutes.controllers.Stream.apiGetChildren(user.rootStream()).url,
+        url: jsRoutes.controllers.StreamApiController.apiGetChildren(user.rootStream()).url,
         headers: {
             accept: "application/json"
         },

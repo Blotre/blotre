@@ -31,7 +31,7 @@ var updateSearchResultsForQuery = function(model, query) {
     $('.list-loading').removeClass('hidden');
     $.ajax({
         type: "GET",
-        url: jsRoutes.controllers.Stream.apiGetStreams().url,
+        url: jsRoutes.controllers.StreamApiController.apiGetStreams().url,
         data: {
             'query': query
         },
