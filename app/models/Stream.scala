@@ -45,6 +45,11 @@ case class StreamName(value: String)
 case class StreamUri(value: String)
 
 /**
+ * A valid stream tag.
+ */
+case class StreamTag(value: String)
+
+/**
  *
  */
 @Entity
@@ -57,9 +62,10 @@ case class Stream(
   var updated: Date,
   @Embedded var status: Status,
   ownerId: ObjectId,
-  var childCount: Long)
+  var childCount: Long,
+   @Embedded tags: java.util.List[String])
 {
-  def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null, 0)
+  def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null, 0, new java.util.ArrayList[String]())
 
   def getOwner() =
     User.findById(this.ownerId)
@@ -78,6 +84,8 @@ object Stream {
 
   val streamNamePattern = (streamNameCharacter + "{1,64}").r
 
+  val tagNamePattern = ("(?!a-fA-F0-9){6}$)" + streamNameCharacter + "{1,32}").r
+
   def toValidStreamName(name: String): Option[StreamName] = {
     val trimmed = name.trim()
     if (trimmed.matches(streamNamePattern.toString))
@@ -89,9 +97,6 @@ object Stream {
   def toValidStreamName(name: StreamUri): Option[StreamName] =
     toValidStreamName(name.value.replace("+", " "))
 
-  /**
-   *
-   */
   def toValidQuery(query: String): Option[String] =
     toValidStreamName(query) map { query =>
       query.value.replaceAllLiterally("$", "\\$")
@@ -230,7 +235,7 @@ object Stream {
   private def createStreamWithName(name: StreamName, uri: StreamUri, owner: User): Option[Stream] =
     findByUri(uri) orElse {
       val created = new Date()
-      val s = save(Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id, 0))
+      val s = save(Stream(null, name.value, uri.value, created, created, Status.defaultStatus(owner.id), owner.id, 0, new java.util.ArrayList[String]()))
       User.incrementStreamCount(owner)
       s
     }
@@ -295,22 +300,17 @@ object Stream {
     findById(childData.parentId).map(removeChild(_, childData.childId))
 
   /**
-   *
+   * Set the status of a stream.
    */
-  def updateStreamStatus(stream: Stream, color: String, poster: User): Option[Stream] = {
-    if (color.matches(Status.colorPattern.toString())) {
-      asEditable(poster, stream) flatMap { current =>
-        val updated = new Date()
-        current.status = Status(color, updated, poster.id)
-        current.updated = updated
-        save(current)
-      }
-    } else {
-      None
+  def updateStreamStatus(stream: Stream, color: Color, poster: User): Option[Stream] =
+    asEditable(poster, stream) flatMap { current =>
+      val updated = new Date()
+      current.status = Status(color, updated, poster.id)
+      current.updated = updated
+      save(current)
     }
-  }
 
-  def updateStreamStatus(uri: String, color: String, poster: User): Option[Stream] =
+  def updateStreamStatus(uri: String, color: Color, poster: User): Option[Stream] =
     findByUri(uri) flatMap { current =>
       updateStreamStatus(current, color, poster)
     }

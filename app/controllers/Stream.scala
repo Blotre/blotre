@@ -16,13 +16,14 @@ import helper.ImageHelper
 /**
  *
  */
-case class ApiSetStatusData(color: String)
+case class ApiSetStatusData(color: models.Color)
 
 object ApiSetStatusData
 {
-  val colorValidate = Reads.of[String].filter(ValidationError("Color is not valid."))(_.matches(models.Status.colorPattern.toString))
-
-  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] = (__ \ "color").read (colorValidate).map (ApiSetStatusData.apply _)
+  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] =
+    (__ \ "color")
+      .read(models.Color.readColor)
+      .map(color => ApiSetStatusData.apply(models.Color(color)))
 }
 
 /**
@@ -440,7 +441,7 @@ object Stream extends Controller {
   /**
    *
    */
-  private def updateStreamStatus(stream: models.Stream, color: String, poster: models.User): Option[models.Status] =
+  private def updateStreamStatus(stream: models.Stream, color: models.Color, poster: models.User): Option[models.Status] =
     canUpdateStreamStatus(stream, poster) flatMap { _ =>
       models.Stream.updateStreamStatus(stream, color, poster)
     } map { s =>

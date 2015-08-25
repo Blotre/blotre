@@ -3,11 +3,33 @@ package models
 import java.util.Date
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
+import play.api.data.validation.ValidationError
 import play.api.libs.json._
-import play.data.validation.Constraints
 import play.api.libs.functional.syntax._
 
+/**
+ * Validated stream color.
+ */
+case class Color(value: String)
 
+object Color
+{
+  val pattern = """#[0-9a-fA-F]{6}""".r
+
+  val default = Color("#aaaaaa")
+
+  def readColor = Reads.StringReads.filter(ValidationError("Color is not valid."))(_.matches(Color.pattern.toString))
+
+  def fromString(value: String): Option[Color] =
+    if (value.matches(pattern.toString))
+      Some(Color(value.toLowerCase))
+    else
+      None
+}
+
+/**
+ * Status of a stream.
+ */
 @Embedded
 @SerialVersionUID(1L)
 class Status(
@@ -16,25 +38,29 @@ class Status(
   val posterId: ObjectId)
 {
   def this() = this("#000000", new Date(), null)
+
+  def GetColor() = this.color
 }
 
 object Status
 {
   import models.Serializable._
 
-  val colorPattern = """#[0-9a-fA-F]{6}""".r
+  private def create(color: String, created: Date, posterId: ObjectId): Status =
+    new Status(color, created, posterId)
 
-  def apply(color: String, created: Date, posterId: ObjectId): Status =
-    new Status(color.toLowerCase, created, posterId)
+  def apply(color: Color, created: Date, posterId: ObjectId): Status =
+    create(color.value, created, posterId)
 
   def defaultStatus(poster: ObjectId): Status =
-    apply("#aaaaaa",  new Date(), poster)
+    apply(Color.default, new Date(), poster)
+
 
   implicit val statusReads: Reads[Status] =
-    ((JsPath \ "color").read[String] and
+    ((JsPath \ "color").read[String](Color.readColor) and
       (JsPath \ "created").read[Date] and
       (JsPath \ "poster").read[ObjectId]
-    )(Status.apply _)
+    )(Status.create _)
 
   implicit val statusWrites = new Writes[Status] {
     def writes(x: Status): JsValue =
