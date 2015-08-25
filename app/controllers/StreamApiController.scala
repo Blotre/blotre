@@ -32,7 +32,7 @@ case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetS
 
 object ApiCreateStreamData
 {
-  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.Stream.streamNamePattern.toString))
+  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
 
   implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
     (JsPath \ "name").read[String](nameValidate) and
@@ -89,7 +89,7 @@ object StreamApiController extends Controller {
 
   private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
     StreamHelper.getParentFromPath(uri) flatMap { case (parent, childUri) =>
-      models.Stream.toValidStreamName(childUri) flatMap { childName =>
+      models.StreamName.fromString(childUri) flatMap { childName =>
         createDescendant(user, parent, childName)
       }
     }
@@ -142,7 +142,7 @@ object StreamApiController extends Controller {
   }
 
   def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
-    models.Stream.toValidStreamName(name) map { validatedName =>
+    models.StreamName.fromString(name) map { validatedName =>
       StreamHelper.getParentFromPath(uri) map { case (parent, childUri) =>
         if (!(models.Stream.normalizeUri(validatedName).value.equalsIgnoreCase(childUri.value)))
           ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))

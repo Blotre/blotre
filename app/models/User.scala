@@ -102,7 +102,7 @@ object User
 {
   import models.Serializable._
 
-  val userNamePattern = (Stream.streamNameCharacter + "{3,64}").r
+  val userNamePattern = (StreamName.validCharacter + "{3,64}").r
 
   val streamLimit = 10000
 
@@ -112,8 +112,7 @@ object User
       Json.obj(
         "id" -> x.id,
         "userName" -> x.userName,
-        "rootStream" -> rootStreamId
-      )
+        "rootStream" -> rootStreamId)
     }
   }
 

@@ -70,7 +70,7 @@
             </span>
             <ul class="tags" data-bind="foreach: stream().tags">
                 <li class="tag">
-                    <a></a>
+                    <a data-bind="attr: { href: url }, text: value"></a>
                 </li>
             </ul>
         </div>

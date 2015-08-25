@@ -53,6 +53,13 @@ StatusModel.fromJson = function(data) {
 
 /**
 */
+var TagModel = function(value) {
+   var self = this;
+   self.value = ko.observable(value);
+};
+
+/**
+*/
 var StreamModel = function(id, name, uri, status, updated, tags) {
     var self = this;
     self.id = ko.observable(id);
@@ -93,7 +100,8 @@ StreamModel.fromJson = function(data) {
         data && data.name,
         data && data.uri,
         StatusModel.fromJson(data && data.status),
-        new Date(data && data.updated));
+        new Date(data && data.updated),
+        (data && data.tags || []).map(function(x){ return new TagModel(x); }));
 };
 
 /**

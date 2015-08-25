@@ -84,7 +84,7 @@ object Stream extends Controller {
   def tryCreateDescendant(user: models.User, uri: String)(implicit request: RequestHeader): Result =
     StreamHelper.getRawParentPath(uri) flatMap {
       case (parentUri, childUri) =>
-        models.Stream.toValidStreamName(childUri) flatMap { validChildName =>
+        models.StreamName.fromString(childUri) flatMap { validChildName =>
           models.Stream.findByUri(parentUri) flatMap { parent =>
             models.Stream.asEditable(user, parent) map { stream =>
               Ok(views.html.stream.createChild.render(stream, validChildName, request))

@@ -128,7 +128,7 @@ object Account extends Controller
           .flashing("error" -> "Please correct errors."),
 
       values => {
-        models.Stream.toValidStreamName(values.userName) flatMap { validatedName =>
+        models.StreamName.fromString(values.userName) flatMap { validatedName =>
           models.Stream.createRootStream(validatedName, localUser) map { rootStream =>
             models.User.setUserName(localUser, validatedName.value)
             Redirect(routes.Application.index())

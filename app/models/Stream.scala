@@ -34,20 +34,43 @@ case class ChildStream(
 }
 
 /**
- * A valid stream name.
+ * Valid stream name.
  */
 case class StreamName(value: String)
 
+object StreamName
+{
+  val validCharacter = """[ a-zA-Z0-9_\-$]"""
+
+  val pattern = (validCharacter + "{1,64}").r
+
+  def fromString(name: String): Option[StreamName] = {
+    val trimmed = name.trim()
+    if (trimmed.matches(pattern.toString))
+      Some(StreamName(trimmed))
+    else
+      None
+  }
+
+  def fromString(name: StreamUri): Option[StreamName] =
+    fromString(name.value.replace("+", " "))
+}
 
 /**
- * A valid stream uri.
+ * Valid stream uri.
  */
 case class StreamUri(value: String)
 
 /**
- * A valid stream tag.
+ * Valid stream tag.
  */
 case class StreamTag(value: String)
+
+object StreamTag
+{
+  val pattern = ("(?![a-fA-F0-9]{6}$)" + StreamName.validCharacter + "{1,32}").r
+
+}
 
 /**
  *
@@ -77,28 +100,12 @@ case class Stream(
     Stream.getChildrenOf(this)
 }
 
-object Stream {
+object Stream
+{
   import models.Serializable._
 
-  val streamNameCharacter = """[ a-zA-Z0-9_\-$]"""
-
-  val streamNamePattern = (streamNameCharacter + "{1,64}").r
-
-  val tagNamePattern = ("(?![a-fA-F0-9]{6}$)" + streamNameCharacter + "{1,32}").r
-
-  def toValidStreamName(name: String): Option[StreamName] = {
-    val trimmed = name.trim()
-    if (trimmed.matches(streamNamePattern.toString))
-      Some(StreamName(trimmed))
-    else
-      None
-  }
-
-  def toValidStreamName(name: StreamUri): Option[StreamName] =
-    toValidStreamName(name.value.replace("+", " "))
-
   def toValidQuery(query: String): Option[String] =
-    toValidStreamName(query) map { query =>
+    StreamName.fromString(query) map { query =>
       query.value.replaceAllLiterally("$", "\\$")
     }
 
