@@ -70,6 +70,17 @@ object StreamTag
 {
   val pattern = ("(?![a-fA-F0-9]{6}$)" + StreamName.validCharacter + "{1,32}").r
 
+  implicit val streamWrites = new Writes[StreamTag] {
+    def writes(x: StreamTag): JsValue = Json.toJson(x.value)
+  }
+
+  def fromString(name: String): Option[StreamTag] = {
+    val trimmed = name.trim()
+    if (trimmed.matches(pattern.toString))
+      Some(StreamTag(trimmed))
+    else
+      None
+  }
 }
 
 /**
@@ -86,7 +97,7 @@ case class Stream(
   @Embedded var status: Status,
   ownerId: ObjectId,
   var childCount: Long,
-   @Embedded tags: java.util.List[String])
+  @Embedded tags: java.util.List[String])
 {
   def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null, 0, new java.util.ArrayList[String]())
 
@@ -98,6 +109,9 @@ case class Stream(
 
   def getChildren() =
     Stream.getChildrenOf(this)
+
+  def getTags() =
+    this.tags.asScala.toList.map(StreamTag.apply)
 }
 
 object Stream
@@ -110,6 +124,8 @@ object Stream
     }
 
   val maxChildren = 1000
+
+  var maxTags = 6
 
   implicit val streamWrites = new Writes[Stream] {
     def writes(x: Stream): JsValue =

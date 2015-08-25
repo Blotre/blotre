@@ -28,6 +28,26 @@ object ApiSetStatusData
 /**
  *
  */
+case class ApiSetTagsData(tags: Seq[models.StreamTag])
+
+object ApiSetTagsData
+{
+  implicit val streamTagReads: Reads[models.StreamTag] =
+    Reads.StringReads
+      .map(models.StreamTag.fromString)
+      .filter(ValidationError("Tag is not valid."))(_.isDefined)
+      .map(_.get)
+
+  implicit val apiSetStatusDataReads: Reads[ApiSetTagsData] =
+    Reads.list[models.StreamTag]
+      .filter(ValidationError("Too many tags."))(tags => tags.size > models.Stream.maxTags)
+      .filter(ValidationError("Duplicate tags not allowed."))(tags => tags.distinct.size != tags.size)
+      .map(ApiSetTagsData(_))
+}
+
+/**
+ *
+ */
 case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
 
 object ApiCreateStreamData
@@ -68,7 +88,7 @@ object StreamHelper
 }
 
 /**
- *
+ * Stream REST api controller.
  */
 object StreamApiController extends Controller {
 
@@ -281,7 +301,6 @@ object StreamApiController extends Controller {
     } yield Ok(Json.toJson(child))) getOrElse NotFound(Json.toJson(ApiError("Stream does not exist.")))
   }
 
-
   /**
    * Remove a linked child stream.
    *
@@ -342,6 +361,46 @@ object StreamApiController extends Controller {
       } getOrElse (InternalServerError)
 
   /**
+   * Get all tags associated with a given stream.
+   */
+  def getTags(streamId: String) = Action { implicit request =>
+    (for {
+      id <- stringToObjectId(streamId);
+      stream <- models.Stream.findById(id)
+    } yield
+      Ok(Json.toJson(stream.getTags))) getOrElse NotFound(Json.toJson(ApiError("Stream does not exist.")))
+  }
+
+  /**
+   * Update the tags associated with a given stream.
+   */
+  def setTags(streamId: String) = AuthorizedAction(parse.json) { implicit request =>
+    (for {
+      id <- stringToObjectId(streamId);
+      stream <- models.Stream.findById(id)
+    } yield {
+      toResponse(setTagsInternal(request.user, stream, request.body))
+    }) getOrElse {
+      NotFound(Json.toJson(ApiError("Stream does not exist.")))
+    }
+  }
+
+  private def setTagsInternal(user: models.User, stream: models.Stream, body: JsValue): ApiResult[models.Stream] =
+    Json.fromJson[ApiSetTagsData](body) map { tags =>
+      setTagsInternal(user, stream, tags)
+    } recoverTotal { e =>
+      ApiCouldNotProccessRequest(ApiError("Could not process request.", e))
+    }
+
+  private def setTagsInternal(user: models.User, stream: models.Stream, data: ApiSetTagsData) : ApiResult[models.Stream] =
+    models.Stream.asEditable(user, stream) map { parent =>
+      doSetTags(stream, data.tags)
+      ApiOk(stream)
+    } getOrElse {
+      ApiUnauthroized(ApiError("User does not have permission to add tags."))
+    }
+
+  /**
    * Can a user edit a given stream?
    */
   def canUpdateStreamStatus(stream: models.Stream, poster: models.User): Option[models.Stream] = {
@@ -362,7 +421,7 @@ object StreamApiController extends Controller {
     canUpdateStreamStatus(stream, poster) flatMap { _ =>
       models.Stream.updateStreamStatus(stream, color, poster)
     } map { s =>
-      StreamSupervisor.updateStatus(stream.uri, s.status)
+      StreamSupervisor.updateStatus(stream, s.status)
       s.status
     }
 
@@ -396,6 +455,15 @@ object StreamApiController extends Controller {
     models.Stream.getRelations(stream).foreach(removeChild)
     models.Stream.deleteStream(stream)
     StreamSupervisor.deleteStream(stream.uri)
+  }
+
+  /**
+   *
+   */
+  private def doSetTags(stream: models.Stream, tags: Seq[models.StreamTag]): Option[models.Stream] = {
+    StreamSupervisor.updateTags(stream, tags)
+    Some(stream)
+   // models.Stream.setTags(stream, tags)
   }
 }
 
