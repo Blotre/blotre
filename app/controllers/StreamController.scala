@@ -84,12 +84,12 @@ object Stream extends Controller {
   def tryCreateDescendant(user: models.User, uri: String)(implicit request: RequestHeader): Result =
     StreamHelper.getRawParentPath(uri) flatMap {
       case (parentUri, childUri) =>
-        models.StreamName.fromString(childUri) flatMap { validChildName =>
-          models.Stream.findByUri(parentUri) flatMap { parent =>
-            models.Stream.asOwner(parent, user) map { stream =>
-              Ok(views.html.stream.createChild.render(stream.stream, validChildName, request))
-            }
-          }
+        for (
+          validChildName <- models.StreamName.fromString(childUri);
+          parent <- models.Stream.findByUri(parentUri);
+          parent <- models.Stream.asOwner(parent, user)
+        ) yield {
+          Ok(views.html.stream.createChild.render(parent.stream, validChildName, request))
         }
     } getOrElse {
       NotFound(views.html.notFound.render(request))
