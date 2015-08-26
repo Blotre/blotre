@@ -1,12 +1,47 @@
 package controllers
 
 import Actors.{StreamSupervisor, CollectionSupervisor}
-import play.api.libs.json.{Json, JsValue}
+import play.api.data.validation.ValidationError
+import play.api.libs.json._
 import play.utils.UriEncoding
 
 import scala.collection.immutable.{Seq, List}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+
+/**
+ *
+ */
+case class ApiSetStatusData(color: models.Color)
+
+object ApiSetStatusData
+{
+  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] =
+    (__ \ "color")
+      .read(models.Color.readColor)
+      .map(ApiSetStatusData.apply(_))
+}
+
+/**
+ *
+ */
+case class ApiSetTagsData(tags: Seq[models.StreamTag])
+
+object ApiSetTagsData
+{
+  implicit val streamTagReads: Reads[models.StreamTag] =
+    Reads.StringReads
+      .map(models.StreamTag.fromString)
+      .filter(ValidationError("Tag is not valid."))(_.isDefined)
+      .map(_.get)
+
+  implicit val apiSetStatusDataReads: Reads[ApiSetTagsData] =
+    Reads.list[models.StreamTag]
+      .filter(ValidationError("Too many tags."))(tags => tags.size > models.Stream.maxTags)
+      .filter(ValidationError("Duplicate tags not allowed."))(tags => tags.distinct.size != tags.size)
+      .map(ApiSetTagsData(_))
+}
+
 
 object StreamHelper
 {
@@ -196,41 +231,72 @@ object StreamApi
       } getOrElse (ApiInternalError())
 
   /**
-   * Update the tags associated with a given stream.
+   * Get the tags for a given stream.
    */
-  private def setTagsInternal(user: models.User, stream: models.Stream, body: JsValue): ApiResult[models.Stream] =
-    Json.fromJson[ApiSetTagsData](body) map { tags =>
-      setTagsInternal(user, stream, tags)
-    } recoverTotal { e =>
-      ApiCouldNotProccessRequest(ApiError("Could not process request.", e))
+  def getTags(streamId: String): ApiResult[Seq[models.StreamTag]] =
+    models.Stream.findById(streamId) map { stream =>
+      ApiOk(stream.getTags)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
     }
 
-  private def setTagsInternal(user: models.User, stream: models.Stream, data: ApiSetTagsData) : ApiResult[models.Stream] =
-    models.Stream.asOwner(stream, user) map { parent =>
-      doSetTags(stream, data.tags)
-      ApiOk(stream)
+  /**
+   * Update the tags associated with a given stream.
+   */
+  def setTags(user: models.User, streamId: String, data: ApiSetTagsData) : ApiResult[models.Stream] =
+    models.Stream.findById(streamId) map {
+      setTags(user, _, data)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  def setTags(user: models.User, stream: models.Stream, data: ApiSetTagsData) : ApiResult[models.Stream] =
+    models.Stream.asOwner(stream, user) map {
+      setTags(_, data)
     } getOrElse {
       ApiUnauthroized(ApiError("User does not have permission to add tags."))
     }
 
-  private def getTagInternal(stream: models.Stream, tag: String): ApiResult[String] =
+  def setTags(stream: models.Stream.OwnedStream, data: ApiSetTagsData) : ApiResult[models.Stream] = {
+    doSetTags(stream.stream, data.tags)
+    ApiOk(stream.stream)
+  }
+
+  /**
+   * Lookup a tag on a given stream.
+   */
+  def getTag(streamId: String, tag: String): ApiResult[String] =
+    models.Stream.findById(streamId) map { stream =>
+      getTag(stream, tag)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  def getTag(stream: models.Stream, tag: String): ApiResult[String] =
     stream.getTags()
       .filter(streamTag => streamTag.value == tag)
       .headOption
       .map(tag => ApiOk(tag.value))
-      .getOrElse(ApiNotFound(ApiError("Stream does not exist.")))
+      .getOrElse(ApiNotFound(ApiError("No such tag on stream.")))
 
   /**
    * Set a tag on a given stream.
    */
-  private def setTagInternal(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
+  def setTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
+    models.Stream.findById(streamId) map {
+      setTag(user, _, tag)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  def setTag(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      setTagInternal(user, stream, _)
+      setTag(user, stream, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  private def setTagInternal(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
+  def setTag(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
     if (stream.hasTag(tag))
       ApiOk(tag.value)
     else {
@@ -238,14 +304,30 @@ object StreamApi
       ApiCreated(tag.value)
     }
 
-  private def removeTagInternal(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
+  /**
+   * Remove a tag on a given stream.
+   */
+  def removeTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
+    (for {
+      stream <- models.Stream.findById(streamId)
+    } yield {
+        models.Stream.asOwner(stream, user) map { ownedStream =>
+          removeTag(user, ownedStream.stream, tag)
+        } getOrElse {
+          ApiNotFound(ApiError("User does not have permission to edit stream."))
+        }
+      }) getOrElse {
+        ApiNotFound(ApiError("Stream does not exist."))
+      }
+
+  def removeTag(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      removeTagInternal(user, stream, _)
+      removeTag(user, stream, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  private def removeTagInternal(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
+  def removeTag(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
     if (stream.hasTag(tag)) {
       models.Stream.setTags(stream, stream.getTags() diff List(tag))
       ApiOk(tag.value)
