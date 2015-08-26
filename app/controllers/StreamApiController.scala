@@ -172,18 +172,18 @@ object StreamApiController extends Controller {
 
   private def apiCreateStream(user: models.User, parent: models.Stream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
     models.Stream.asOwner(parent, user) map { parent =>
-      models.Stream.findByUri(uri) map { existing =>
-        status.map(s => updateStreamStatus(existing, s.color, user))
-        ApiOk(existing)
+      models.Stream.findByUri(uri).flatMap(models.Stream.asOwner(_, user)) map { existing =>
+        status.map(s => updateStreamStatus(existing, s.color))
+        ApiOk(existing.stream)
       } getOrElse {
         if (parent.stream.childCount >= models.Stream.maxChildren)
           ApiCouldNotProccessRequest(ApiError("Too many children."))
         else if (user.streamCount >= models.User.streamLimit)
           ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
         else
-          createDescendant(parent, validatedName) map { newStream =>
-            status.map(s => updateStreamStatus(newStream, s.color, user))
-            ApiCreated(newStream)
+          createDescendant(parent, validatedName).flatMap(models.Stream.asOwner(_, user)) map { newStream =>
+            status.map(s => updateStreamStatus(newStream, s.color))
+            ApiCreated(newStream.stream)
           } getOrElse (ApiInternalError())
       }
     } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
@@ -251,8 +251,8 @@ object StreamApiController extends Controller {
 
   def apiSetStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.asOwner(stream, user) map { stream =>
-      stream.updateStatus(status.color) map { stream =>
-        ApiOk(stream.status)
+      updateStreamStatus(stream, status.color) map { stream =>
+        ApiOk(stream)
       } getOrElse (ApiInternalError())
     } getOrElse (ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
 
@@ -501,11 +501,9 @@ object StreamApiController extends Controller {
   /**
    *
    */
-  private def updateStreamStatus(stream: models.Stream, color: models.Color, poster: models.User): Option[models.Status] =
-    models.Stream.asOwner(stream, poster) flatMap { stream =>
-     stream.updateStatus(color)
-    } map { s =>
-      StreamSupervisor.updateStatus(stream, s.status)
+  private def updateStreamStatus(stream: models.Stream.OwnedStream, color: models.Color): Option[models.Status] =
+    stream.updateStatus(color) map { s =>
+      StreamSupervisor.updateStatus(s, s.status)
       s.status
     }
 
