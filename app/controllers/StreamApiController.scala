@@ -157,7 +157,7 @@ object StreamApiController extends Controller {
   def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
     models.StreamName.fromString(name) map { validatedName =>
       StreamHelper.getParentFromPath(uri) map { case (parent, childUri) =>
-        if (!(models.Stream.normalizeUri(validatedName).value.equalsIgnoreCase(childUri.value)))
+        if (!(models.StreamUri.fromName(validatedName).value.equalsIgnoreCase(childUri.value)))
           ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
         else
           apiCreateStream(user, parent, uri, validatedName, status)

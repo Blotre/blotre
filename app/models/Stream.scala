@@ -60,6 +60,35 @@ object StreamName
  * Valid stream uri.
  */
 case class StreamUri(value: String)
+{
+  /**
+   * Add a path segment to the stream uri.
+   */
+  def addPath(child: StreamName): StreamUri  =
+    StreamUri(value + "/" + child.value)
+}
+
+object StreamUri
+{
+  def fromString(uri: String): Option[StreamUri] =
+    try
+      if (uri == null)
+        None
+      else
+        Some(StreamUri(UriEncoding.decodePath(uri
+          .trim()
+          .replace(" ", "+")
+          .toLowerCase
+          .stripSuffix("/"),
+          "UTF-8")))
+    catch {
+      case e: Throwable =>
+        None
+    }
+
+  def fromName(uri: StreamName): StreamUri  =
+    StreamUri(uri.value)
+}
 
 /**
  * Valid stream tag.
@@ -109,6 +138,9 @@ case class Stream(
 
   def getChildren() =
     Stream.getChildrenOf(this)
+
+  def getUri() =
+    StreamUri(uri)
 
   def getTags() =
     this.tags.asScala.toList.map(StreamTag.apply)
@@ -197,14 +229,11 @@ object Stream
         StreamUri("")
     }
 
-  def normalizeUri(uri: StreamName): StreamUri =
-    normalizeUri(uri.value)
-
   /**
    * Given a parent Stream and a child name, get the URI of the child.
    */
-  def descendantUri(parent: Stream, childName: StreamName): StreamUri =
-    normalizeUri(parent.uri + "/" + childName.value)
+  private def descendantUri(parent: Stream, childName: StreamName): StreamUri =
+    parent.getUri.addPath(childName)
 
   /**
    * Lookup a stream by id.
@@ -294,7 +323,7 @@ object Stream
    * Returns the existing child stream if it exists.
    */
   def createRootStream(name: StreamName, owner: User): Option[Stream] =
-    createStreamWithName(name, normalizeUri(name), owner)
+    createStreamWithName(name, StreamUri.fromName(name), owner)
 
   /**
    * Create a descendant of an existing stream.
