@@ -231,7 +231,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Try to create a new stream.
    */
   private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApiController.apiCreateStream(user, name, uri, status) match {
+    StreamApi.apiCreateStream(user, name, uri, status) match {
       case controllers.ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
@@ -265,7 +265,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Delete a stream.
    */
   private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApiController.apiDeleteStream(user, uri) match {
+    StreamApi.apiDeleteStream(user, uri) match {
       case controllers.ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
@@ -308,7 +308,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the children of a stream.
    */
   private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApiController.apiGetChildren(uri, "", limit, offset) map {
+    StreamApi.apiGetChildren(uri, "", limit, offset) map {
       case controllers.ApiSuccess(children) =>
         ack(ApiChildrenResponse(uri, children, correlation))
 

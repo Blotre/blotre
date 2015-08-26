@@ -110,41 +110,11 @@ object StreamApiController extends Controller {
   def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     (Json.fromJson[ApiCreateStreamData](request.body)).fold(
       valid = value => {
-        toResponse(apiCreateStream(request.user, value.name, value.uri, value.status))
+        toResponse(StreamApi.apiCreateStream(request.user, value.name, value.uri, value.status))
       },
       invalid = e =>
         BadRequest(Json.toJson(ApiError("Could not process request", e))))
   }
-
-  def apiCreateStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
-    models.StreamName.fromString(name) map { validatedName =>
-      StreamHelper.getParentFromPath(uri) map { case (parent, childUri) =>
-        if (!(models.StreamUri.fromName(validatedName).value.equalsIgnoreCase(childUri.value)))
-          ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
-        else
-          apiCreateStream(user, parent, uri, validatedName, status)
-      } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
-    } getOrElse {
-      ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
-    }
-
-  private def apiCreateStream(user: models.User, parent: models.Stream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
-    models.Stream.asOwner(parent, user) map { parent =>
-      models.Stream.findByUri(uri).flatMap(models.Stream.asOwner(_, user)) map { existing =>
-        status.map(s => updateStreamStatus(existing, s.color))
-        ApiOk(existing.stream)
-      } getOrElse {
-        if (parent.stream.childCount >= models.Stream.maxChildren)
-          ApiCouldNotProccessRequest(ApiError("Too many children."))
-        else if (user.streamCount >= models.User.streamLimit)
-          ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
-        else
-          createDescendant(parent, validatedName).flatMap(models.Stream.asOwner(_, user)) map { newStream =>
-            status.map(s => updateStreamStatus(newStream, s.color))
-            ApiCreated(newStream.stream)
-          } getOrElse (ApiInternalError())
-      }
-    } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
 
   /**
    * Delete an existing stream.
@@ -153,26 +123,9 @@ object StreamApiController extends Controller {
    */
   def apiDeleteStream(id: String): Action[Unit] = AuthorizedAction(parse.empty) { implicit request =>
     toResponse(models.Stream.findById(id) map { stream =>
-      apiDeleteStream(request.user, stream)
+      StreamApi.apiDeleteStream(request.user, stream)
     } getOrElse (ApiNotFound(ApiError("Stream does not exist."))))
   }
-
-  def apiDeleteStream(user: models.User, uri: String): ApiResult[models.Stream] =
-    models.Stream.findByUri(uri) map { stream =>
-      apiDeleteStream(user, stream)
-    } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
-
-  def apiDeleteStream(user: models.User, stream: models.Stream): ApiResult[models.Stream] =
-    models.Stream.asOwner(stream, user) map { ownedStream =>
-      if (ownedStream.stream.name == ownedStream.stream.uri) {
-        ApiCouldNotProccessRequest(ApiError("Cannot delete root streams."))
-      } else {
-        deleteStream(stream)
-        ApiOk(stream)
-      }
-    } getOrElse {
-      ApiUnauthroized(ApiError("User does not have permission to delete stream."))
-    }
 
   /**
    * Lookup that status of a stream.
@@ -200,25 +153,9 @@ object StreamApiController extends Controller {
   def apiGetChildren(id: String): Action[AnyContent] = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
-      apiGetChildren(stream, query, 20, 0).map(toResponse(_))
+      StreamApi.apiGetChildren(stream, query, 20, 0).map(toResponse(_))
     } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
   }
-
-  def apiGetChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
-    models.Stream.findByUri(uri) map { stream =>
-      apiGetChildren(stream, query, limit, offset)
-    } getOrElse (Future.successful(ApiNotFound(ApiError("Stream does not exist."))))
-
-  def apiGetChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
-    if (query.isEmpty) {
-      // Get most recently updated children
-      CollectionSupervisor.getCollectionState(stream.uri, limit, offset) map { children =>
-        ApiOk(children.map(models.Stream.findByUri(_)).flatten[models.Stream])
-      }
-    } else {
-      // Lookup children using query
-      Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, limit)))
-    }
 
   /**
    * Get a child of this stream.
