@@ -7,7 +7,6 @@ import org.mongodb.morphia.annotations._
 import org.mongodb.morphia.query._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-import play.utils.UriEncoding
 import org.mongodb.morphia.query.Query
 import scala.collection.immutable._
 import scala.collection.JavaConverters._
@@ -31,66 +30,6 @@ case class ChildStream(
   created: Date)
 {
   def this() = this(null, false, null, null, null, null, "", "", new Date(0))
-}
-
-/**
- * Valid stream name.
- */
-case class StreamName(value: String)
-
-object StreamName
-{
-  val validCharacter = """[ a-zA-Z0-9_\-$]"""
-
-  val pattern = (validCharacter + "{1,64}").r
-
-  def fromString(name: String): Option[StreamName] = {
-    val trimmed = name.trim()
-    if (trimmed.matches(pattern.toString))
-      Some(StreamName(trimmed))
-    else
-      None
-  }
-
-  def fromString(name: StreamUri): Option[StreamName] =
-    fromString(name.value.replace("+", " "))
-}
-
-/**
- * Valid stream uri.
- */
-case class StreamUri(value: String)
-{
-  /**
-   * Add a path segment to the stream uri.
-   */
-  def addPath(child: StreamName): StreamUri  =
-    StreamUri(value + "/" + child.value)
-}
-
-object StreamUri
-{
-  def fromString(uri: String): Option[StreamUri] =
-    try
-      if (uri == null)
-        None
-      else {
-        Some(UriEncoding.decodePath(uri
-          .trim()
-          .replace(" ", "+")
-          .toLowerCase
-          .stripSuffix("/"),
-          "UTF-8"))
-        .filterNot(_.isEmpty)
-        .map(StreamUri(_))
-      }
-    catch {
-      case e: Throwable =>
-        None
-    }
-
-  def fromName(uri: StreamName): StreamUri  =
-    StreamUri(uri.value)
 }
 
 /**
