@@ -1,12 +1,11 @@
 package controllers
 
-import Actors.{CollectionSupervisor, StreamSupervisor}
+import Actors.{StreamSupervisor}
 import play.api.data.validation._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
-import scala.collection.immutable._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -28,10 +27,8 @@ object ApiCreateStreamData {
 /**
  * Stream REST api controller.
  */
-object StreamApiController extends Controller {
-
-  import models.Serializable._
-
+object StreamApiController extends Controller
+{
   private def toResponse[T](result: ApiResult[T])(implicit writes: Writes[T]) =
     result match {
       case _: ApiCreated[T] => Created(result.toJson)
@@ -130,23 +127,7 @@ object StreamApiController extends Controller {
    * Does not delete the target stream and cannot be used to delete hierarchical children.
    */
   def apiDeleteChild(parentId: String, childId: String) = AuthorizedAction { implicit request =>
-    val user = request.user
-    (for {
-      parentId <- stringToObjectId(parentId);
-      childId <- stringToObjectId(childId);
-      parent <- models.Stream.findById(parentId);
-      childData <- models.Stream.getChildById(parentId, childId)
-      child <- models.Stream.findById(childId)
-    } yield (
-        models.Stream.asOwner(parent, user) map { ownedStream =>
-          if (childData.hierarchical)
-            UnprocessableEntity(Json.toJson(ApiError("Cannot remove hierarchical child.")))
-          else {
-            removeChild(ownedStream, child)
-            Ok("")
-          }
-        } getOrElse Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
-      ) getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    toResponse(StreamApi.apiDeleteChild(request.user, parentId, childId))
   }
 
   /**
@@ -195,21 +176,6 @@ object StreamApiController extends Controller {
    */
   def removeTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
     toResponse(StreamApi.removeTag(request.user, streamId, tag))
-  }
-
-  def addChild(parent: models.Stream.OwnedStream, heirarchical: Boolean, child: models.Stream): Option[models.Stream] =
-    if (parent.stream.childCount < models.Stream.maxChildren)
-      parent.addChild(heirarchical, child) map { newChildData =>
-        StreamSupervisor.addChild(parent.stream, child)
-        child
-      }
-    else
-      None
-
-  private def removeChild(parent: models.Stream.OwnedStream, child: models.Stream): Option[models.Stream] = {
-    models.Stream.removeChild(parent.stream, child.id)
-    StreamSupervisor.removeChild(parent.stream.uri, child.uri)
-    Some(child)
   }
 }
 

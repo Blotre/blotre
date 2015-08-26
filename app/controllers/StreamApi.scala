@@ -257,6 +257,29 @@ object StreamApi
       } getOrElse (ApiInternalError())
 
   /**
+   * Remove a linked child stream.
+   *
+   * Does not delete the target stream and cannot be used to delete hierarchical children.
+   */
+  def apiDeleteChild(user: models.User, parentId: String, childId: String): ApiResult[models.Stream] =
+    (for {
+      parentId <- stringToObjectId(parentId);
+      childId <- stringToObjectId(childId);
+      parent <- models.Stream.findById(parentId);
+      childData <- models.Stream.getChildById(parentId, childId)
+      child <- models.Stream.findById(childId)
+    } yield (
+        models.Stream.asOwner(parent, user) map { ownedStream =>
+          if (childData.hierarchical)
+            ApiCouldNotProccessRequest(ApiError("Cannot remove hierarchical child."))
+          else {
+            removeChild(ownedStream, child)
+            ApiOk(child)
+          }
+        } getOrElse ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
+      ) getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
+
+  /**
    * Get the tags for a given stream.
    */
   def getTags(streamId: String): ApiResult[Seq[models.StreamTag]] =
