@@ -82,8 +82,12 @@ object StreamHelper
   }
 
   def getParentPath(uri: String) =
-    getRawParentPath(models.Stream.normalizeUri(uri).value) map { paths =>
-      (paths._1, models.Stream.normalizeUri(paths._2))
+    for (
+      uri <- models.StreamUri.fromString(uri);
+      paths <- getRawParentPath(uri.value);
+      parentPath <- models.StreamUri.fromString(paths._2)
+    ) yield {
+      (paths._1, parentPath)
     }
 }
 

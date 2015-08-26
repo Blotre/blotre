@@ -74,13 +74,16 @@ object StreamUri
     try
       if (uri == null)
         None
-      else
-        Some(StreamUri(UriEncoding.decodePath(uri
+      else {
+        Some(UriEncoding.decodePath(uri
           .trim()
           .replace(" ", "+")
           .toLowerCase
           .stripSuffix("/"),
-          "UTF-8")))
+          "UTF-8"))
+        .filterNot(_.isEmpty)
+        .map(StreamUri(_))
+      }
     catch {
       case e: Throwable =>
         None
@@ -213,22 +216,6 @@ object Stream
   private def childDb(): Query[ChildStream] =
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
 
-  def normalizeUri(uri: String): StreamUri =
-    try
-      if (uri == null)
-        StreamUri("")
-      else
-        StreamUri(UriEncoding.decodePath(uri
-          .trim()
-          .replace(" ", "+")
-          .toLowerCase
-          .stripSuffix("/"),
-          "UTF-8"))
-    catch {
-      case e: Throwable =>
-        StreamUri("")
-    }
-
   /**
    * Given a parent Stream and a child name, get the URI of the child.
    */
@@ -255,7 +242,7 @@ object Stream
       .get())
 
   def findByUri(uri: String): Option[Stream] =
-    findByUri(normalizeUri(uri))
+    StreamUri.fromString(uri).flatMap(findByUri)
 
   /**
    * Lookup streams using a search term.

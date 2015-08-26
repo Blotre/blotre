@@ -20,11 +20,13 @@ object StreamSupervisor
   /**
    * Get the Akka path of a stream.
    */
-  private def getStreamTopic(path: String): Option[String] =
-    Some(ActorHelper.normalizeName(models.Stream.normalizeUri(path).value))
+  private def getStreamTopic(path: models.StreamUri): Option[String] =
+    Some(ActorHelper.normalizeName(path.value))
       .filterNot(_.isEmpty)
       .map("streams/" + _)
 
+  private def getStreamTopic(path: String): Option[String] =
+    models.StreamUri.fromString(path).flatMap(getStreamTopic)
 
   /**
    * Get the Akka path of a collection.

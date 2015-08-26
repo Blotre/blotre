@@ -325,7 +325,9 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     targets.foreach(subscribe)
 
   private def subscribe(target: String)(implicit correlation: Int): Unit =
-    subscribe(models.Stream.normalizeUri(target))
+    models.StreamUri.fromString(target) map { uri =>
+      subscribe(uri)
+    }
 
   private def subscribe(target: models.StreamUri)(implicit correlation: Int): Unit = {
     if (subscriptions.contains(target.value)) {
