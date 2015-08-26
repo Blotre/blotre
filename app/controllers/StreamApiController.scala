@@ -39,43 +39,16 @@ object StreamApiController extends Controller
   /**
    * Lookup streams using an optional query.
    */
-  def apiGetStreams(): Action[AnyContent] = Action { implicit request =>
+  def apiGetStreams() = Action { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
     toResponse(StreamApi.getStreams(query))
   }
 
   /**
-   * Create a new stream.
-   *
-   * Cannot create root streams.
-   */
-  def apiCreateStream() = AuthorizedAction(parse.json) { implicit request =>
-    (Json.fromJson[ApiCreateStreamData](request.body)).fold(
-      valid = value => {
-        toResponse(StreamApi.createStream(request.user, value.name, value.uri, value.status))
-      },
-      invalid = e =>
-        BadRequest(Json.toJson(ApiError("Could not process request", e))))
-  }
-
-  /**
-   * Delete an existing stream.
-   *
-   * Cannot delete root streams.
-   */
-  def apiDeleteStream(id: String) = AuthorizedAction { implicit request =>
-    toResponse(models.Stream.findById(id) map { stream =>
-      StreamApi.apiDeleteStream(request.user, stream)
-    } getOrElse (ApiNotFound(ApiError("Stream does not exist."))))
-  }
-
-  /**
-   * Lookup that status of a stream.
+   * Get the status of a stream.
    */
   def apiGetStreamStatus(id: String) = Action { implicit request =>
-    models.Stream.findById(id) map { stream =>
-      Ok(Json.toJson(stream.status))
-    } getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    toResponse(StreamApi.getStreamStatus(id))
   }
 
   /**
@@ -86,17 +59,45 @@ object StreamApiController extends Controller
   }
 
   /**
+   * Create a new stream.
+   *
+   * Cannot create root streams.
+   */
+  def apiCreateStream() = AuthorizedAction(parse.json) { implicit request =>
+    Json.fromJson[ApiCreateStreamData](request.body) map { value =>
+      toResponse(StreamApi.createStream(request.user, value.name, value.uri, value.status))
+    } recoverTotal  { e =>
+      BadRequest(Json.toJson(ApiError("Could not process request", e)))
+    }
+  }
+
+  /**
+   * Delete an existing stream.
+   *
+   * Cannot delete root streams.
+   */
+  def apiDeleteStream(id: String) = AuthorizedAction { implicit request =>
+    toResponse(models.Stream.findById(id) map { stream =>
+      StreamApi.apiDeleteStream(request.user, stream)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    })
+  }
+
+  /**
    * Get children of a stream.
    *
    * Returns either the most recent children or children from the query
    *
    * TODO: normally should return list of ids which query params can expand to stream?
    */
-  def apiGetChildren(id: String): Action[AnyContent] = Action.async { implicit request =>
+  def apiGetChildren(id: String) = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
       StreamApi.getChildren(stream, query, 20, 0).map(toResponse(_))
-    } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
+    } getOrElse {
+      Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist."))))
+    }
   }
 
   /**
@@ -153,7 +154,7 @@ object StreamApiController extends Controller
    * Set a tag on a given stream.
    */
   def setTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
-    toResponse(StreamApi.setTag(request.user, streamId, tag))
+    toResponse(StreamApi.addTag(request.user, streamId, tag))
   }
 
   /**

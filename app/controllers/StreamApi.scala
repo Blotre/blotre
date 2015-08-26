@@ -122,6 +122,16 @@ object StreamApi
   }
 
   /**
+   * Get the status of a stream.
+   */
+  def getStreamStatus(id: String): ApiResult[models.Status] =
+    models.Stream.findById(id) map { stream =>
+      ApiOk(stream.status)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  /**
    * Get a child of a stream.
    */
   def getChild(parentId: String, childId: String): ApiResult[models.Stream] =
@@ -356,10 +366,10 @@ object StreamApi
       .filter(streamTag => streamTag.value == tag)
       .headOption
       .map(tag => ApiOk(tag.value))
-      .getOrElse(ApiNotFound(ApiError("No such tag on stream.")))
+      .getOrElse(ApiNotFound(ApiError("Tag does not exist.")))
 
   /**
-   * Add a tag to a stream.
+   * Change the tags on a stream.
    */
   private def modifyTags(user: models.User, streamId: String)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
     models.Stream.findById(streamId) map {
@@ -368,7 +378,7 @@ object StreamApi
       ApiNotFound(ApiError("Stream does not exist."))
     }
 
-  def modifyTags(user: models.User, stream: models.Stream)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
+  private def modifyTags(user: models.User, stream: models.Stream)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
     models.Stream.asOwner(stream, user) map {
       modify(_)
     } getOrElse {
@@ -376,16 +386,16 @@ object StreamApi
     }
 
   /**
-   * Add a tag to a stream.
+   * r a tag to a stream.
    */
-  def setTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
+  def addTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      setTag(user, streamId, _)
+      addTag(user, streamId, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def setTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
+  def addTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
     modifyTags(user, streamId) { stream =>
       if (stream.stream.hasTag(tag))
         ApiOk(tag.value)
@@ -400,7 +410,7 @@ object StreamApi
    */
   def removeTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      setTag(user, streamId, _)
+      addTag(user, streamId, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
@@ -424,7 +434,7 @@ object StreamApi
       s.status
     }
 
-  def addChild(parent: models.Stream.OwnedStream, heirarchical: Boolean, child: models.Stream): Option[models.Stream] =
+  private def addChild(parent: models.Stream.OwnedStream, heirarchical: Boolean, child: models.Stream): Option[models.Stream] =
     if (parent.stream.childCount < models.Stream.maxChildren)
       parent.addChild(heirarchical, child) map { newChildData =>
         StreamSupervisor.addChild(parent.stream, child)
