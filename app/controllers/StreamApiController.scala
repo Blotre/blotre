@@ -401,6 +401,93 @@ object StreamApiController extends Controller {
     }
 
   /**
+   * Lookup a tag on a given stream.
+   */
+  def getTag(streamId: String, tag: String) = Action { implicit request =>
+    (for {
+      id <- stringToObjectId(streamId);
+      stream <- models.Stream.findById(id)
+    } yield {
+        toResponse(getTagInternal(stream, tag))
+      }) getOrElse {
+      NotFound(Json.toJson(ApiError("Stream does not exist.")))
+    }
+  }
+
+  private def getTagInternal(stream: models.Stream, tag: String): ApiResult[String] =
+    stream.getTags()
+      .filter(streamTag => streamTag.value == tag)
+      .headOption
+      .map(tag => ApiOk(tag.value))
+      .getOrElse(ApiNotFound(ApiError("Stream does not exist.")))
+
+  /**
+   * Set a tag on a given stream.
+   */
+  def setTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
+    (for {
+      id <- stringToObjectId(streamId);
+      stream <- models.Stream.findById(id)
+    } yield {
+        canUpdateStreamStatus(stream, request.user) map { ownedStream =>
+          toResponse(setTagInternal(request.user, ownedStream, tag))
+        } getOrElse {
+          NotFound(Json.toJson(ApiError("User does not have permission to edit stream.")))
+        }
+      }) getOrElse {
+      NotFound(Json.toJson(ApiError("Stream does not exist.")))
+    }
+  }
+
+  private def setTagInternal(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
+    models.StreamTag.fromString(tag) map {
+      setTagInternal(user, stream, _)
+    } getOrElse {
+      ApiNotFound(ApiError("Tag is not valid."))
+    }
+
+  private def setTagInternal(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
+    if (stream.hasTag(tag))
+      ApiOk(tag.value)
+    else {
+      models.Stream.setTags(stream, stream.getTags() :+ tag)
+      ApiCreated(tag.value)
+    }
+
+  /**
+   * Remove a tag on a given stream.
+   */
+  def removeTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
+    (for {
+      id <- stringToObjectId(streamId);
+      stream <- models.Stream.findById(id)
+    } yield {
+        canUpdateStreamStatus(stream, request.user) map { ownedStream =>
+          toResponse(removeTagInternal(request.user, ownedStream, tag))
+        } getOrElse {
+          NotFound(Json.toJson(ApiError("User does not have permission to edit stream.")))
+        }
+      }) getOrElse {
+      NotFound(Json.toJson(ApiError("Stream does not exist.")))
+    }
+  }
+
+  private def removeTagInternal(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
+    models.StreamTag.fromString(tag) map {
+      removeTagInternal(user, stream, _)
+    } getOrElse {
+      ApiNotFound(ApiError("Tag is not valid."))
+    }
+
+  private def removeTagInternal(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
+    if (stream.hasTag(tag)) {
+      models.Stream.setTags(stream, stream.getTags() diff List(tag))
+      ApiOk(tag.value)
+    } else {
+      ApiNotFound(ApiError("No such tag."))
+    }
+
+  /**
    * Can a user edit a given stream?
    */
   def canUpdateStreamStatus(stream: models.Stream, poster: models.User): Option[models.Stream] = {

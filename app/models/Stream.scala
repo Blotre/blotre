@@ -112,6 +112,9 @@ case class Stream(
 
   def getTags() =
     this.tags.asScala.toList.map(StreamTag.apply)
+
+  def hasTag(tag: StreamTag) =
+    this.getTags().contains(tag)
 }
 
 object Stream
@@ -339,6 +342,18 @@ object Stream
     }
 
   /**
+   * Set the tags of a stream.
+   */
+  def setTags(stream: Stream, tags: Seq[StreamTag]): Option[Stream] = {
+    MorphiaObject.datastore.update(
+      db().filter("id", stream.id),
+      MorphiaObject.datastore.createUpdateOperations((classOf[Stream]))
+        .set("updated", new Date())
+        .set("tags", tags.asJava))
+    Some(stream)
+  }
+
+  /**
    * Delete an existing stream.
    *
    * Caller should also clean up relationships before delete.
@@ -399,6 +414,7 @@ object Stream
       .asScala.toList
       .map(x => findById(x.childId)).flatten
   }
+
 
   /**
    * Lookup the child of a stream by the child's id.
