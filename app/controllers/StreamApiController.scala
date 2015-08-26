@@ -22,7 +22,7 @@ object ApiSetStatusData
   implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] =
     (__ \ "color")
       .read(models.Color.readColor)
-      .map(color => ApiSetStatusData.apply(models.Color(color)))
+      .map(ApiSetStatusData.apply(_))
 }
 
 /**
