@@ -86,8 +86,8 @@ object Stream extends Controller {
       case (parentUri, childUri) =>
         models.StreamName.fromString(childUri) flatMap { validChildName =>
           models.Stream.findByUri(parentUri) flatMap { parent =>
-            models.Stream.asEditable(user, parent) map { stream =>
-              Ok(views.html.stream.createChild.render(stream, validChildName, request))
+            models.Stream.asOwner(parent, user) map { stream =>
+              Ok(views.html.stream.createChild.render(stream.stream, validChildName, request))
             }
           }
         }

@@ -121,6 +121,30 @@ object Stream
 {
   import models.Serializable._
 
+  /**
+   * Stream that belongs to a given user and is editable by them.
+   */
+  case class OwnedStream(stream: Stream, user: User)
+  {
+    def updateStatus(color: Color) =
+      Stream.updateStreamStatus(stream, color, user)
+
+    def createDescendant(childName: StreamName): Option[models.Stream] =
+      Stream.createDescendant(stream, childName, user)
+
+    def addChild(hierarchical: Boolean, child: Stream) =
+      Stream.addChild(hierarchical, stream, child, user)
+    }
+
+  /**
+   * Try to create an owned stream.
+   */
+  def asOwner(stream: Stream, user: User): Option[OwnedStream] =
+    if (stream.ownerId == user.id)
+      Some(OwnedStream(stream, user))
+    else
+      None
+
   def toValidQuery(query: String): Option[String] =
     StreamName.fromString(query) map { query =>
       query.value.replaceAllLiterally("$", "\\$")
@@ -172,15 +196,6 @@ object Stream
    */
   def descendantUri(parent: Stream, childName: StreamName): StreamUri =
     normalizeUri(parent.uri + "/" + childName.value)
-
-  /**
-   * TODO: move to controller
-   */
-  def asEditable(poster: User, stream: Stream): Option[Stream] =
-    if (stream != null && poster != null && stream.ownerId == poster.id)
-      Some(stream)
-    else
-      None
 
   /**
    * Lookup a stream by id.
@@ -279,14 +294,12 @@ object Stream
    *
    * Returns the existing child if it exists.
    */
-  def createDescendant(parent: Stream, childName: StreamName, user: User): Option[models.Stream] =
-    asEditable(user, parent) flatMap { stream =>
-      findByParent(parent, childName) orElse {
-        createStreamWithName(childName, descendantUri(parent, childName), user)
-      }
+  private def createDescendant(parent: Stream, childName: StreamName, user: User): Option[models.Stream] =
+    findByParent(parent, childName) orElse {
+      createStreamWithName(childName, descendantUri(parent, childName), user)
     }
 
-  def createDescendant(parentUri: String, childName: StreamName, user: User): Option[models.Stream] =
+  private def createDescendant(parentUri: String, childName: StreamName, user: User): Option[models.Stream] =
     findByUri(parentUri) flatMap { parentStream =>
       createDescendant(parentStream, childName, user)
     }
@@ -294,16 +307,15 @@ object Stream
   /**
    * Registers a new child for a given stream.
    */
-  def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] =
-    asEditable(user, parent) flatMap { parent =>
-      val s = save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
-      MorphiaObject.datastore.update(
-        db().filter("id", parent.id),
-        MorphiaObject.datastore.createUpdateOperations((classOf[Stream])).inc("childCount"))
-      s
-    }
+  private def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] = {
+    val s = save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
+    MorphiaObject.datastore.update(
+      db().filter("id", parent.id),
+      MorphiaObject.datastore.createUpdateOperations((classOf[Stream])).inc("childCount"))
+    s
+  }
 
-  def addChild(hierarchical: Boolean, parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
+  private def addChild(hierarchical: Boolean, parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
     findById(childId) flatMap { child =>
       addChild(hierarchical, parent, child, user)
     }
@@ -328,18 +340,12 @@ object Stream
   /**
    * Set the status of a stream.
    */
-  def updateStreamStatus(stream: Stream, color: Color, poster: User): Option[Stream] =
-    asEditable(poster, stream) flatMap { current =>
-      val updated = new Date()
-      current.status = Status(color, updated, poster.id)
-      current.updated = updated
-      save(current)
-    }
-
-  def updateStreamStatus(uri: String, color: Color, poster: User): Option[Stream] =
-    findByUri(uri) flatMap { current =>
-      updateStreamStatus(current, color, poster)
-    }
+  private def updateStreamStatus(stream: Stream, color: Color, poster: User): Option[Stream] = {
+    val updated = new Date()
+    stream.status = Status(color, updated, poster.id)
+    stream.updated = updated
+    save(stream)
+  }
 
   /**
    * Set the tags of a stream.

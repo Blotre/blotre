@@ -107,16 +107,9 @@ object StreamApiController extends Controller {
       case _: ApiFailure[T] => BadRequest(result.toJson)
     }
 
-  private def createDescendant(user: models.User, uri: String): Option[models.Stream] =
-    StreamHelper.getParentFromPath(uri) flatMap { case (parent, childUri) =>
-      models.StreamName.fromString(childUri) flatMap { childName =>
-        createDescendant(user, parent, childName)
-      }
-    }
-
-  private def createDescendant(user: models.User, parent: models.Stream, name: models.StreamName): Option[models.Stream] =
-    models.Stream.createDescendant(parent.uri, name, user) flatMap { newChild =>
-      addChild(user, true, parent, newChild)
+  private def createDescendant(parent: models.Stream.OwnedStream, name: models.StreamName): Option[models.Stream] =
+    parent.createDescendant(name) flatMap { newChild =>
+      addChild(parent, true, newChild)
     }
 
   /**
@@ -174,17 +167,17 @@ object StreamApiController extends Controller {
     }
 
   private def apiCreateStream(user: models.User, parent: models.Stream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
-    models.Stream.asEditable(user, parent) map { parent =>
+    models.Stream.asOwner(parent, user) map { parent =>
       models.Stream.findByUri(uri) map { existing =>
         status.map(s => updateStreamStatus(existing, s.color, user))
         ApiOk(existing)
       } getOrElse {
-        if (parent.childCount >= models.Stream.maxChildren)
+        if (parent.stream.childCount >= models.Stream.maxChildren)
           ApiCouldNotProccessRequest(ApiError("Too many children."))
         else if (user.streamCount >= models.User.streamLimit)
           ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
         else
-          createDescendant(user, parent, validatedName) map { newStream =>
+          createDescendant(parent, validatedName) map { newStream =>
             status.map(s => updateStreamStatus(newStream, s.color, user))
             ApiCreated(newStream)
           } getOrElse (ApiInternalError())
@@ -208,8 +201,8 @@ object StreamApiController extends Controller {
     } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
 
   def apiDeleteStream(user: models.User, stream: models.Stream): ApiResult[models.Stream] =
-    models.Stream.asEditable(user, stream) map { ownedStream =>
-      if (ownedStream.name == ownedStream.uri) {
+    models.Stream.asOwner(stream, user) map { ownedStream =>
+      if (ownedStream.stream.name == ownedStream.stream.uri) {
         ApiCouldNotProccessRequest(ApiError("Cannot delete root streams."))
       } else {
         deleteStream(stream)
@@ -253,9 +246,9 @@ object StreamApiController extends Controller {
     } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
 
   def apiSetStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult[models.Status]  =
-    models.Stream.asEditable(user, stream) map { stream =>
-      updateStreamStatus(stream, status.color, user) map { status =>
-        ApiOk(status)
+    models.Stream.asOwner(stream, user) map { stream =>
+      stream.updateStatus(status.color) map { stream =>
+        ApiOk(stream.status)
       } getOrElse (ApiInternalError())
     } getOrElse (ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
 
@@ -342,20 +335,20 @@ object StreamApiController extends Controller {
   }}
 
   def apiCreateChildInternal(user: models.User, parent: models.Stream, childId: String): Result =
-    models.Stream.asEditable(user, parent) map { parent =>
+    models.Stream.asOwner(parent, user) map { parent =>
       models.Stream.findById(childId) map { child =>
-        apiCreateChildInternal(user, parent, child)
+        apiCreateChildInternal(parent, child)
       } getOrElse (NotFound(Json.toJson(ApiError("Child stream does not exist."))))
     } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
 
-  def apiCreateChildInternal(user: models.User, parent: models.Stream, child: models.Stream): Result =
-    if (parent.id == child.id)
+  def apiCreateChildInternal(parent: models.Stream.OwnedStream, child: models.Stream): Result =
+    if (parent.stream.id == child.id)
       UnprocessableEntity(Json.toJson(ApiError("I'm my own grandpa.")))
     else
-      models.Stream.getChildById(parent.id, child.id) map { _ =>
+      models.Stream.getChildById(parent.stream.id, child.id) map { _ =>
         Ok(Json.toJson(child))
       } orElse {
-        addChild(user, false, parent, child) map { _ =>
+        addChild(parent, false, child) map { _ =>
           Created(Json.toJson(child))
         }
       } getOrElse (InternalServerError)
@@ -393,7 +386,7 @@ object StreamApiController extends Controller {
     }
 
   private def setTagsInternal(user: models.User, stream: models.Stream, data: ApiSetTagsData) : ApiResult[models.Stream] =
-    models.Stream.asEditable(user, stream) map { parent =>
+    models.Stream.asOwner(stream, user) map { parent =>
       doSetTags(stream, data.tags)
       ApiOk(stream)
     } getOrElse {
@@ -505,17 +498,17 @@ object StreamApiController extends Controller {
    *
    */
   private def updateStreamStatus(stream: models.Stream, color: models.Color, poster: models.User): Option[models.Status] =
-    canUpdateStreamStatus(stream, poster) flatMap { _ =>
-      models.Stream.updateStreamStatus(stream, color, poster)
+    models.Stream.asOwner(stream, poster) flatMap { stream =>
+     stream.updateStatus(color)
     } map { s =>
       StreamSupervisor.updateStatus(stream, s.status)
       s.status
     }
 
-  def addChild(user: models.User, heirarchical: Boolean, parent: models.Stream, child: models.Stream): Option[models.Stream] =
-    if (parent.childCount < models.Stream.maxChildren)
-      models.Stream.addChild(heirarchical, parent, child.id, user) map { newChildData =>
-        StreamSupervisor.addChild(parent, child)
+  def addChild(parent: models.Stream.OwnedStream, heirarchical: Boolean, child: models.Stream): Option[models.Stream] =
+    if (parent.stream.childCount < models.Stream.maxChildren)
+      parent.addChild(heirarchical, child) map { newChildData =>
+        StreamSupervisor.addChild(parent.stream, child)
         child
       }
     else
