@@ -312,7 +312,7 @@ object StreamApiController extends Controller {
       childData <- models.Stream.getChildById(parentId, childId)
       child <- models.Stream.findById(childId)
     } yield (
-        if (canUpdateStreamStatus(parent, user).isDefined) {
+        if (models.Stream.asOwner(parent, user).isDefined) {
           if (childData.hierarchical)
             UnprocessableEntity(Json.toJson(ApiError("Cannot remove hierarchical child.")))
           else {
@@ -426,8 +426,8 @@ object StreamApiController extends Controller {
       id <- stringToObjectId(streamId);
       stream <- models.Stream.findById(id)
     } yield {
-        canUpdateStreamStatus(stream, request.user) map { ownedStream =>
-          toResponse(setTagInternal(request.user, ownedStream, tag))
+        models.Stream.asOwner(stream, request.user) map { ownedStream =>
+          toResponse(setTagInternal(request.user, ownedStream.stream, tag))
         } getOrElse {
           NotFound(Json.toJson(ApiError("User does not have permission to edit stream.")))
         }
@@ -459,8 +459,8 @@ object StreamApiController extends Controller {
       id <- stringToObjectId(streamId);
       stream <- models.Stream.findById(id)
     } yield {
-        canUpdateStreamStatus(stream, request.user) map { ownedStream =>
-          toResponse(removeTagInternal(request.user, ownedStream, tag))
+        models.Stream.asOwner(stream, request.user) map { ownedStream =>
+          toResponse(removeTagInternal(request.user, ownedStream.stream, tag))
         } getOrElse {
           NotFound(Json.toJson(ApiError("User does not have permission to edit stream.")))
         }
@@ -483,20 +483,6 @@ object StreamApiController extends Controller {
     } else {
       ApiNotFound(ApiError("No such tag."))
     }
-
-  /**
-   * Can a user edit a given stream?
-   */
-  def canUpdateStreamStatus(stream: models.Stream, poster: models.User): Option[models.Stream] = {
-    if (poster != null && stream != null)
-      if (stream.ownerId == poster.id)
-        return Some(stream);
-    return None;
-  }
-
-  def canUpdateStreamStatus(uri: String, poster: models.User): Option[models.Stream] =
-    models.Stream.findByUri(uri)
-      .flatMap(x => canUpdateStreamStatus(x, poster))
 
   /**
    *

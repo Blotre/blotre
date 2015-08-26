@@ -79,7 +79,7 @@
             <button disabled="disabled" class="stream-favorite btn-lg">
                 <span class="glyphicon glyphicon-star"></span>
             </button>
-            <div class="status-picker-control @("hidden".when(!controllers.StreamApiController.canUpdateStreamStatus(stream, Application.getLocalUser(request))))">
+            <div class="status-picker-control @("hidden".when(!stream.isOwner(Application.getLocalUser(request))))">
                 @_streamColorControl(stream)
             </div>
             <button class="stream-share btn-lg" disabled>
@@ -99,7 +99,7 @@
         }
         <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"</p>
 
-        <div class="create-child clearfix @("hidden".when(!controllers.StreamApiController.canUpdateStreamStatus(stream, Application.getLocalUser(request))))">
+        <div class="create-child clearfix @("hidden".when(!stream.isOwner(Application.getLocalUser(request))))">
             <div class="hidden" id="create-child-name-input">
                 <input class="form-control" type="text" name="name" placeholder="Name" />
             </div>

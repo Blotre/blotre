@@ -2,6 +2,7 @@ package models
 
 import java.util.Date
 import helper.datasources.MorphiaObject
+import models.Stream.OwnedStream
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
 import org.mongodb.morphia.query._
@@ -75,6 +76,9 @@ case class Stream(
   def getOwner() =
     User.findById(this.ownerId)
 
+  def isOwner(user: User) =
+    user != null && this.ownerId == user.id
+
   def getChildData() =
     Stream.getChildrenData(this)
 
@@ -124,7 +128,7 @@ object Stream
    * Try to create an owned stream.
    */
   def asOwner(stream: Stream, user: User): Option[OwnedStream] =
-    if (stream.ownerId == user.id)
+    if (stream.isOwner(user))
       Some(OwnedStream(stream, user))
     else
       None
@@ -223,14 +227,11 @@ object Stream
   /**
    * Lookup a stream by its parent.
    */
-  def findByParent(parent: Stream, childName: String): Option[Stream] =
+  def findByParent(parent: Stream, childName: StreamName): Option[Stream] =
     Option(childDb()
       .filter("parentId =", parent.id)
-      .filter("childName =", childName)
+      .filter("childName =", childName.value)
       .get()) flatMap (entry => findById(entry.childId))
-
-  def findByParent(parent: Stream, name: StreamName): Option[Stream] =
-    findByParent(parent, name.value)
 
   /**
    * Create a new stream with a given name.
@@ -373,7 +374,6 @@ object Stream
       .map(x => findById(x.childId)).flatten
   }
 
-
   /**
    * Lookup the child of a stream by the child's id.
    */
@@ -381,15 +381,6 @@ object Stream
     Option(childDb()
       .filter("parentId =", parentId)
       .filter("childId =", childId)
-      .get)
-
-  /**
-   * Lookup the child of a stream by the child's uri.
-   */
-  def getChildByUri(parent: Stream, childUri: String) =
-    Option(childDb()
-      .filter("parentId =", parent.id)
-      .filter("childUri =", childUri)
       .get)
 
   private def save[A](obj: A): Option[A] = {
