@@ -2,7 +2,6 @@ package controllers
 
 import Actors.{StreamSupervisor, CollectionSupervisor}
 import play.api.libs.json.{Json, JsValue}
-import play.api.mvc.{Result, Controller}
 import play.utils.UriEncoding
 
 import scala.collection.immutable.{Seq, List}
@@ -42,7 +41,7 @@ object StreamHelper
 /**
  * Stream api.
  */
-object StreamApi extends Controller
+object StreamApi
 {
   private def createDescendant(parent: models.Stream.OwnedStream, name: models.StreamName): Option[models.Stream] =
     parent.createDescendant(name) flatMap { newChild =>
@@ -167,32 +166,34 @@ object StreamApi extends Controller
       Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, limit)))
     }
 
-
-  private def apiCreateChildInternal(user: models.User, parent: models.Stream, childId: String): Result =
+  /**
+   *
+   */
+  def apiCreateChild(user: models.User, parent: models.Stream, childId: String): ApiResult[models.Stream] =
     models.Stream.asOwner(parent, user) map { parent =>
-      apiCreateChildInternal(parent, childId)
+      apiCreateChild(parent, childId)
     } getOrElse {
-      Unauthorized(Json.toJson(ApiError("User does not have permission to add child.")))
+      ApiUnauthroized(ApiError("User does not have permission to add child."))
     }
 
-  private def apiCreateChildInternal(parent: models.Stream.OwnedStream, childId: String): Result =
+  def apiCreateChild(parent: models.Stream.OwnedStream, childId: String): ApiResult[models.Stream] =
     models.Stream.findById(childId) map { child =>
-      apiCreateChildInternal(parent, child)
+      apiCreateChild(parent, child)
     } getOrElse {
-      NotFound(Json.toJson(ApiError("Child stream does not exist.")))
+      ApiNotFound(ApiError("Child stream does not exist."))
     }
 
-  private def apiCreateChildInternal(parent: models.Stream.OwnedStream, child: models.Stream): Result =
+  def apiCreateChild(parent: models.Stream.OwnedStream, child: models.Stream): ApiResult[models.Stream] =
     if (parent.stream.id == child.id)
-      UnprocessableEntity(Json.toJson(ApiError("I'm my own grandpa.")))
+      ApiCouldNotProccessRequest(ApiError("I'm my own grandpa."))
     else
       models.Stream.getChildById(parent.stream.id, child.id) map { _ =>
-        Ok(Json.toJson(child))
+        ApiOk(child)
       } orElse {
         addChild(parent, false, child) map { _ =>
-          Created(Json.toJson(child))
+          ApiCreated(child)
         }
-      } getOrElse (InternalServerError)
+      } getOrElse (ApiInternalError())
 
   /**
    * Update the tags associated with a given stream.

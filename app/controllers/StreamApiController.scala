@@ -80,11 +80,6 @@ object StreamApiController extends Controller {
       case _: ApiFailure[T] => BadRequest(result.toJson)
     }
 
-  private def createDescendant(parent: models.Stream.OwnedStream, name: models.StreamName): Option[models.Stream] =
-    parent.createDescendant(name) flatMap { newChild =>
-      addChild(parent, true, newChild)
-    }
-
   /**
    * Lookup all streams using an optional query.
    */
@@ -206,37 +201,11 @@ object StreamApiController extends Controller {
       if (parent.childCount >= models.Stream.maxChildren)
         UnprocessableEntity(Json.toJson(ApiError("Too many children.")))
       else
-        apiCreateChildInternal(request.user, parent, childId)
+        toResponse(StreamApi.apiCreateChild(request.user, parent, childId))
     } getOrElse {
       NotFound(Json.toJson(ApiError("Parent stream does not exist.")))
     }
   }}
-
-  private def apiCreateChildInternal(user: models.User, parent: models.Stream, childId: String): Result =
-    models.Stream.asOwner(parent, user) map { parent =>
-      apiCreateChildInternal(parent, childId)
-    } getOrElse {
-      Unauthorized(Json.toJson(ApiError("User does not have permission to add child.")))
-    }
-
-  private def apiCreateChildInternal(parent: models.Stream.OwnedStream, childId: String): Result =
-    models.Stream.findById(childId) map { child =>
-      apiCreateChildInternal(parent, child)
-    } getOrElse {
-      NotFound(Json.toJson(ApiError("Child stream does not exist.")))
-    }
-
-  private def apiCreateChildInternal(parent: models.Stream.OwnedStream, child: models.Stream): Result =
-    if (parent.stream.id == child.id)
-      UnprocessableEntity(Json.toJson(ApiError("I'm my own grandpa.")))
-    else
-      models.Stream.getChildById(parent.stream.id, child.id) map { _ =>
-        Ok(Json.toJson(child))
-      } orElse {
-        addChild(parent, false, child) map { _ =>
-          Created(Json.toJson(child))
-        }
-      } getOrElse (InternalServerError)
 
   /**
    * Get all tags associated with a given stream.
@@ -365,15 +334,6 @@ object StreamApiController extends Controller {
       ApiNotFound(ApiError("No such tag."))
     }
 
-  /**
-   *
-   */
-  private def updateStreamStatus(stream: models.Stream.OwnedStream, color: models.Color): Option[models.Status] =
-    stream.updateStatus(color) map { s =>
-      StreamSupervisor.updateStatus(s, s.status)
-      s.status
-    }
-
   def addChild(parent: models.Stream.OwnedStream, heirarchical: Boolean, child: models.Stream): Option[models.Stream] =
     if (parent.stream.childCount < models.Stream.maxChildren)
       parent.addChild(heirarchical, child) map { newChildData =>
@@ -392,18 +352,6 @@ object StreamApiController extends Controller {
   private def removeChild(childData: models.ChildStream): Unit = {
     models.Stream.removeChild(childData)
     StreamSupervisor.removeChild(childData.parentUri, childData.childUri)
-  }
-
-  private def deleteStream(stream: models.Stream): Unit = {
-    models.Stream.getChildrenData(stream) foreach { childData =>
-      removeChild(childData)
-      if (childData.hierarchical) {
-        models.Stream.findById(childData.childId).map(deleteStream)
-      }
-    }
-    models.Stream.getRelations(stream).foreach(removeChild)
-    models.Stream.deleteStream(stream)
-    StreamSupervisor.deleteStream(stream.uri)
   }
 
   /**
