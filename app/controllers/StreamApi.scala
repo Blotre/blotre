@@ -359,59 +359,60 @@ object StreamApi
       .getOrElse(ApiNotFound(ApiError("No such tag on stream.")))
 
   /**
-   * Set a tag on a given stream.
+   * Add a tag to a stream.
    */
-  def setTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
+  private def modifyTags(user: models.User, streamId: String)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
     models.Stream.findById(streamId) map {
-      setTag(user, _, tag)
+      modifyTags(user, _)(modify)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
     }
 
-  def setTag(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
+  def modifyTags(user: models.User, stream: models.Stream)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
+    models.Stream.asOwner(stream, user) map {
+      modify(_)
+    } getOrElse {
+      ApiNotFound(ApiError("User does not have permission to edit stream."))
+    }
+
+  /**
+   * Add a tag to a stream.
+   */
+  def setTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      setTag(user, stream, _)
+      setTag(user, streamId, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def setTag(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
-    if (stream.hasTag(tag))
-      ApiOk(tag.value)
-    else {
-      models.Stream.setTags(stream, stream.getTags() :+ tag)
-      ApiCreated(tag.value)
+  def setTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
+    modifyTags(user, streamId) { stream =>
+      if (stream.stream.hasTag(tag))
+        ApiOk(tag.value)
+      else {
+        stream.setTags(stream.stream.getTags() :+ tag)
+        ApiCreated(tag.value)
+      }
     }
 
   /**
    * Remove a tag on a given stream.
    */
   def removeTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
-    (for {
-      stream <- models.Stream.findById(streamId)
-    } yield {
-        models.Stream.asOwner(stream, user) map { ownedStream =>
-          removeTag(user, ownedStream.stream, tag)
-        } getOrElse {
-          ApiNotFound(ApiError("User does not have permission to edit stream."))
-        }
-      }) getOrElse {
-        ApiNotFound(ApiError("Stream does not exist."))
-      }
-
-  def removeTag(user: models.User, stream: models.Stream, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      removeTag(user, stream, _)
+      setTag(user, streamId, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def removeTag(user: models.User, stream: models.Stream, tag: models.StreamTag): ApiResult[String] =
-    if (stream.hasTag(tag)) {
-      models.Stream.setTags(stream, stream.getTags() diff List(tag))
-      ApiOk(tag.value)
-    } else {
-      ApiNotFound(ApiError("No such tag."))
+  def removeTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
+    modifyTags(user, streamId) { stream =>
+      if (!stream.stream.hasTag(tag))
+        ApiOk("")
+      else {
+        stream.setTags(stream.stream.getTags() diff List(tag))
+        ApiOk(tag.value)
+      }
     }
 
   /**
@@ -438,7 +439,7 @@ object StreamApi
     }
 
   private def removeChild(parent: models.Stream.OwnedStream, child: models.Stream): Option[models.Stream] = {
-    models.Stream.removeChild(parent.stream, child.id)
+    parent.removeChild(child.id)
     StreamSupervisor.removeChild(parent.stream.uri, child.uri)
     Some(child)
   }

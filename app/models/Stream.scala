@@ -122,6 +122,12 @@ object Stream
 
     def addChild(hierarchical: Boolean, child: Stream) =
       Stream.addChild(hierarchical, stream, child, user)
+
+    def removeChild(child: ObjectId) =
+      Stream.removeChild(stream, child)
+
+    def setTags(tags: Seq[StreamTag]) =
+      Stream.setTags(stream, tags)
   }
 
   /**
@@ -158,6 +164,11 @@ object Stream
 
   private def childDb(): Query[ChildStream] =
     MorphiaObject.datastore.createQuery((classOf[ChildStream]))
+
+  private def save[A](obj: A): Option[A] = {
+    MorphiaObject.datastore.save[A](obj)
+    Some(obj)
+  }
 
   /**
    * Given a parent Stream and a child name, get the URI of the child.
@@ -276,7 +287,7 @@ object Stream
   /**
    * Remove an existing child.
    */
-  def removeChild(parent: Stream, child: ObjectId): Unit = {
+  private def removeChild(parent: Stream, child: ObjectId): Unit = {
     MorphiaObject.datastore.delete(
       childDb()
         .filter("parentId =", parent.id)
@@ -303,7 +314,7 @@ object Stream
   /**
    * Set the tags of a stream.
    */
-  def setTags(stream: Stream, tags: Seq[StreamTag]): Option[Stream] = {
+  private def setTags(stream: Stream, tags: Seq[StreamTag]): Option[Stream] = {
     MorphiaObject.datastore.update(
       db().filter("id", stream.id),
       MorphiaObject.datastore.createUpdateOperations((classOf[Stream]))
@@ -322,18 +333,6 @@ object Stream
       db()
         .filter("id =", stream.id))
     stream.getOwner.map(User.decrementStreamCount)
-  }
-
-  /**
-   * Remove all relationships that a stream appears in
-   */
-  private def deleteStreamRelationships(stream: Stream): Unit = {
-    val q = childDb()
-    q.or(
-        q.criteria("parentId").equal(stream.id),
-        q.criteria("childId").equal(stream.id))
-
-    MorphiaObject.datastore.delete(q)
   }
 
   /**
@@ -383,8 +382,5 @@ object Stream
       .filter("childId =", childId)
       .get)
 
-  private def save[A](obj: A): Option[A] = {
-    MorphiaObject.datastore.save[A](obj)
-    Some(obj)
-  }
+
 }
