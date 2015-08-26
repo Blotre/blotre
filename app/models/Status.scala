@@ -18,7 +18,7 @@ class Status(
 {
   def this() = this(Color.none.value, new Date(), null)
 
-  def GetColor() = this.color
+  def getColor() = this.color
 }
 
 object Status

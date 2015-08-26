@@ -295,7 +295,9 @@ object StreamApiController extends Controller {
       child <- stringToObjectId(childId);
       childData <- models.Stream.getChildById(parent, child);
       child <- models.Stream.findById(childData.childId)
-    } yield Ok(Json.toJson(child))) getOrElse NotFound(Json.toJson(ApiError("Stream does not exist.")))
+    } yield Ok(Json.toJson(child))) getOrElse {
+      NotFound(Json.toJson(ApiError("Stream does not exist.")))
+    }
   }
 
   /**
@@ -312,17 +314,16 @@ object StreamApiController extends Controller {
       childData <- models.Stream.getChildById(parentId, childId)
       child <- models.Stream.findById(childId)
     } yield (
-        if (models.Stream.asOwner(parent, user).isDefined) {
+        models.Stream.asOwner(parent, user) map { ownedStream =>
           if (childData.hierarchical)
             UnprocessableEntity(Json.toJson(ApiError("Cannot remove hierarchical child.")))
           else {
-            removeChild(parent, child)
+            removeChild(ownedStream, child)
             Ok("")
           }
-        } else Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
+        } getOrElse Unauthorized(Json.toJson(ApiError("User does not have permission to edit stream."))))
       ) getOrElse (NotFound(Json.toJson(ApiError("Stream does not exist."))))
   }
-
 
   /**
    * Link an existing stream as a child of a stream.
@@ -335,17 +336,26 @@ object StreamApiController extends Controller {
         UnprocessableEntity(Json.toJson(ApiError("Too many children.")))
       else
         apiCreateChildInternal(request.user, parent, childId)
-    } getOrElse (NotFound(Json.toJson(ApiError("Parent stream does not exist."))))
+    } getOrElse {
+      NotFound(Json.toJson(ApiError("Parent stream does not exist.")))
+    }
   }}
 
-  def apiCreateChildInternal(user: models.User, parent: models.Stream, childId: String): Result =
+  private def apiCreateChildInternal(user: models.User, parent: models.Stream, childId: String): Result =
     models.Stream.asOwner(parent, user) map { parent =>
-      models.Stream.findById(childId) map { child =>
-        apiCreateChildInternal(parent, child)
-      } getOrElse (NotFound(Json.toJson(ApiError("Child stream does not exist."))))
-    } getOrElse (Unauthorized(Json.toJson(ApiError("User does not have permission to add child."))))
+      apiCreateChildInternal(parent, childId)
+    } getOrElse {
+      Unauthorized(Json.toJson(ApiError("User does not have permission to add child.")))
+    }
 
-  def apiCreateChildInternal(parent: models.Stream.OwnedStream, child: models.Stream): Result =
+  private def apiCreateChildInternal(parent: models.Stream.OwnedStream, childId: String): Result =
+    models.Stream.findById(childId) map { child =>
+      apiCreateChildInternal(parent, child)
+    } getOrElse {
+      NotFound(Json.toJson(ApiError("Child stream does not exist.")))
+    }
+
+  private def apiCreateChildInternal(parent: models.Stream.OwnedStream, child: models.Stream): Result =
     if (parent.stream.id == child.id)
       UnprocessableEntity(Json.toJson(ApiError("I'm my own grandpa.")))
     else
@@ -502,9 +512,9 @@ object StreamApiController extends Controller {
     else
       None
 
-  private def removeChild(parent: models.Stream, child: models.Stream): Option[models.Stream] = {
-    models.Stream.removeChild(parent, child.id)
-    StreamSupervisor.removeChild(parent.uri, child.uri)
+  private def removeChild(parent: models.Stream.OwnedStream, child: models.Stream): Option[models.Stream] = {
+    models.Stream.removeChild(parent.stream, child.id)
+    StreamSupervisor.removeChild(parent.stream.uri, child.uri)
     Some(child)
   }
 
