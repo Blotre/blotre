@@ -122,6 +122,16 @@ object Stream
   import models.Serializable._
 
   /**
+   * Maximum number of children a single stream can have.
+   */
+  val maxChildren = 1000
+
+  /**
+   * Maximum number of tags a single stream can have.
+   */
+  var maxTags = 6
+
+  /**
    * Stream that belongs to a given user and is editable by them.
    */
   case class OwnedStream(stream: Stream, user: User)
@@ -134,7 +144,7 @@ object Stream
 
     def addChild(hierarchical: Boolean, child: Stream) =
       Stream.addChild(hierarchical, stream, child, user)
-    }
+  }
 
   /**
    * Try to create an owned stream.
@@ -145,14 +155,13 @@ object Stream
     else
       None
 
+  /**
+   * Normalizes a string query to escape potential regular expressions.
+   */
   def toValidQuery(query: String): Option[String] =
     StreamName.fromString(query) map { query =>
       query.value.replaceAllLiterally("$", "\\$")
     }
-
-  val maxChildren = 1000
-
-  var maxTags = 6
 
   implicit val streamWrites = new Writes[Stream] {
     def writes(x: Stream): JsValue =
@@ -270,8 +279,6 @@ object Stream
 
   /**
    * Create a new stream with a given name.
-   *
-   * Name and uri should have already been validated at this point.
    */
   private def createStreamWithName(name: StreamName, uri: StreamUri, owner: User): Option[Stream] =
     findByUri(uri) orElse {
