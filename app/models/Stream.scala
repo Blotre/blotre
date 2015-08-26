@@ -299,11 +299,6 @@ object Stream
       createStreamWithName(childName, descendantUri(parent, childName), user)
     }
 
-  private def createDescendant(parentUri: String, childName: StreamName, user: User): Option[models.Stream] =
-    findByUri(parentUri) flatMap { parentStream =>
-      createDescendant(parentStream, childName, user)
-    }
-
   /**
    * Registers a new child for a given stream.
    */
@@ -314,11 +309,6 @@ object Stream
       MorphiaObject.datastore.createUpdateOperations((classOf[Stream])).inc("childCount"))
     s
   }
-
-  private def addChild(hierarchical: Boolean, parent: Stream, childId: ObjectId, user: User): Option[ChildStream] =
-    findById(childId) flatMap { child =>
-      addChild(hierarchical, parent, child, user)
-    }
 
   /**
    * Remove an existing child.
