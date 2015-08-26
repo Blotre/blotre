@@ -1,6 +1,5 @@
 package controllers
 
-import Actors.{StreamSupervisor}
 import play.api.data.validation._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
@@ -10,25 +9,13 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
- *
- */
-case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
-
-object ApiCreateStreamData {
-  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
-
-  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
-    (JsPath \ "name").read[String](nameValidate) and
-      (JsPath \ "uri").read[String] and
-      (JsPath \ "status").readNullable[ApiSetStatusData]
-    )(ApiCreateStreamData.apply _)
-}
-
-/**
  * Stream REST api controller.
  */
 object StreamApiController extends Controller
 {
+  /**
+   * Convert an API result into a HTTP response.
+   */
   private def toResponse[T](result: ApiResult[T])(implicit writes: Writes[T]) =
     result match {
       case _: ApiCreated[T] => Created(result.toJson)
@@ -43,7 +30,14 @@ object StreamApiController extends Controller
     }
 
   /**
-   * Lookup all streams using an optional query.
+   * Lookup a stream by id.
+   */
+  def apiGetStream(id: String) = Action { implicit request =>
+    toResponse(StreamApi.getStream(id))
+  }
+
+  /**
+   * Lookup streams using an optional query.
    */
   def apiGetStreams(): Action[AnyContent] = Action { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
@@ -51,20 +45,11 @@ object StreamApiController extends Controller
   }
 
   /**
-   * Lookup a stream by id.
-   */
-  def apiGetStream(id: String) = Action { implicit request =>
-    models.Stream.findById(id) map { stream =>
-      Ok(Json.toJson(stream))
-    } getOrElse(NotFound)
-  }
-
-  /**
    * Create a new stream.
    *
    * Cannot create root streams.
    */
-  def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
+  def apiCreateStream() = AuthorizedAction(parse.json) { implicit request =>
     (Json.fromJson[ApiCreateStreamData](request.body)).fold(
       valid = value => {
         toResponse(StreamApi.createStream(request.user, value.name, value.uri, value.status))
@@ -78,7 +63,7 @@ object StreamApiController extends Controller
    *
    * Cannot delete root streams.
    */
-  def apiDeleteStream(id: String): Action[Unit] = AuthorizedAction(parse.empty) { implicit request =>
+  def apiDeleteStream(id: String) = AuthorizedAction { implicit request =>
     toResponse(models.Stream.findById(id) map { stream =>
       StreamApi.apiDeleteStream(request.user, stream)
     } getOrElse (ApiNotFound(ApiError("Stream does not exist."))))
@@ -96,7 +81,7 @@ object StreamApiController extends Controller
   /**
    * Set the status of a stream.
    */
-  def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
+  def apiSetStreamStatus(id: String) = AuthorizedAction(parse.json) { implicit request =>
     toResponse(StreamApi.setStreamStatus(request.user, id, request.body))
   }
 

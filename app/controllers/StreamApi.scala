@@ -3,6 +3,7 @@ package controllers
 import Actors.{StreamSupervisor, CollectionSupervisor}
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 import play.utils.UriEncoding
 
 import scala.collection.immutable.{Seq, List}
@@ -26,6 +27,22 @@ object ApiSetStatusData
  *
  */
 case class ApiSetTagsData(tags: Seq[models.StreamTag])
+
+/**
+ *
+ */
+case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
+
+object ApiCreateStreamData {
+  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
+
+  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
+    (JsPath \ "name").read[String](nameValidate) and
+      (JsPath \ "uri").read[String] and
+      (JsPath \ "status").readNullable[ApiSetStatusData]
+    )(ApiCreateStreamData.apply _)
+}
+
 
 object ApiSetTagsData
 {
@@ -80,6 +97,19 @@ object StreamApi
 {
   import models.Serializable._
 
+  /**
+   * Lookup a stream by Id
+   */
+  def getStream(id: String): ApiResult[models.Stream] =
+    models.Stream.findById(id) map { stream =>
+      ApiOk(stream)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  /**
+   * Lookup multiple streams.
+   */
   def getStreams(query: String): ApiResult[JsValue] = {
     val queryValue = query.trim()
     ApiOk(Json.toJson(
@@ -429,7 +459,6 @@ object StreamApi
     models.Stream.deleteStream(stream)
     StreamSupervisor.deleteStream(stream.uri)
   }
-
 
 
   /**
