@@ -50,7 +50,7 @@ object StreamApiController extends Controller {
    */
   def apiGetStreams(): Action[AnyContent] = Action { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
-    toResponse(StreamApi.apiGetStreams(query))
+    toResponse(StreamApi.getStreams(query))
   }
 
   /**
@@ -70,7 +70,7 @@ object StreamApiController extends Controller {
   def apiCreateStream(): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
     (Json.fromJson[ApiCreateStreamData](request.body)).fold(
       valid = value => {
-        toResponse(StreamApi.apiCreateStream(request.user, value.name, value.uri, value.status))
+        toResponse(StreamApi.createStream(request.user, value.name, value.uri, value.status))
       },
       invalid = e =>
         BadRequest(Json.toJson(ApiError("Could not process request", e))))
@@ -100,7 +100,7 @@ object StreamApiController extends Controller {
    * Set the status of a stream.
    */
   def apiSetStreamStatus(id: String): Action[JsValue] = AuthorizedAction(parse.json) { implicit request =>
-    toResponse(StreamApi.apiSetStreamStatus(request.user, id, request.body))
+    toResponse(StreamApi.setStreamStatus(request.user, id, request.body))
   }
 
   /**
@@ -113,22 +113,15 @@ object StreamApiController extends Controller {
   def apiGetChildren(id: String): Action[AnyContent] = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
     models.Stream.findById(id) map { stream =>
-      StreamApi.apiGetChildren(stream, query, 20, 0).map(toResponse(_))
+      StreamApi.getChildren(stream, query, 20, 0).map(toResponse(_))
     } getOrElse (Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist.")))))
   }
 
   /**
-   * Get a child of this stream.
+   * Get a child of a stream.
    */
   def apiGetChild(parentId: String, childId: String) = Action { implicit request =>
-    (for {
-      parent <- stringToObjectId(parentId);
-      child <- stringToObjectId(childId);
-      childData <- models.Stream.getChildById(parent, child);
-      child <- models.Stream.findById(childData.childId)
-    } yield Ok(Json.toJson(child))) getOrElse {
-      NotFound(Json.toJson(ApiError("Stream does not exist.")))
-    }
+    toResponse(StreamApi.getChild(parentId, childId))
   }
 
   /**
@@ -162,14 +155,7 @@ object StreamApiController extends Controller {
    * Noop if the child already exists.
    */
   def apiCreateChild(parentId: String, childId: String) = AuthorizedAction { implicit request => {
-    models.Stream.findById(parentId) map { parent =>
-      if (parent.childCount >= models.Stream.maxChildren)
-        UnprocessableEntity(Json.toJson(ApiError("Too many children.")))
-      else
-        toResponse(StreamApi.apiCreateChild(request.user, parent, childId))
-    } getOrElse {
-      NotFound(Json.toJson(ApiError("Parent stream does not exist.")))
-    }
+    toResponse(StreamApi.createChild(request.user, parentId, childId))
   }}
 
   /**
