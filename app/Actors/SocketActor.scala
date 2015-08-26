@@ -1,7 +1,7 @@
 package Actors
 
 import akka.actor._
-import controllers.{ApiSetStatusData, ApiCreateStreamData, StreamApiController}
+import controllers.{ApiSetStatusData, ApiCreateStreamData, StreamApiController, StreamApi}
 import models.User
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
@@ -253,7 +253,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    *
    */
   private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApiController.apiGetStreams(query) match {
+    StreamApi.apiGetStreams(query) match {
       case controllers.ApiSuccess(streams) =>
         ack(streams)
 
@@ -296,7 +296,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApiController.apiSetStreamStatusForUri(user, uri, status) match {
+    StreamApi.apiSetStreamStatusForUri(user, uri, status) match {
       case controllers.ApiSuccess(status) =>
         ack(CurrentStatusResponse(uri, status, correlation))
 
