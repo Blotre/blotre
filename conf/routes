@@ -11,6 +11,7 @@ GET     /ThePolicy                     controllers.Application.policy()
 # Streams
 GET     /s                          controllers.Stream.index()
 GET     /s/*path                    controllers.Stream.getStream(path)
+GET     /t/:tag                     controllers.Stream.getTag(tag)
 
 # WebSocket
 GET     /v0/ws                          controllers.Socket.open()

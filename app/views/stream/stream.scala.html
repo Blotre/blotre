@@ -55,6 +55,12 @@
         </li>
     </script>
 
+    <script type="text/html" id="stream-tag-template">
+        <li class="tag">
+            <a data-bind="attr: { href: url }, text: value"></a>
+        </li>
+    </script>
+
     <script data-main="@routes.Assets.at("js/main.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
 }
 
@@ -68,11 +74,16 @@
             <span class="stream-updated" data-bind="text: stream().displayUpdated">
                  @stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")
             </span>
-            <ul class="tags" data-bind="foreach: stream().tags">
-                <li class="tag">
-                    <a data-bind="attr: { href: url }, text: value"></a>
-                </li>
-            </ul>
+            <div class="tags">
+                <ul>
+                    <!-- ko template: { name: 'stream-tag-template', foreach: stream().tags} --><!-- /ko -->
+                </ul>
+                <div id="tag-editor">
+                    <input type="text" class="hidden"></input>
+                    <button id="save-tags-button" class="hidden">Save</button>
+                    <button id="edit-tags-button">Edit Tags</button>
+                </div>
+            </div>
         </div>
 
         <nav class="stream-controls @("hidden".when(Application.getLocalUser(request) == null))"">

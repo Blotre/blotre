@@ -94,4 +94,15 @@ object Stream extends Controller {
     } getOrElse {
       NotFound(views.html.notFound.render(request))
     }
+
+  /**
+   * Tag collection view.
+   */
+  def getTag(tag: String) = Action { implicit request =>
+    models.StreamTag.fromString(tag) map { tag =>
+      Ok(views.html.stream.tag.render(tag, request))
+    } getOrElse {
+      NotFound(views.html.notFound.render(request))
+    }
+  }
 }

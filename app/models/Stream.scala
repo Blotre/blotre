@@ -2,7 +2,6 @@ package models
 
 import java.util.Date
 import helper.datasources.MorphiaObject
-import models.Stream.OwnedStream
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
 import org.mongodb.morphia.query._
@@ -34,28 +33,6 @@ case class ChildStream(
 }
 
 /**
- * Valid stream tag.
- */
-case class StreamTag(value: String)
-
-object StreamTag
-{
-  val pattern = ("(?![a-fA-F0-9]{6}$)" + StreamName.validCharacter + "{1,32}").r
-
-  implicit val streamWrites = new Writes[StreamTag] {
-    def writes(x: StreamTag): JsValue = Json.toJson(x.value)
-  }
-
-  def fromString(name: String): Option[StreamTag] = {
-    val trimmed = name.trim()
-    if (trimmed.matches(pattern.toString))
-      Some(StreamTag(trimmed))
-    else
-      None
-  }
-}
-
-/**
  *
  */
 @Entity
@@ -69,7 +46,7 @@ case class Stream(
   @Embedded var status: Status,
   ownerId: ObjectId,
   var childCount: Long,
-  @Embedded tags: java.util.List[String])
+  @Embedded var tags: java.util.List[String])
 {
   def this() = this(null, "", "", new Date(0), new Date(0), new Status(), null, 0, new java.util.ArrayList[String]())
 
@@ -156,7 +133,8 @@ object Stream
         "created" -> x.created,
         "updated" -> x.updated,
         "status" -> x.status,
-        "owner" -> x.ownerId)
+        "owner" -> x.ownerId,
+        "tags" -> x.getTags())
   }
 
   private def db(): Query[Stream] =
@@ -315,11 +293,13 @@ object Stream
    * Set the tags of a stream.
    */
   private def setTags(stream: Stream, tags: Seq[StreamTag]): Option[Stream] = {
+    val tagList = tags.map(_.value).asJava
     MorphiaObject.datastore.update(
       db().filter("id", stream.id),
       MorphiaObject.datastore.createUpdateOperations((classOf[Stream]))
         .set("updated", new Date())
-        .set("tags", tags.asJava))
+        .set("tags", tagList))
+    stream.tags = tagList
     Some(stream)
   }
 

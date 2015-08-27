@@ -142,6 +142,7 @@
 
             routes.javascript.Stream.index,
             routes.javascript.Stream.getStream,
+            routes.javascript.Stream.getTag,
 
             routes.javascript.StreamApiController.apiGetStreams,
             routes.javascript.StreamApiController.apiGetStream,
@@ -153,6 +154,9 @@
             routes.javascript.StreamApiController.apiGetChild,
             routes.javascript.StreamApiController.apiCreateChild,
             routes.javascript.StreamApiController.apiDeleteChild,
+
+            routes.javascript.StreamApiController.getTags,
+            routes.javascript.StreamApiController.setTags,
 
             routes.javascript.DeveloperController.index,
             routes.javascript.DeveloperController.getClient,
@@ -172,8 +176,8 @@
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))"></script>
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))"></script>
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("knockout.js"))"></script>
-        <script src="@routes.Assets.at("js/spectrum.js")"></script>
-        <script src="@routes.Assets.at("js/bootbox.min.js")"></script>
+        <script src="@routes.Assets.at("js/external/spectrum.js")"></script>
+        <script src="@routes.Assets.at("js/external/bootbox.min.js")"></script>
 
          <script type="text/html" id="blotre-bar-template">
             <li class="blotre-bar-stream">

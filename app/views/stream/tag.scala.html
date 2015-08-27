@@ -1,0 +1,32 @@
+@(tag: models.StreamTag)(implicit request: RequestHeader)
+
+@import play.api.libs.json._
+@import helper._
+@import play.api.Play.current
+@import play.api.i18n.Messages.Implicits._
+
+@navHeader = {
+    <ul id="stream-breadcrumbs">
+        <li><a href="@routes.Stream.getTag(tag.value)">#@tag.value</a></li>
+    </ul>
+}
+
+@articleHeader = {
+
+}
+
+@extraScripts = {
+
+}
+
+@main(tag.value, "tag", articleHeader = articleHeader, navHeader = navHeader, extraScripts = extraScripts) {
+
+    <div class="stream-header">
+        <div class="stream-data">
+            <h1 class="stream-title">
+                <a data-bind="text: stream().name" href="@routes.Stream.getTag(tag.value)">#@tag.value</a>
+            </h1>
+        </div>
+    </div>
+
+}

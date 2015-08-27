@@ -56,6 +56,10 @@ StatusModel.fromJson = function(data) {
 var TagModel = function(value) {
    var self = this;
    self.value = ko.observable(value);
+
+    self.url = ko.computed(function() {
+       return jsRoutes.controllers.Stream.getTag(self.value()).url;
+   });
 };
 
 /**
@@ -147,6 +151,8 @@ return {
 
     StatusModel: StatusModel,
     StreamModel: StreamModel,
+    TagModel: TagModel,
+
     UserModel: UserModel,
     Collection: Collection
 };

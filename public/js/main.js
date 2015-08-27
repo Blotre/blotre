@@ -106,7 +106,6 @@ var AppViewModel = function(user, stream) {
     };
 };
 
-
 AppViewModel.prototype.checkFavorite = function() {
     var self = this;
     if (!self.user().userName())
@@ -287,6 +286,69 @@ var updateSearchResults = function(model) {
 
 /**
 */
+var updateStreamTags = function(model, tags) {
+    $.ajax({
+        type: "POST",
+        url: jsRoutes.controllers.StreamApiController.setTags(model.stream().id()).url,
+        contentType: 'application/json',
+        data: JSON.stringify(tags.map(function(x) { return x.value(); })),
+        headers: {
+            accept: "application/json"
+        },
+        error: function(e) {
+
+        }
+    }).done(function(result) {
+        model.stream().tags(
+            result.tags.map(function(tag) {
+                return new models.TagModel(tag);
+            }));
+    });
+};
+
+/**
+    Convert a list of tags to a editable string representation.
+*/
+var tagsToString = function(tags) {
+    return Array.prototype.map.call(tags, function(x) { return x.value(); })
+        .join(', ');
+};
+
+/**
+    Convert a string to a list of tags.
+*/
+var stringToTags = function(tags) {
+    return (tags.match(/([a-z\$])+/ig) || []).map(function(tag) {
+        return new models.TagModel(tag);
+    });
+};
+
+/**
+    Edit the stream's tags.
+*/
+var editTags = function(model) {
+    $('#save-tags-button').removeClass('hidden');
+    $('#edit-tags-button').addClass('hidden');
+
+    $('#tag-editor input')
+        .val(tagsToString(model.stream().tags()))
+        .removeClass('hidden');
+};
+
+/**
+    Save the edited tags.
+*/
+var saveTags = function(model) {
+    $('#save-tags-button').addClass('hidden');
+    $('#edit-tags-button').removeClass('hidden');
+    $('#tag-editor input').addClass('hidden');
+
+    var tags = stringToTags($('#tag-editor input').val());
+    updateStreamTags(model, tags);
+};
+
+/**
+*/
 $(function(){
     var model = new AppViewModel(
         application_model.initialUser(),
@@ -376,7 +438,14 @@ $(function(){
     $('#create-child-cancel-button button')
         .on('click', hideChildForm);
 
+    // Tag editor
+    $('#edit-tags-button').on('click', function(e) {
+        editTags(model);
+    });
 
+    $('#save-tags-button').on('click', function(e) {
+        saveTags(model);
+    });
 
     // Child Search
     $('#stream-search-form button').on('click', function(e) {

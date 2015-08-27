@@ -54,8 +54,8 @@ object ApiSetTagsData
 
   implicit val apiSetStatusDataReads: Reads[ApiSetTagsData] =
     Reads.list[models.StreamTag]
-      .filter(ValidationError("Too many tags."))(tags => tags.size > models.Stream.maxTags)
-      .filter(ValidationError("Duplicate tags not allowed."))(tags => tags.distinct.size != tags.size)
+      .filter(ValidationError("Too many tags."))(tags => tags.size <= models.Stream.maxTags)
+      .filter(ValidationError("Duplicate tags not allowed."))(tags => tags.distinct.size == tags.size)
       .map(ApiSetTagsData(_))
 }
 
@@ -347,7 +347,7 @@ object StreamApi
     }
 
   def setTags(stream: models.Stream.OwnedStream, data: ApiSetTagsData) : ApiResult[models.Stream] = {
-    doSetTags(stream.stream, data.tags)
+    doSetTags(stream, data.tags)
     ApiOk(stream.stream)
   }
 
@@ -475,9 +475,8 @@ object StreamApi
   /**
    *
    */
-  private def doSetTags(stream: models.Stream, tags: Seq[models.StreamTag]): Option[models.Stream] = {
-    StreamSupervisor.updateTags(stream, tags)
-    Some(stream)
-    // models.Stream.setTags(stream, tags)
+  private def doSetTags(stream: models.Stream.OwnedStream, tags: Seq[models.StreamTag]): Option[models.Stream] = {
+    StreamSupervisor.updateTags(stream.stream, tags)
+    stream.setTags(tags)
   }
 }
