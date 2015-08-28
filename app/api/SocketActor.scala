@@ -1,14 +1,12 @@
-package Actors
+package api
 
+import actors._
 import akka.actor._
-import api._
-import controllers.StreamApiController
 import models.User
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
-import play.api.libs.json._
 import play.api.libs.json.Reads._
-import play.api.Logger
+import play.api.libs.json._
 
 /**
  *

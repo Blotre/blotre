@@ -1,4 +1,4 @@
-package Actors
+package actors
 
 import akka.actor._
 import java.util.Date

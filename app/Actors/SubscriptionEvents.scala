@@ -1,4 +1,4 @@
-package Actors
+package actors
 
 import play.api.libs.json._
 

@@ -1,4 +1,4 @@
-package Actors
+package actors
 
 import akka.actor._
 import akka.contrib.pattern.{DistributedPubSubExtension, DistributedPubSubMediator}
