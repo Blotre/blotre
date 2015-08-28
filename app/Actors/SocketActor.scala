@@ -1,7 +1,8 @@
 package Actors
 
 import akka.actor._
-import controllers.{ApiSetStatusData, ApiCreateStreamData, StreamApiController, StreamApi}
+import api._
+import controllers.StreamApiController
 import models.User
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
@@ -232,10 +233,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
     StreamApi.createStream(user, name, uri, status) match {
-      case controllers.ApiSuccess(stream) =>
+      case ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
-      case controllers.ApiFailure(e) =>
+      case ApiFailure(e) =>
         error(e.error)
     }
 
@@ -254,10 +255,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     StreamApi.getStreams(query) match {
-      case controllers.ApiSuccess(streams) =>
+      case ApiSuccess(streams) =>
         ack(streams)
 
-      case controllers.ApiFailure(e) =>
+      case ApiFailure(e) =>
         error(e.error)
     }
 
@@ -266,10 +267,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     StreamApi.apiDeleteStream(user, uri) match {
-      case controllers.ApiSuccess(stream) =>
+      case ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
-      case controllers.ApiFailure(e) =>
+      case ApiFailure(e) =>
         error(e.error)
     }
 
@@ -297,10 +298,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
     StreamApi.apiSetStreamStatusForUri(user, uri, status) match {
-      case controllers.ApiSuccess(status) =>
+      case ApiSuccess(status) =>
         ack(CurrentStatusResponse(uri, status, correlation))
 
-      case controllers.ApiFailure(e) =>
+      case ApiFailure(e) =>
         error(e.error)
     }
 
@@ -309,10 +310,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
     StreamApi.getChildren(uri, "", limit, offset) map {
-      case controllers.ApiSuccess(children) =>
+      case ApiSuccess(children) =>
         ack(ApiChildrenResponse(uri, children, correlation))
 
-      case controllers.ApiFailure(e) =>
+      case ApiFailure(e) =>
         error(e.error)
     }
 

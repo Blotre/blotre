@@ -1,14 +1,14 @@
-package controllers
+package api
 
-import Actors.{StreamSupervisor, CollectionSupervisor}
+import Actors.{CollectionSupervisor, StreamSupervisor}
 import play.api.data.validation.ValidationError
-import play.api.libs.json._
 import play.api.libs.functional.syntax._
+import play.api.libs.json._
 import play.utils.UriEncoding
 
-import scala.collection.immutable.{Seq, List}
-import scala.concurrent.Future
+import scala.collection.immutable.{List, Seq}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
  *

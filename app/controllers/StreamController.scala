@@ -1,5 +1,6 @@
 package controllers
 
+import api.StreamHelper
 import play.api.mvc._
 import scala.collection.immutable._
 import helper.ImageHelper

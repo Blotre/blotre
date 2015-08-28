@@ -1,5 +1,6 @@
 package controllers
 
+import api.ApiError
 import controllers.Stream._
 import play.api.data.Form
 import play.api.data.Forms._

@@ -1,8 +1,7 @@
-package controllers
+package api
 
-import play.api.libs.json._
 import play.api.data.validation.ValidationError
-
+import play.api.libs.json._
 
 case class ApiError(error: String, details: Option[JsObject] = None)
 

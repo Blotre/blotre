@@ -1,5 +1,6 @@
 package controllers
 
+import api.ApiError
 import play.api.mvc.Security.AuthenticatedBuilder
 import play.api.mvc._
 import play.api.libs.json._
