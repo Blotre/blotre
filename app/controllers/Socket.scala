@@ -1,6 +1,6 @@
 package controllers
 
-import api.SocketActor
+import api.socket.SocketActor
 import play.api.mvc._
 import play.api.Play.current
 import play.api.libs.json._

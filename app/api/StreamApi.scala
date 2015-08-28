@@ -1,6 +1,6 @@
 package api
 
-import actors.{CollectionSupervisor, StreamSupervisor}
+import Actors.{CollectionSupervisor, StreamSupervisor}
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._

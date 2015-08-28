@@ -1,4 +1,4 @@
-package api
+package api.socket
 
 import play.api.libs.json._
 

@@ -1,7 +1,8 @@
-package api
+package api.socket
 
-import actors._
+import Actors._
 import akka.actor._
+import api._
 import models.User
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
