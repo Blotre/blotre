@@ -75,14 +75,18 @@
                  @stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")
             </span>
             <div class="tags">
-                <ul>
-                    <!-- ko template: { name: 'stream-tag-template', foreach: stream().tags} --><!-- /ko -->
-                </ul>
-                <div id="tag-editor">
-                    <input type="text" class="hidden"></input>
-                    <button id="save-tags-button" class="hidden">Save</button>
-                    <button id="edit-tags-button">Edit Tags</button>
+                <div id="tag-editor" class="@("hidden".when(!stream.isOwner(Application.getLocalUser(request))))">
+                    <div id="tag-input" class="input-group hidden">
+                        <span class="input-group-btn">
+                            <button id="save-tags-button" class="btn btn-default" type="button">Save</button>
+                        </span>
+                        <input type="text" class="form-control" />
+                    </div>
+                    <button id="edit-tags-button" title="Edit Tags">
+                        <span class="glyphicon glyphicon-tag"></span>
+                    </button>
                 </div>
+                <ul class="tag-list" data-bind="template: { name: 'stream-tag-template', foreach: stream().tags }"></ul>
             </div>
         </div>
 

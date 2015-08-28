@@ -329,10 +329,13 @@ var stringToTags = function(tags) {
 var editTags = function(model) {
     $('#save-tags-button').removeClass('hidden');
     $('#edit-tags-button').addClass('hidden');
+    $('.tag-list').addClass('hidden');
 
-    $('#tag-editor input')
-        .val(tagsToString(model.stream().tags()))
+    $('#tag-input')
         .removeClass('hidden');
+
+    $('#tag-input input')
+        .val(tagsToString(model.stream().tags()))
 };
 
 /**
@@ -341,9 +344,10 @@ var editTags = function(model) {
 var saveTags = function(model) {
     $('#save-tags-button').addClass('hidden');
     $('#edit-tags-button').removeClass('hidden');
-    $('#tag-editor input').addClass('hidden');
+    $('#tag-input').addClass('hidden');
+    $('.tag-list').removeClass('hidden');
 
-    var tags = stringToTags($('#tag-editor input').val());
+    var tags = stringToTags($('#tag-input input').val());
     updateStreamTags(model, tags);
 };
 
