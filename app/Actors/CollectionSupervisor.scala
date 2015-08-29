@@ -68,7 +68,7 @@ class CollectionSupervisor extends Actor
    */
   private def getOrCreateChild(uri: String) =
     ActorHelper.normalizeName(uri) map { name =>
-      context.child(name).getOrElse(context.actorOf(CollectionActor.props(uri), name = name))
+      context.child(name).getOrElse(context.actorOf(CollectionActor.props(models.StreamUri(uri)), name = name))
     }
 
   /**
@@ -115,25 +115,6 @@ class CollectionSupervisor extends Actor
 
 object CollectionSupervisor
 {
-  /**
-   * Get the Akka path of a stream collection.
-   */
-  private def getStreamTopic(path: models.StreamUri): Option[String] =
-    ActorHelper.normalizeName(path.value)
-      .filterNot(_.isEmpty)
-      .map("streams/" + _)
-
-  private def getStreamTopic(path: String): Option[String] =
-    models.StreamUri.fromString(path).flatMap(getStreamTopic)
-
-  /**
-   * Get the Akka path of a tagcollection.
-   */
-  private def getTagTopic(tag: models.StreamTag): Option[String] =
-    Some(ActorHelper.normalizeName(tag.value))
-      .filterNot(_.isEmpty)
-      .map("tags/" + _)
-
   def props(): Props = Props(new CollectionSupervisor())
 
   lazy val supervisor = Akka.system.actorOf(props())
@@ -143,14 +124,14 @@ object CollectionSupervisor
   /**
    * Get the actor for a collection.
    */
-  private def getCollection(uri: String): Future[ActorRef] =
-    ask(supervisor, GetCollection(uri)).mapTo[GetCollectionResponse].map(_.actor)
+  private def getCollection(topic: Topic): Future[ActorRef] =
+    ask(supervisor, GetCollection(topic.value)).mapTo[GetCollectionResponse].map(_.actor)
 
   /**
    * Get the in-memory state of a stream collection.
    */
   def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
-    getStreamTopic(uri) map { topic =>
+    Topic.forStream(uri) map { topic =>
       getCollection(topic) flatMap { collection =>
         ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
       }
@@ -162,7 +143,7 @@ object CollectionSupervisor
    * Get the in-memory state of a tag collection.
    */
   def getTagCollection(tag: models.StreamTag, limit: Int, offset: Int): Future[List[String]] =
-    getTagTopic(tag) map { topic =>
+    Topic.forTag(tag) map { topic =>
       getCollection(topic) flatMap { collection =>
         ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
       }

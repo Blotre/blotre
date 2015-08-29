@@ -12,18 +12,18 @@ case class GetCollectionStatus(size: Int, offset: Int)
  * Takes a snapshot of the stream's children on creation and subscribes to events on these children.
  * Creates and maintains an in-memory representation of the children's state.
  */
-class CollectionActor(path: String) extends Actor
+abstract class CollectionActorBase(path: String) extends Actor
 {
   case class Updated(name: String, updated: Date)
 
-  private var state = Map[String, models.Status]()
+  protected var state = Map[String, models.Status]()
 
-  private var updated = mutable.ListBuffer[String]()
+  protected var updated = mutable.ListBuffer[String]()
 
-  private def hasChild(childUri: String) =
+  protected def hasChild(childUri: String) =
     updated.contains(childUri)
 
-  private def updateChild(uri: String, status: models.Status): Unit =
+  protected def updateChild(uri: String, status: models.Status): Unit =
     if (hasChild(uri)) {
       updated -= uri
       uri +=: updated
@@ -31,7 +31,7 @@ class CollectionActor(path: String) extends Actor
       CollectionSupervisor.broadcast(path, StatusUpdatedEvent(uri, status, Some(path)))
     }
 
-  private def addChild(child: models.Stream): Unit =
+  protected def addChild(child: models.Stream): Unit =
     if (!hasChild(child.uri)) {
       child.uri +=: updated
       state += (child.uri -> child.status)
@@ -39,22 +39,28 @@ class CollectionActor(path: String) extends Actor
       StreamSupervisor.subscribe(self, child.uri)
     }
 
-  private def removeChild(childUri: String): Unit =
+  protected def removeChild(childUri: String): Unit =
     if (hasChild(childUri)) {
       updated -= childUri
       state -= childUri
       StreamSupervisor.unsubscribe(self, childUri)
       CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, childUri, Some(path)))
     }
+}
 
+/**
+ *
+ */
+class CollectionActor(streamUri: models.StreamUri)  extends CollectionActorBase(streamUri.value)
+{
   def receive = {
     case StatusUpdatedEvent(uri, status, _) =>
-      if (uri != path) { // Skip root stream updates
+      if (uri != streamUri) { // Skip root stream updates
         updateChild(uri, status)
       }
 
     case ChildRemovedEvent(uri, childUri, _) =>
-      if (uri == path) { // Only monitor root stream child changes
+      if (uri == streamUri) { // Only monitor root stream child changes
         removeChild(childUri)
       }
 
@@ -62,7 +68,7 @@ class CollectionActor(path: String) extends Actor
       removeChild(uri)
 
     case ChildAddedEvent(uri, child, _) =>
-      if (uri == path && !state.contains(child.uri)) { // Only monitor root stream child changes
+      if (uri == streamUri && !state.contains(child.uri)) { // Only monitor root stream child changes
         addChild(child)
       }
 
@@ -72,21 +78,66 @@ class CollectionActor(path: String) extends Actor
     case _ =>
   }
 
-  override def preStart(): Unit = {
-    val children = models.Stream.findByUri(path) map { stream =>
+  protected def loadInitialChildren() =
+    models.Stream.findByUri(streamUri) map { stream =>
       stream.getChildren()
     } getOrElse(List())
 
+  override def preStart(): Unit = {
+    val children = loadInitialChildren()
     state = children.map(child => (child.uri, child.status)).toMap
     updated = updated ++ children.sortBy(-_.updated.getTime).map(_.uri)
 
-    StreamSupervisor.subscribe(self, path)
+    StreamSupervisor.subscribe(self, streamUri.value)
     StreamSupervisor.subscribe(self, children.map(_.uri))
   }
 }
 
-
 object CollectionActor
 {
-  def props(name: String): Props = Props(new CollectionActor(name))
+  def props(name: models.StreamUri): Props = Props(new CollectionActor(name))
+}
+
+/**
+ *
+ */
+class TagCollectionActor(tag: models.StreamTag)  extends CollectionActorBase(tag.value)
+{
+  protected def loadInitialChildren() =
+    models.Stream.getStreamWithTag(tag, 20)
+
+  override def preStart(): Unit = {
+    val children = loadInitialChildren()
+    state = children.map(child => (child.uri, child.status)).toMap
+    updated = updated ++ children.sortBy(-_.updated.getTime).map(_.uri)
+
+    StreamSupervisor.subscribe(self, children.map(_.uri))
+  }
+
+  def receive = {
+    case StatusUpdatedEvent(uri, status, _) =>
+      updateChild(uri, status)
+
+    case ChildRemovedEvent(uri, childUri, _) =>
+        removeChild(childUri)
+
+
+    case StreamDeletedEvent(uri, _) =>
+      removeChild(uri)
+
+    case ChildAddedEvent(uri, child, _) =>
+      if (!state.contains(child.uri)) { // Only monitor root stream child changes
+        addChild(child)
+      }
+
+    case GetCollectionStatus(size, offset) =>
+      sender ! updated.drop(offset).take(size).toList
+
+    case _ =>
+  }
+}
+
+object TagCollectionActor
+{
+  def props(name: models.StreamTag): Props = Props(new TagCollectionActor(name))
 }

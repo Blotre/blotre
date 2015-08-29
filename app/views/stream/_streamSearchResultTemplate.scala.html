@@ -1,0 +1,13 @@
+@(controls: Html)(implicit request: RequestHeader)
+
+<script type="text/html" id="stream-search-result-template">
+    <li class="stream-search-result">
+        <a data-bind="attr: { href: url }">
+            <div class="status" data-bind="style: { 'background': color }"></div>
+            <span class="color-label" data-bind="text: color"></span>
+            <h2 data-bind="text: name"></h2>
+            <span class="stream-uri" data-bind="text: uri"></span>
+        </a>
+        @controls
+    </li>
+</script>

@@ -49,7 +49,7 @@ PUT     /v0/api/stream/:id/children/:child   controllers.StreamApiController.api
 DELETE  /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiDeleteChild(id, child)
 
 # Tag Api
-GET     /v0/api/tag/:name/children          controllers.StreamApiController.apiGetChildren(name)
+GET     /v0/api/tag/:tag/children          controllers.StreamApiController.getTagChildren(tag)
 
 # User Api
 GET     /v0/api/user/:id                   controllers.User.apiGetUser(id)

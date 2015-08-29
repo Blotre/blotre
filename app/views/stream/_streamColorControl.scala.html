@@ -1,7 +1,7 @@
-@(
-    stream: models.Stream)(implicit request: RequestHeader)
+@(stream: models.Stream)(implicit request: RequestHeader)
 
 @import helper._
+
 @if(stream != null) {
     @_userOr { user =>
         <div class="status-picker-form">

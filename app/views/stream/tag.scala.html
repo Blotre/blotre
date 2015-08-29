@@ -11,22 +11,40 @@
     </ul>
 }
 
-@articleHeader = {
-
-}
 
 @extraScripts = {
+    @_streamSearchResultTemplate { }
 
+    <script data-main="@routes.Assets.at("js/tag.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
 }
 
-@main(tag.value, "tag", articleHeader = articleHeader, navHeader = navHeader, extraScripts = extraScripts) {
+@main(tag.value, "tag", navHeader = navHeader, extraScripts = extraScripts) {
 
     <div class="stream-header">
         <div class="stream-data">
             <h1 class="stream-title">
-                <a data-bind="text: stream().name" href="@routes.Stream.getTag(tag.value)">#@tag.value</a>
+                <a data-bind="text: tag" href="@routes.Stream.getTag(tag.value)">#@tag.value</a>
             </h1>
         </div>
     </div>
 
+    <div class="stream-body">
+        @helper.form(action = routes.Stream.getTag(tag.value), 'id -> "stream-search-form", 'role -> "search") {
+            <div class="input-group">
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit">Go!</button>
+                </span>
+                <input name="query" type="text" class="form-control" placeholder="@Messages("blotre.controls.search.findChildPlaceholder")">
+            </div>
+        }
+        <p id="stream-search-query-label" data-bind="text: query() || 'Latest'"</p>
+
+        <div class="list-header list-loading">
+            <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+        </div>
+        <ul class="stream-children" id="stream-search-results">
+            <li class="no-results hidden">@Messages("blotre.stream.stream.noChildren")</li>
+            <!-- ko template: { name: 'stream-search-result-template', foreach: results } --><!-- /ko -->
+        </ul>
+    </div>
 }
