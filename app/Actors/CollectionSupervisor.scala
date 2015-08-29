@@ -15,6 +15,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case class GetCollection(uri: String)
 case class GetCollectionResponse(actor: ActorRef)
 
+case class SubscribeCollection(topic: models.StreamUri, ref: ActorRef)
+case class UnsubscribeCollection(topic: models.StreamUri, ref: ActorRef)
+case class PublishCollection(topic: models.StreamUri, msg:  Any)
 
 /**
  * Manages all collections in the system.
@@ -23,8 +26,6 @@ case class GetCollectionResponse(actor: ActorRef)
  */
 class CollectionSupervisor extends Actor
 {
-  import akka.contrib.pattern.DistributedPubSubMediator._
-
   private lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
 
   private var subscriptions: Map[String, Set[ActorRef]] = Map()
@@ -38,21 +39,21 @@ class CollectionSupervisor extends Actor
   }
 
   def receive = {
-    case Subscribe(path, group, subscriber) =>
-      onSubscribe(path, subscriber)
-      getTopic(path) map { topic =>
-        mediator ! Subscribe(topic, group, subscriber)
+    case SubscribeCollection(path, subscriber) =>
+      onSubscribe(path.value, subscriber)
+      getTopic(path.value) map {
+        mediator ! DistributedPubSubMediator.Subscribe(_, subscriber)
       }
 
-    case Unsubscribe(path, group, subscriber) =>
-      onUnsubscribe(path, subscriber)
-      getTopic(path) map { topic =>
-        mediator ! Unsubscribe(topic, group, subscriber)
+    case UnsubscribeCollection(path, subscriber) =>
+      onUnsubscribe(path.value, subscriber)
+      getTopic(path.value) map {
+        mediator ! DistributedPubSubMediator.Unsubscribe(_, subscriber)
       }
 
-    case Publish(path, msg, toEachGroup) =>
-      getTopic(path) map { topic =>
-        mediator ! Publish(topic, msg, toEachGroup)
+    case PublishCollection(path, msg) =>
+      getTopic(path.value) map {
+        mediator ! DistributedPubSubMediator.Publish(_, msg)
       }
 
     case GetCollection(uri) =>
@@ -138,7 +139,6 @@ object CollectionSupervisor
   def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
     getCollectionState(uri, limit, offset)
 
-
   /**
    * Get the in-memory state of a tag collection.
    */
@@ -153,17 +153,17 @@ object CollectionSupervisor
    * Subscribe an actor to a collection's events.
    */
   def subscribeCollection(subscriber: ActorRef, path: models.StreamUri): Unit =
-    supervisor ! DistributedPubSubMediator.Subscribe(path.value, subscriber)
+    supervisor ! SubscribeCollection(path, subscriber)
 
   /**
    * Unsubscribe an actor from a collection's events.
    */
   def unsubscribeCollection(subscriber: ActorRef, path: models.StreamUri): Unit =
-    supervisor ! DistributedPubSubMediator.Unsubscribe(path.value, subscriber)
+    supervisor ! UnsubscribeCollection(path, subscriber)
 
   /**
    * Broadcast an event for a collection.
    */
   def broadcast[A](path: models.StreamUri, event: A): Unit =
-    supervisor ! DistributedPubSubMediator.Publish(path.value, event)
+    supervisor ! PublishCollection(path, event)
 }
