@@ -110,16 +110,18 @@ object StreamApi
   /**
    * Lookup multiple streams.
    */
-  def getStreams(query: String): ApiResult[JsValue] = {
-    val queryValue = query.trim()
-    ApiOk(Json.toJson(
-      if (queryValue.isEmpty)
-        models.Stream.findByUpdated()
-      else if (queryValue.startsWith("#"))
-        models.Stream.findByStatusQuery(query)
-      else
-        models.Stream.findByQuery(queryValue)))
-  }
+  def getStreams(query: String): ApiResult[Seq[models.Stream]] =
+    models.StreamQuery.fromString(query) map {
+      getStreams(_)
+    } getOrElse {
+      ApiOk(models.Stream.findByUpdated())
+    }
+
+  def getStreams(query: models.StreamQuery): ApiResult[Seq[models.Stream]] =
+    if (query.value.startsWith("#"))
+      ApiOk(models.Stream.findByStatusQuery(query))
+    else
+      ApiOk(models.Stream.findByQuery(query))
 
   /**
    * Get the status of a stream.
@@ -204,13 +206,6 @@ object StreamApi
   /**
    * Set the status of a stream.
    */
-  def setStreamStatus(user: models.User, id: String, body: JsValue): ApiResult[models.Status] =
-    Json.fromJson[ApiSetStatusData](body) map { status =>
-      setStreamStatus(user, id, status)
-    } recoverTotal { e =>
-      ApiCouldNotProccessRequest(ApiError("Could not process request.", e))
-    }
-
   def setStreamStatus(user: models.User, streamId: String, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.findById(streamId) map { stream =>
       setStreamStatus(user, stream, status)
@@ -472,10 +467,11 @@ object StreamApi
   }
 
   /**
-   *
+   * Perform a tag de
    */
   private def doSetTags(stream: models.Stream.OwnedStream, tags: Seq[models.StreamTag]): Option[models.Stream] = {
-    StreamSupervisor.updateTags(stream.stream, tags)
+    StreamSupervisor.addedTags(stream.stream, stream.stream.getTags() diff tags)
+    StreamSupervisor.removedTags(stream.stream, tags diff stream.stream.getTags())
     stream.setTags(tags)
   }
 }

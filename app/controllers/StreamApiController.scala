@@ -56,7 +56,11 @@ object StreamApiController extends Controller
    * Set the status of a stream.
    */
   def apiSetStreamStatus(id: String) = AuthorizedAction(parse.json) { implicit request =>
-    toResponse(StreamApi.setStreamStatus(request.user, id, request.body))
+    Json.fromJson[ApiSetStatusData](request.body) map { status =>
+      toResponse(StreamApi.setStreamStatus(request.user, id, status))
+    } recoverTotal { e =>
+      BadRequest(Json.toJson(ApiError("Could not process request", e)))
+    }
   }
 
   /**

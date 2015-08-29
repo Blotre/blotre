@@ -123,14 +123,6 @@ object Stream
     else
       None
 
-  /**
-   * Normalizes a string query to escape potential regular expressions.
-   */
-  def toValidQuery(query: String): Option[String] =
-    StreamName.fromString(query) map { query =>
-      query.value.replaceAllLiterally("$", "\\$")
-    }
-
   implicit val streamWrites = new Writes[Stream] {
     def writes(x: Stream): JsValue =
       Json.obj(
@@ -188,25 +180,22 @@ object Stream
    *
    * TODO: order by score
    */
-  def findByQuery(query: String): List[Stream] =
-    toValidQuery(query) map { safeQuery =>
-      val q = db().limit(20)
-      q.criteria("name")
-        .containsIgnoreCase(safeQuery)
-      q.order("-updated").asList().asScala.toList
-    } getOrElse {
-      List()
-    }
+  def findByQuery(query: StreamQuery): List[Stream] = {
+    val q = db().limit(20)
+    q.criteria("name")
+      .containsIgnoreCase(query.value)
+    q.order("-updated").asList().asScala.toList
+  }
 
   /**
    * Lookup streams by status.
    *
    * TODO: order by score
    */
-  def findByStatusQuery(query: String): List[Stream] = {
+  def findByStatusQuery(query: StreamQuery): List[Stream] = {
     val q = db().limit(20)
     q.criteria("status.color")
-      .containsIgnoreCase(query)
+      .containsIgnoreCase(query.value)
     q.order("-updated").asList().asScala.toList
   }
 

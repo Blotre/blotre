@@ -90,14 +90,6 @@ object StreamSupervisor
     }
 
   /**
-   * Broadcast stream tags changed.
-   */
-  def updateTags(stream: models.Stream, tags: Seq[models.StreamTag]): Unit = {
-    addedTags(stream, stream.getTags() diff tags)
-    removedTags(stream, tags diff stream.getTags())
-  }
-
-  /**
    * Broadcast stream tags added.
    */
   def addedTags(stream: models.Stream, addedTags: Seq[models.StreamTag]): Unit =
