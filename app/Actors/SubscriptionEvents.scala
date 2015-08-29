@@ -55,7 +55,7 @@ object ChildAddedEvent extends
 /**
  * Stream added as the child of a stream.
  */
-case class ParentAddedEvent(uri: Address, parent: models.Stream, source: Option[String] = None)
+case class ParentAddedEvent(uri: models.StreamUri, parent: Address, source: Option[String] = None)
 
 object ParentAddedEvent extends
 {
@@ -89,7 +89,7 @@ object ChildRemovedEvent extends
 /**
  * Stream removed as the child of a stream.
  */
-case class ParentRemovedEvent(uri: Address, parent: models.StreamUri, source: Option[String] = None)
+case class ParentRemovedEvent(uri: models.StreamUri, parent: Address, source: Option[String] = None)
 
 object ParentRemovedEvent extends
 {

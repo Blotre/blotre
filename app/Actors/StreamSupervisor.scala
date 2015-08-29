@@ -80,7 +80,7 @@ object StreamSupervisor
       broadcast(_, ChildAddedEvent(Address.create(parent), child))
     }
     StreamTopic.forStream(child) foreach {
-      broadcast(_, ParentAddedEvent(Address.create(child), parent))
+      broadcast(_, ParentAddedEvent(child.getUri, Address.create(parent)))
     }
   }
 
@@ -92,7 +92,7 @@ object StreamSupervisor
       broadcast(_, ChildRemovedEvent(Address.create(path), childUri))
     }
     StreamTopic.forStream(childUri) foreach {
-      broadcast(_, ParentRemovedEvent(Address.create(path), path))
+      broadcast(_, ParentRemovedEvent(path, Address.create(path)))
     }
   }
 
@@ -112,6 +112,9 @@ object StreamSupervisor
       StreamTopic.forTag(tag) foreach {
         broadcast(_, ChildAddedEvent(Address.create(tag), stream))
       }
+      StreamTopic.forStream(stream) foreach {
+        broadcast(_, ParentAddedEvent(stream.getUri(), Address.create(tag)))
+      }
     }
 
   /**
@@ -121,6 +124,9 @@ object StreamSupervisor
     removedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
         broadcast(_, ChildRemovedEvent(Address.create(tag), stream.getUri()))
+      }
+      StreamTopic.forStream(stream) foreach {
+        broadcast(_, ParentRemovedEvent(stream.getUri(), Address.create(tag)))
       }
     }
 }
