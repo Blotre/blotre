@@ -4,10 +4,8 @@ import akka.actor._
 import akka.contrib.pattern.{DistributedPubSubExtension, DistributedPubSubMediator}
 import akka.pattern.{ask}
 import akka.util.Timeout
-import helper._
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
-import play.api.Logger
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,8 +13,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case class GetCollection(topic: CollectionTopic)
 case class GetCollectionResponse(actor: ActorRef)
 
-case class SubscribeCollection(topic: models.StreamUri, ref: ActorRef)
-case class UnsubscribeCollection(topic: models.StreamUri, ref: ActorRef)
+case class SubscribeCollection(topic: CollectionTopic, ref: ActorRef)
+case class UnsubscribeCollection(topic: CollectionTopic, ref: ActorRef)
 case class PublishCollection(topic: CollectionTopic, msg:  Any)
 
 /**
@@ -34,13 +32,11 @@ class CollectionSupervisor extends Actor
    * Topic used to register a collection.
    */
   def receive = {
-    case SubscribeCollection(path, subscriber) =>
-      val topic = CollectionTopic.forStream(path)
+    case SubscribeCollection(topic, subscriber) =>
       onSubscribe(topic, subscriber)
       mediator ! DistributedPubSubMediator.Subscribe(topic.value, subscriber)
 
-    case UnsubscribeCollection(path, subscriber) =>
-      val topic = CollectionTopic.forStream(path)
+    case UnsubscribeCollection(topic, subscriber) =>
       onUnsubscribe(topic, subscriber)
       mediator ! DistributedPubSubMediator.Unsubscribe(topic.value, subscriber)
 
@@ -153,14 +149,14 @@ object CollectionSupervisor
   /**
    * Subscribe an actor to a collection's events.
    */
-  def subscribeCollection(subscriber: ActorRef, path: models.StreamUri): Unit =
-    supervisor ! SubscribeCollection(path, subscriber)
+  def subscribeCollection(subscriber: ActorRef, path: Address): Unit =
+    supervisor ! SubscribeCollection(CollectionTopic.fromAddress(path), subscriber)
 
   /**
    * Unsubscribe an actor from a collection's events.
    */
-  def unsubscribeCollection(subscriber: ActorRef, path: models.StreamUri): Unit =
-    supervisor ! UnsubscribeCollection(path, subscriber)
+  def unsubscribeCollection(subscriber: ActorRef, path: Address): Unit =
+    supervisor ! UnsubscribeCollection(CollectionTopic.fromAddress(path), subscriber)
 
   /**
    * Broadcast an event for a collection.

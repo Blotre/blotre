@@ -22,8 +22,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   val SUBSCRIPTION_LIMIT = 256
   val COLLECTION_SUBSCRIPTION_LIMIT = 8
 
-  var subscriptions = Set[String]()
-  var collectionSubscriptions = Set[String]()
+  private var subscriptions = Set[String]()
+  private var collectionSubscriptions = Set[Actors.Address]()
   
   override def postStop() {
     collectionSubscriptions.foreach(unsubscribeCollection(_))
@@ -263,26 +263,30 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Subscribe to collection updates.
    */
-  private def subscribeCollection(target: String)(implicit correlation: Int): Unit = {
+  private def subscribeCollection(target: String)(implicit correlation: Int): Unit =
+    Actors.Address.fromUser(target).map(subscribeCollection(_))
+
+  private def subscribeCollection(target: Actors.Address)(implicit correlation: Int): Unit = {
     if (collectionSubscriptions.contains(target))
       return
 
     if (collectionSubscriptions.size >= COLLECTION_SUBSCRIPTION_LIMIT) {
       error("Subscription limit exceeded.")
     } else {
-      models.Stream.findByUri(target) map { stream =>
-        collectionSubscriptions += target
-        CollectionSupervisor.subscribeCollection(self, stream.getUri())
-      }
+      collectionSubscriptions += target
+      CollectionSupervisor.subscribeCollection(self, target)
     }
   }
 
   /**
    * Unsubscribe from collection updates.
    */
-  private def unsubscribeCollection(uri: String): Unit = {
-    models.StreamUri.fromString(uri).foreach(CollectionSupervisor.unsubscribeCollection(self, _))
-    collectionSubscriptions -= uri
+  private def unsubscribeCollection(target: String)(implicit correlation: Int): Unit =
+    Actors.Address.fromUser(target).map(unsubscribeCollection(_))
+
+  private def unsubscribeCollection(target: Actors.Address): Unit = {
+    CollectionSupervisor.unsubscribeCollection(self, target)
+    collectionSubscriptions -= target
   }
 }
 

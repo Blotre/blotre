@@ -36,4 +36,14 @@ object Address {
    */
   def create(tag: models.StreamTag): TagAddress =
     TagAddress(tag)
+
+  /**
+   * Attempt to create an address from user input
+   */
+  def fromUser(input: String): Option[Address] =
+    if (input.startsWith("#")) {
+      models.StreamTag.fromString(input.substring(1)).map(create(_))
+    } else {
+      models.StreamUri.fromString(input).map(create(_))
+    }
 }

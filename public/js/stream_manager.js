@@ -42,7 +42,7 @@ var StreamManager = function() {
                 }));
             }
 
-            var targetCollections = Object.keys(self.streams);
+            var targetCollections = Object.keys(self.collections);
             if (targetCollections.length) {
                 targetCollections.forEach(function(x) {
                     socket.send(JSON.stringify({

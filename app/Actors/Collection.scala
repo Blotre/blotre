@@ -20,24 +20,6 @@ abstract class CollectionActorBase(val path: Address) extends Actor
   private var updated = mutable.ListBuffer[models.StreamUri]()
 
   def receive = {
-    case StatusUpdatedEvent(source, status, _) =>
-      if (source.value != path.value) { // Skip root stream updates
-        updateChild(source, status)
-      }
-
-    case ChildRemovedEvent(source, childUri, _) =>
-      if (source.value == path.value) { // Only monitor root stream child changes
-        removeChild(childUri)
-      }
-
-    case StreamDeletedEvent(source, _) =>
-      removeChild(source)
-
-    case ChildAddedEvent(source, child, _) =>
-      if (source.value == path.value) {
-        addChild(child)
-      }
-
     case GetCollectionStatus(size, offset) =>
       sender ! CollectionStatusResponse(updated.drop(offset).take(size).toList)
 
@@ -88,6 +70,28 @@ abstract class CollectionActorBase(val path: Address) extends Actor
  */
 class StreamCollection(streamUri: models.StreamUri) extends CollectionActorBase(Address.create(streamUri))
 {
+  override def receive = {
+    case StatusUpdatedEvent(source, status, _) =>
+      if (source.value != path.value) { // Skip root stream updates
+        updateChild(source, status)
+      }
+
+    case ChildRemovedEvent(source, childUri, _) =>
+      if (source.value == path.value) { // Only monitor root stream child changes
+        removeChild(childUri)
+      }
+
+    case StreamDeletedEvent(source, _) =>
+      removeChild(source)
+
+    case ChildAddedEvent(source, child, _) =>
+      if (source.value == path.value) {
+        addChild(child)
+      }
+
+    case msg => super.receive(msg)
+  }
+
   protected override def loadInitialChildren() =
     models.Stream.findByUri(streamUri) map { stream =>
       stream.getChildren()
@@ -110,6 +114,22 @@ object StreamCollection
  */
 class TagCollection(tag: models.StreamTag) extends CollectionActorBase(Address.create(tag))
 {
+  override def receive = {
+    case StatusUpdatedEvent(source, status, _) =>
+      updateChild(source, status)
+      
+    case ChildRemovedEvent(source, childUri, _) =>
+      removeChild(childUri)
+
+    case StreamDeletedEvent(source, _) =>
+      removeChild(source)
+
+    case ChildAddedEvent(source, child, _) =>
+        addChild(child)
+
+    case msg => super.receive(msg)
+  }
+
   protected override def loadInitialChildren() =
     models.Stream.getStreamWithTag(tag, 20)
 

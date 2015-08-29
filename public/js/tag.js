@@ -101,7 +101,7 @@ $(function(){
         window.history.pushState({ query: query }, '', url);
     });
 
-    model.manager.subscribe('#' + model.tag(), {
+    model.manager.subscribeCollection('#' + model.tag(), {
         'StatusUpdated': function(msg) {
             if (msg.from === model.stream().uri()) {
                 model.setColor(msg.status.color);
