@@ -12,7 +12,7 @@ case class StreamUri(value: String)
    * Add a path segment to the stream uri.
    */
   def addPath(child: StreamName): StreamUri  =
-    StreamUri(value + StreamUri.sep + child.value)
+    StreamUri(value + StreamUri.sep + child.value.toLowerCase())
 
   /**
    * Break the Uri into a set of names.
@@ -65,6 +65,6 @@ object StreamUri
    * Names are subsets of uris.
    */
   def fromName(uri: StreamName): StreamUri  =
-    StreamUri(uri.value)
+    StreamUri(uri.value.toLowerCase())
 }
 

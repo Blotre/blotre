@@ -48,7 +48,7 @@ $(function(){
         })
         .then(function(result) {
             if (result && !result.error) {
-                document.location.href = jsRoutes.controllers.StreamApiController.getStream(result.uri).url;
+                document.location.href = jsRoutes.controllers.Stream.getStream(result.uri).url;
             } else {
                 shared.unlockButton(btn);
             }

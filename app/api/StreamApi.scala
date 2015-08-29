@@ -15,8 +15,7 @@ import scala.concurrent.Future
  */
 case class ApiSetStatusData(color: models.Color)
 
-object ApiSetStatusData
-{
+object ApiSetStatusData {
   implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] =
     (__ \ "color")
       .read(models.Color.readColor)
@@ -28,30 +27,7 @@ object ApiSetStatusData
  */
 case class ApiSetTagsData(tags: Seq[models.StreamTag])
 
-/**
- *
- */
-case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData])
-
-object ApiCreateStreamData {
-  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
-
-  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
-    (JsPath \ "name").read[String](nameValidate) and
-      (JsPath \ "uri").read[String] and
-      (JsPath \ "status").readNullable[ApiSetStatusData]
-    )(ApiCreateStreamData.apply _)
-}
-
-
-object ApiSetTagsData
-{
-  implicit val streamTagReads: Reads[models.StreamTag] =
-    Reads.StringReads
-      .map(models.StreamTag.fromString)
-      .filter(ValidationError("Tag is not valid."))(_.isDefined)
-      .map(_.get)
-
+object ApiSetTagsData {
   implicit val apiSetStatusDataReads: Reads[ApiSetTagsData] =
     Reads.list[models.StreamTag]
       .filter(ValidationError("Too many tags."))(tags => tags.size <= models.Stream.maxTags)
@@ -59,6 +35,21 @@ object ApiSetTagsData
       .map(ApiSetTagsData(_))
 }
 
+/**
+ *
+ */
+case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData], tags: Option[ApiSetTagsData])
+
+object ApiCreateStreamData {
+  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
+
+  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
+    (JsPath \ "name").read[String](nameValidate) and
+      (JsPath \ "uri").read[String] and
+      (JsPath \ "status").readNullable[ApiSetStatusData] and
+      (JsPath \ "tags").readNullable[ApiSetTagsData]
+    )(ApiCreateStreamData.apply _)
+}
 
 object StreamHelper
 {
