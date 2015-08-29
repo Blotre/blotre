@@ -131,7 +131,7 @@ class TagCollection(tag: models.StreamTag)  extends CollectionActorBase(models.S
       }
 
     case GetCollectionStatus(size, offset) =>
-      sender ! updated.drop(offset).take(size).toList
+      sender ! updated.drop(offset).take(size).map(_.value).toList
 
     case _ =>
   }

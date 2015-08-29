@@ -173,8 +173,8 @@ object StreamApiController extends Controller
    * Lookup all streams with a given tag.
    */
   def getTagChildren(tag: String) = Action.async { implicit request =>
-      val query = request.getQueryString("query").getOrElse("")
-      TagApi.getTagChildren(tag, query, 20, 0).map(toResponse(_))
+    val query = request.getQueryString("query").getOrElse("")
+    TagApi.getTagChildren(tag, query, 20, 0).map(toResponse(_))
   }
 }
 

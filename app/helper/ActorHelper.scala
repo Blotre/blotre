@@ -10,9 +10,12 @@ object ActorHelper
   def normalizeName(name: String): Option[String] = {
     if (name == null)
       return None
-    val normalized = name.replaceAll( """[^a-zA-Z0-9\-_$]""", "+")
+    val normalized = name.replaceAll("""[^a-zA-Z0-9\-_$]""", "+")
     if (normalized.isEmpty) None else Some(normalized)
   }
+
+  def normalizeName(name: models.StreamUri): String =
+    name.value.replaceAll("""[^a-zA-Z0-9\-_$]""", "+")
 
   def normalizeName(name: models.StreamName): String =
     name.value

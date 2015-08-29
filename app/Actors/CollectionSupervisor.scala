@@ -56,16 +56,25 @@ class CollectionSupervisor extends Actor
    * Get an existing child if one exists.
    */
   private def getExistingChild(topic: CollectionTopic) =
-    context.child(topic.value)
+    context.child(topic.actorName)
+
+  /**
+   * Create a new child.
+   */
+  private def createChild(topic: CollectionTopic) =
+    topic match {
+      case StreamCollectionTopic(uri) =>
+        context.actorOf(StreamCollection.props(uri), name = topic.actorName)
+
+      case TagCollectionTopic(uri) =>
+        context.actorOf(TagCollection.props(uri), name = topic.actorName)
+    }
 
   /**
    * Get an existing child or create a new one.
    */
   private def getOrCreateChild(topic: CollectionTopic) =
-    topic match {
-      case StreamCollectionTopic(uri) =>
-        getExistingChild(topic).getOrElse(context.actorOf(StreamCollection.props(uri)))
-    }
+    getExistingChild(topic).getOrElse(createChild(topic))
 
   /**
    * Invoked when a subscriber has been successfully registered.
@@ -138,11 +147,7 @@ object CollectionSupervisor
    * Get the in-memory state of a tag collection.
    */
   def getTagCollection(tag: models.StreamTag, limit: Int, offset: Int): Future[List[String]] =
-    //Topic.forTag(tag) map {
-    //  getCollectionState(_, limit, offset)
-    //} getOrElse {
-      Future.successful(List())
-    //}
+    getCollectionState(CollectionTopic.forTag(tag), limit, offset)
 
   /**
    * Subscribe an actor to a collection's events.

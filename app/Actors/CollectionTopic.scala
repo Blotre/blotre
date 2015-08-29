@@ -7,6 +7,7 @@ import helper.ActorHelper
  */
 abstract class CollectionTopic {
   val value: String
+  val actorName: String
 }
 
 case class StreamCollectionTopic(uri: models.StreamUri) extends CollectionTopic {
@@ -14,11 +15,16 @@ case class StreamCollectionTopic(uri: models.StreamUri) extends CollectionTopic 
     uri.components()
       .map(ActorHelper.normalizeName(_))
       .mkString("/")).toLowerCase()
+
+
+  val actorName: String = ActorHelper.normalizeName(uri)
 }
 
 case class TagCollectionTopic(tag: models.StreamTag) extends CollectionTopic {
   val value = ("@tag-collection/" +
     ActorHelper.normalizeName(tag)).toLowerCase()
+
+  val actorName: String = ActorHelper.normalizeName(tag)
 }
 
 object CollectionTopic {

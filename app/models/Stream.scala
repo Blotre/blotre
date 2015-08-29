@@ -363,7 +363,7 @@ object Stream
    */
   def getStreamWithTag(tag: StreamTag, limit: Int): Seq[Stream] = {
     val q = db().limit(limit)
-    q.field("tags").hasThisElement(tag.value)
+    q.field("tags").hasAnyOf(Arrays.asList(tag.value))
     q.asList()
       .asScala.toList
   }
