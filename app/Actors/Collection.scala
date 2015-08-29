@@ -15,9 +15,9 @@ case class CollectionStatusResponse(children: Seq[models.StreamUri])
  */
 abstract class CollectionActorBase(val path: Address) extends Actor
 {
-  protected var state = Map[models.StreamUri, models.Status]()
+  private var state = Map[models.StreamUri, models.Status]()
 
-  protected var updated = mutable.ListBuffer[models.StreamUri]()
+  private var updated = mutable.ListBuffer[models.StreamUri]()
 
   def receive = {
     case StatusUpdatedEvent(source, status, _) =>
@@ -84,11 +84,11 @@ abstract class CollectionActorBase(val path: Address) extends Actor
 }
 
 /**
- *
+ * Collection for a stream's children.
  */
 class StreamCollection(streamUri: models.StreamUri) extends CollectionActorBase(Address.create(streamUri))
 {
-  protected override  def loadInitialChildren() =
+  protected override def loadInitialChildren() =
     models.Stream.findByUri(streamUri) map { stream =>
       stream.getChildren()
     } getOrElse(List())
@@ -106,7 +106,7 @@ object StreamCollection
 }
 
 /**
- *
+ * Collection for a tag.
  */
 class TagCollection(tag: models.StreamTag) extends CollectionActorBase(Address.create(tag))
 {

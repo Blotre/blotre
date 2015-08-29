@@ -269,7 +269,7 @@ var updateSearchResultsForQuery = function(model, query) {
         headers: {
             accept: "application/json"
         },
-        error: function() {
+        error: function(e) {
             $('.list-loading').addClass('hidden');
         }
     }).done(function(result) {

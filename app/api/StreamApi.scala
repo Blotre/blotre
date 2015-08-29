@@ -232,16 +232,26 @@ object StreamApi
    *
    * TODO: normally should return list of ids which query params can expand to stream?
    */
-  def getChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
-    models.Stream.findByUri(uri) map { stream =>
-      models.StreamQuery.fromString(query) map {
-        getChildren(stream, _, limit, offset)
-      } getOrElse {
-        getChildren(stream, limit, offset)
-      }
+  def getChildren(uri: models.StreamUri, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
+    models.Stream.findByUri(uri) map {
+     getChildren(_, query, limit, offset)
     } getOrElse {
-    Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
-  }
+      Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
+    }
+
+  def getChildren(id: String, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
+    models.Stream.findById(id) map {
+      getChildren(_, query, limit, offset)
+    } getOrElse {
+      Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
+    }
+
+  def getChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
+    models.StreamQuery.fromString(query) map {
+      getChildren(stream, _, limit, offset)
+    } getOrElse {
+      getChildren(stream, limit, offset)
+    }
 
   def getChildren(stream: models.Stream, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
     CollectionSupervisor.getStreamCollection(stream.getUri(), limit, offset) map { children =>
