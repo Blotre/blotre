@@ -5,7 +5,7 @@
 /**
     Page header navigation.
 */
-#stream-breadcrumbs {
+.breadcrumbs {
     position: absolute;
     z-index: 0;
     left: 0;
@@ -21,18 +21,18 @@
     white-space: nowrap;
 }
 
-#stream-breadcrumbs li {
+.breadcrumbs li {
     display: inline;
     font-size: 1.6rem;
 }
 
-#stream-breadcrumbs li:before {
-    content: "/";
-    padding: 0 0.6rem;
+#header-bar .breadcrumbs li a {
     color: inherit;
 }
 
-#header-bar #stream-breadcrumbs li a {
+.stream-breadcrumbs li:before {
+    content: "/";
+    padding: 0 0.6rem;
     color: inherit;
 }
 
@@ -93,14 +93,15 @@
 }
 
 #tag-editor {
-    max-width: 30em;
+
 }
 
-#tag-editor #edit-tags-button {
+#tag-editor button {
     border: none;
     background: none;
     color: #bbb;
 }
+
 
 /**
     Stream Controls

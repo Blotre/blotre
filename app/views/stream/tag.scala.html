@@ -6,8 +6,8 @@
 @import play.api.i18n.Messages.Implicits._
 
 @navHeader = {
-    <ul id="stream-breadcrumbs">
-        <li><a href="@routes.Stream.getTag(tag.value)">#@tag.value</a></li>
+    <ul class="breadcrumbs tag-breadcrumbs">
+        <li><a href="@routes.Stream.getTag(tag.value)" data-bind="text: tag">@tag.value</a></li>
     </ul>
 }
 
@@ -20,10 +20,10 @@
 
 @main(tag.value, "tag", navHeader = navHeader, extraScripts = extraScripts) {
 
-    <div class="stream-header">
+    <div class="stream-header tag-stream-header">
         <div class="stream-data">
             <h1 class="stream-title">
-                <a data-bind="text: tag" href="@routes.Stream.getTag(tag.value)">#@tag.value</a>
+                <a href="@routes.Stream.getTag(tag.value)" data-bind="text: tag">@tag.value</a>
             </h1>
         </div>
     </div>
