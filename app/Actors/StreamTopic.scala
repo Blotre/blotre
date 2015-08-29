@@ -15,9 +15,8 @@ object StreamTopic
    */
   def forStream(path: models.StreamUri): Option[StreamTopic] =
     Some(StreamTopic(
-      "@stream/" + path.value.split("/")
+      "@stream/" + path.components()
         .map(ActorHelper.normalizeName(_))
-        .flatten
         .mkString("/")))
 
   def forStream(stream: models.Stream): Option[StreamTopic] =

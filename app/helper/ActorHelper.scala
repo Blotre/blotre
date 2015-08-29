@@ -13,4 +13,7 @@ object ActorHelper
     val normalized = name.replaceAll( """[^a-zA-Z0-9\-_$]""", "+")
     if (normalized.isEmpty) None else Some(normalized)
   }
+
+  def normalizeName(name: models.StreamName): String =
+    name.value
 }

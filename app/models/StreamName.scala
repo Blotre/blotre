@@ -3,7 +3,13 @@ package models
 /**
  * Valid stream name.
  */
-case class StreamName private(value: String)
+case class StreamName(value: String)
+{
+  override def equals(o: Any) = o match {
+    case that: StreamName => that.value.equalsIgnoreCase(this.value)
+    case _ => false
+  }
+}
 
 object StreamName
 {

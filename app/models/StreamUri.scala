@@ -12,11 +12,25 @@ case class StreamUri(value: String)
    * Add a path segment to the stream uri.
    */
   def addPath(child: StreamName): StreamUri  =
-    StreamUri(value + "/" + child.value)
+    StreamUri(value + StreamUri.sep + child.value)
+
+  /**
+   * Break the Uri into a set of names.
+   *
+   * Since URIs are lower case, the result may be different in case
+   * from the actual stream name displayed.
+   */
+  def components(): Seq[StreamName] =
+    value.split(StreamUri.sep).map(StreamName(_))
 }
 
 object StreamUri
 {
+  /**
+   * Path component separator.
+   */
+  val sep = "/"
+
   implicit val streamWrites = new Writes[StreamUri] {
     def writes(x: StreamUri): JsValue = Json.toJson(x.value)
   }
@@ -29,12 +43,14 @@ object StreamUri
       if (uri == null)
         None
       else {
-        Some(UriEncoding.decodePath(uri
-          .trim()
-          .replace(" ", "+")
-          .toLowerCase
-          .stripSuffix("/"),
-          "UTF-8"))
+        Some(
+          UriEncoding.decodePath(
+            uri
+              .trim()
+              .replace(" ", "+")
+              .toLowerCase
+              .stripSuffix(StreamUri.sep),
+            "UTF-8"))
           .filterNot(_.isEmpty)
           .map(StreamUri(_))
       }
