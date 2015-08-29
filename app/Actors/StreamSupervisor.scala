@@ -18,69 +18,41 @@ object StreamSupervisor
   lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
 
   /**
-   * Get the Akka path of a stream.
+   * Subscribe to updates from a given stream.
    */
-  private def getStreamTopic(path: models.StreamUri): Option[String] =
-    ActorHelper.normalizeName(path.value)
-      .filterNot(_.isEmpty)
-      .map("streams/" + _)
-
-  private def getStreamTopic(path: String): Option[String] =
-    models.StreamUri.fromString(path).flatMap(getStreamTopic)
+  def subscribe(subscriber: ActorRef, topic: Topic): Unit =
+    mediator ! DistributedPubSubMediator.Subscribe(topic.value, subscriber)
 
   /**
-   * Get the Akka path of a collection.
+   * Subscribe to updates from a stream.
    */
-  private def getCollectionTopic(tag: models.StreamTag): Option[String] =
-    ActorHelper.normalizeName(tag.value)
-      .filterNot(_.isEmpty)
-      .map("collections/" + _)
+  def subscribe(subscriber: ActorRef, path: models.StreamUri): Unit =
+    Topic.forStream(path).foreach(subscribe(subscriber, _))
+
+  def subscribe(subscriber: ActorRef, paths: Iterable[models.StreamUri]): Unit =
+    paths.foreach(subscribe(subscriber, _))
 
   /**
-   * Get the Akka path of any stream like object.
+   * Unsubscribe from updates on a given stream.
    */
-  private def getTopic(path: String): Option[String] =
-    if (path.length > 1 && path.startsWith("#"))
-      getCollectionTopic(models.StreamTag(path.substring(1)))
-    else
-      getStreamTopic(path)
-
-  /**
-   * Subscribe an actor to updates from a given stream.
-   */
-  def subscribe(subscriber: ActorRef, path: String): Unit =
-    getTopic(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Subscribe(topic, subscriber)
+  def unsubscribe(subscriber: ActorRef, path: models.StreamUri): Unit =
+    Topic.forStream(path) foreach { topic =>
+      mediator ! DistributedPubSubMediator.Unsubscribe(topic.value, subscriber)
     }
 
-  def subscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
-    paths foreach {
-      x => subscribe(subscriber, x)
-    }
-
-  /**
-   * Unsubscribe an actor to updates from a given stream.
-   */
-  def unsubscribe(subscriber: ActorRef, path: String): Unit =
-    getTopic(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Unsubscribe(topic, subscriber)
-    }
-
-  def unsubscribe(subscriber: ActorRef, paths: Iterable[String]): Unit =
-    paths foreach { x =>
-      unsubscribe(subscriber, x)
-    }
+  def unsubscribe(subscriber: ActorRef, paths: Iterable[models.StreamUri]): Unit =
+    paths.foreach(unsubscribe(subscriber, _))
 
   /**
    * Broadcast stream status updated.
    */
   def updateStatus(stream: models.Stream, status: models.Status): Unit = {
-    getStreamTopic(stream.uri) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, StatusUpdatedEvent(stream.uri, status))
+    Topic.forStream(stream) foreach { topic =>
+      mediator ! DistributedPubSubMediator.Publish(topic.value, StatusUpdatedEvent(stream.getUri().value, status))
     }
 
-    stream.getTags().flatMap(getCollectionTopic(_)) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, StatusUpdatedEvent(stream.uri, status))
+    stream.getTags().flatMap(Topic.forTag(_)) foreach { topic =>
+      mediator ! DistributedPubSubMediator.Publish(topic.value, StatusUpdatedEvent(stream.getUri().value, status))
     }
   }
 
@@ -88,32 +60,32 @@ object StreamSupervisor
    * Broadcast stream child added.
    */
   def addChild(parent: models.Stream, child: models.Stream): Unit = {
-    getStreamTopic(parent.uri) foreach { parentTopic =>
-      mediator ! DistributedPubSubMediator.Publish(parentTopic, ChildAddedEvent(parent.uri, child))
+    Topic.forStream(parent) foreach { parentTopic =>
+      mediator ! DistributedPubSubMediator.Publish(parentTopic.value, ChildAddedEvent(parent.getUri().value, child))
     }
-    getStreamTopic(child.uri) foreach { childTopic =>
-      mediator ! DistributedPubSubMediator.Publish(childTopic, ParentAddedEvent(child.uri, parent))
+    Topic.forStream(child) foreach { childTopic =>
+      mediator ! DistributedPubSubMediator.Publish(childTopic.value, ParentAddedEvent(child.getUri().value, parent))
     }
   }
 
   /**
    * Broadcast stream child removed.
    */
-  def removeChild(path: String, childUri: String): Unit = {
-    getStreamTopic(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, ChildRemovedEvent(path, childUri))
+  def removeChild(path: models.StreamUri, childUri: models.StreamUri): Unit = {
+    Topic.forStream(path) foreach { topic =>
+      mediator ! DistributedPubSubMediator.Publish(topic.value, ChildRemovedEvent(path.value, childUri.value))
     }
-    getStreamTopic(childUri) foreach { childTopic =>
-      mediator ! DistributedPubSubMediator.Publish(childTopic, ParentRemovedEvent(childUri, path))
+    Topic.forStream(childUri) foreach { childTopic =>
+      mediator ! DistributedPubSubMediator.Publish(childTopic.value, ParentRemovedEvent(childUri.value, path.value))
     }
   }
 
   /**
    * Broadcast stream deleted.
    */
-  def deleteStream(path: String): Unit =
-    getStreamTopic(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic, StreamDeletedEvent(path))
+  def deleteStream(path: models.StreamUri): Unit =
+    Topic.forStream(path) foreach { topic =>
+      mediator ! DistributedPubSubMediator.Publish(topic.value, StreamDeletedEvent(path.value))
     }
 
   /**
@@ -124,14 +96,14 @@ object StreamSupervisor
     val removedTags = tags diff stream.getTags()
 
     addedTags foreach { addedTag =>
-      getCollectionTopic(addedTag) foreach { collectionTopic =>
-        mediator ! DistributedPubSubMediator.Publish(collectionTopic, ChildAddedEvent(addedTag.value, stream))
+      Topic.forTag(addedTag) foreach { collectionTopic =>
+        mediator ! DistributedPubSubMediator.Publish(collectionTopic.value, ChildAddedEvent(addedTag.value, stream))
       }
     }
 
     removedTags foreach { removedTag =>
-      getCollectionTopic(removedTag) foreach { collectionTopic =>
-        mediator ! DistributedPubSubMediator.Publish(collectionTopic, ChildAddedEvent(removedTag.value, stream))
+      Topic.forTag(removedTag) foreach { collectionTopic =>
+        mediator ! DistributedPubSubMediator.Publish(collectionTopic.value, ChildAddedEvent(removedTag.value, stream))
       }
     }
   }

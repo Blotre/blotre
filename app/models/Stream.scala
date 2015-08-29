@@ -31,6 +31,12 @@ case class ChildStream(
   created: Date)
 {
   def this() = this(null, false, null, null, null, null, "", "", new Date(0))
+
+  def getChildUri() =
+    StreamUri(childUri)
+
+  def getParentUri() =
+    StreamUri(childUri)
 }
 
 /**

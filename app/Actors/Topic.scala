@@ -4,7 +4,7 @@ import helper.ActorHelper
 
 
 /**
- * Path to a stream like object used to address actors.
+ * Name used on the event bus to identify stream like objects.
  */
 case class Topic private(value: String)
 
@@ -14,17 +14,21 @@ object Topic
    * Get the topic of a stream.
    */
   def forStream(path: models.StreamUri): Option[Topic] =
-    ActorHelper.normalizeName(path.value)
-      .filterNot(_.isEmpty)
-      .map("streams/" + _)
-      .map(Topic(_))
+    Some(Topic(
+      "@stream/" + path.value.split("/")
+        .map(ActorHelper.normalizeName(_))
+        .flatten
+        .mkString("/")))
+
+  def forStream(stream: models.Stream): Option[Topic] =
+    forStream(stream.getUri())
 
   /**
    * Get the topic of a tag.
    */
   def forTag(tag: models.StreamTag): Option[Topic] =
-    Some(ActorHelper.normalizeName(tag.value))
+    ActorHelper.normalizeName(tag.value)
       .filterNot(_.isEmpty)
-      .map("tags/" + _)
+      .map("@tag/" + _)
       .map(Topic(_))
 }

@@ -450,13 +450,13 @@ object StreamApi
 
   private def removeChild(parent: models.Stream.OwnedStream, child: models.Stream): Option[models.Stream] = {
     parent.removeChild(child.id)
-    StreamSupervisor.removeChild(parent.stream.uri, child.uri)
+    StreamSupervisor.removeChild(parent.stream.getUri(), child.getUri())
     Some(child)
   }
 
   private def removeChild(childData: models.ChildStream): Unit = {
     models.Stream.removeChild(childData)
-    StreamSupervisor.removeChild(childData.parentUri, childData.childUri)
+    StreamSupervisor.removeChild(childData.getParentUri(), childData.getChildUri())
   }
 
   private def deleteStream(stream: models.Stream): Unit = {
@@ -468,9 +468,8 @@ object StreamApi
     }
     models.Stream.getRelations(stream).foreach(removeChild)
     models.Stream.deleteStream(stream)
-    StreamSupervisor.deleteStream(stream.uri)
+    StreamSupervisor.deleteStream(stream.getUri())
   }
-
 
   /**
    *

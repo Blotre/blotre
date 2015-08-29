@@ -68,7 +68,7 @@ class CollectionSupervisor extends Actor
    */
   private def getOrCreateChild(uri: String) =
     ActorHelper.normalizeName(uri) map { name =>
-      context.child(name).getOrElse(context.actorOf(CollectionActor.props(models.StreamUri(uri)), name = name))
+      context.child(name).getOrElse(context.actorOf(StreamCollection.props(models.StreamUri(uri)), name = name))
     }
 
   /**
@@ -95,7 +95,7 @@ class CollectionSupervisor extends Actor
     }
   }
 
-  private def tryRemoveChild(path:String) =
+  private def tryRemoveChild(path: String) =
     context.system.scheduler.scheduleOnce(5 seconds) {
       subscriptions.get(path) map { subscribers =>
         if (subscribers.size == 0) {
@@ -124,48 +124,46 @@ object CollectionSupervisor
   /**
    * Get the actor for a collection.
    */
-  private def getCollection(topic: Topic): Future[ActorRef] =
+  private def getCollection(topic: models.StreamUri): Future[ActorRef] =
     ask(supervisor, GetCollection(topic.value)).mapTo[GetCollectionResponse].map(_.actor)
+
+  private def getCollectionState(topic: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
+    getCollection(topic) flatMap { collection =>
+      ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
+    }
 
   /**
    * Get the in-memory state of a stream collection.
    */
   def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
-    Topic.forStream(uri) map { topic =>
-      getCollection(topic) flatMap { collection =>
-        ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
-      }
-    } getOrElse {
-      Future.successful(null)
-    }
+    getCollectionState(uri, limit, offset)
+
 
   /**
    * Get the in-memory state of a tag collection.
    */
   def getTagCollection(tag: models.StreamTag, limit: Int, offset: Int): Future[List[String]] =
-    Topic.forTag(tag) map { topic =>
-      getCollection(topic) flatMap { collection =>
-        ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
-      }
-    } getOrElse {
+    //Topic.forTag(tag) map {
+    //  getCollectionState(_, limit, offset)
+    //} getOrElse {
       Future.successful(null)
-    }
+    //}
 
   /**
    * Subscribe an actor to a collection's events.
    */
-  def subscribeCollection(subscriber: ActorRef, path: String): Unit =
-      supervisor ! DistributedPubSubMediator.Subscribe(path, subscriber)
+  def subscribeCollection(subscriber: ActorRef, path: models.StreamUri): Unit =
+    supervisor ! DistributedPubSubMediator.Subscribe(path.value, subscriber)
 
   /**
    * Unsubscribe an actor from a collection's events.
    */
-  def unsubscribeCollection(subscriber: ActorRef, path: String): Unit =
-    supervisor ! DistributedPubSubMediator.Unsubscribe(path, subscriber)
+  def unsubscribeCollection(subscriber: ActorRef, path: models.StreamUri): Unit =
+    supervisor ! DistributedPubSubMediator.Unsubscribe(path.value, subscriber)
 
   /**
    * Broadcast an event for a collection.
    */
-  def broadcast[A](path: String, event: A): Unit =
-    supervisor ! DistributedPubSubMediator.Publish(path, event)
+  def broadcast[A](path: models.StreamUri, event: A): Unit =
+    supervisor ! DistributedPubSubMediator.Publish(path.value, event)
 }

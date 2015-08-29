@@ -5,7 +5,6 @@ import akka.actor._
 import api._
 import models.User
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
@@ -27,7 +26,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   var collectionSubscriptions = Set[String]()
   
   override def postStop() {
-    collectionSubscriptions.foreach(CollectionSupervisor.unsubscribeCollection(self, _))
+    collectionSubscriptions.foreach(unsubscribeCollection(_))
   }
 
   /**
@@ -243,7 +242,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       error("Subscription limit exceeded.")
     } else {
       models.Stream.findByUri(target) map { stream =>
-        StreamSupervisor.subscribe(self, target.value)
+        StreamSupervisor.subscribe(self, target)
         subscriptions += target.value
         statusUpdate(stream)(correlation, true)
       }
@@ -253,9 +252,12 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Unsubscribe from a stream's updates
    */
-  private def unsubscribe(targets: List[String]): Unit = {
+  private def unsubscribe(targets: List[String])(implicit correlation: Int): Unit =
+    unsubscribe(targets.map(models.StreamUri.fromString(_)).flatten)
+
+  private def unsubscribe(targets: List[models.StreamUri]): Unit = {
     StreamSupervisor.unsubscribe(self, targets)
-    subscriptions = subscriptions -- targets
+    subscriptions = subscriptions -- targets.map(_.value)
   }
 
   /**
@@ -270,7 +272,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     } else {
       models.Stream.findByUri(target) map { stream =>
         collectionSubscriptions += target
-        CollectionSupervisor.subscribeCollection(self, target)
+        CollectionSupervisor.subscribeCollection(self, stream.getUri())
       }
     }
   }
@@ -279,7 +281,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Unsubscribe from collection updates.
    */
   private def unsubscribeCollection(uri: String): Unit = {
-    CollectionSupervisor.unsubscribeCollection(self, uri)
+    models.StreamUri.fromString(uri).foreach(CollectionSupervisor.unsubscribeCollection(self, _))
     collectionSubscriptions -= uri
   }
 }

@@ -1,5 +1,6 @@
 package models
 
+import play.api.libs.json.{Json, JsValue, Writes}
 import play.utils.UriEncoding
 
 /**
@@ -16,6 +17,10 @@ case class StreamUri(value: String)
 
 object StreamUri
 {
+  implicit val streamWrites = new Writes[StreamUri] {
+    def writes(x: StreamUri): JsValue = Json.toJson(x.value)
+  }
+
   /**
    * Create a stream uri from a string.
    */
@@ -46,3 +51,4 @@ object StreamUri
   def fromName(uri: StreamName): StreamUri  =
     StreamUri(uri.value)
 }
+
