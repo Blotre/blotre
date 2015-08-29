@@ -3,7 +3,6 @@ package Actors
 import akka.actor._
 import akka.contrib.pattern.DistributedPubSubExtension
 import akka.contrib.pattern.DistributedPubSubMediator
-import helper._
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits._
@@ -95,7 +94,7 @@ object StreamSupervisor
   def addedTags(stream: models.Stream, addedTags: Seq[models.StreamTag]): Unit =
     addedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
-        broadcast(_, ChildAddedEvent(tag.value, stream))
+        broadcast(_, ChildAddedEvent("#" + tag.value, stream))
       }
     }
 
@@ -105,7 +104,7 @@ object StreamSupervisor
   def removedTags(stream: models.Stream, removedTags: Seq[models.StreamTag]): Unit =
     removedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
-        broadcast(_, ChildRemovedEvent(tag.value, stream.getUri().value))
+        broadcast(_, ChildRemovedEvent("#" + tag.value, stream.getUri().value))
       }
     }
 }

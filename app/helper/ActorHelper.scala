@@ -16,4 +16,7 @@ object ActorHelper
 
   def normalizeName(name: models.StreamName): String =
     name.value
+
+  def normalizeName(name: models.StreamTag): String =
+    name.value
 }

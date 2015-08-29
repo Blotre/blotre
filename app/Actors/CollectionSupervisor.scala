@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class GetCollection(uri: String)
+case class GetCollection(topic: CollectionTopic)
 case class GetCollectionResponse(actor: ActorRef)
 
 case class SubscribeCollection(topic: models.StreamUri, ref: ActorRef)
@@ -28,54 +28,49 @@ class CollectionSupervisor extends Actor
 {
   private lazy val mediator = DistributedPubSubExtension.get(Akka.system).mediator
 
-  private var subscriptions: Map[String, Set[ActorRef]] = Map()
+  private var subscriptions: Map[CollectionTopic, Set[ActorRef]] = Map()
 
   /**
    * Topic used to register a collection.
    */
-  private def getTopic(path: String): Option[String] = {
-    val normalizePath = ActorHelper.normalizeName(path)
-    if (normalizePath.isEmpty) None else Some("@collection/" + normalizePath)
-  }
-
   def receive = {
     case SubscribeCollection(path, subscriber) =>
-      onSubscribe(path.value, subscriber)
-      getTopic(path.value) map {
-        mediator ! DistributedPubSubMediator.Subscribe(_, subscriber)
-      }
+      val topic = CollectionTopic.forStream(path)
+      onSubscribe(topic, subscriber)
+      mediator ! DistributedPubSubMediator.Subscribe(topic.value, subscriber)
 
     case UnsubscribeCollection(path, subscriber) =>
-      onUnsubscribe(path.value, subscriber)
-      getTopic(path.value) map {
-        mediator ! DistributedPubSubMediator.Unsubscribe(_, subscriber)
-      }
+      val topic = CollectionTopic.forStream(path)
+      onUnsubscribe(topic, subscriber)
+      mediator ! DistributedPubSubMediator.Unsubscribe(topic.value, subscriber)
 
     case PublishCollection(path, msg) =>
-      getTopic(path.value) map {
-        mediator ! DistributedPubSubMediator.Publish(_, msg)
-      }
+      val topic = CollectionTopic.forStream(path)
+      mediator ! DistributedPubSubMediator.Publish(topic.value, msg)
 
-    case GetCollection(uri) =>
-      getOrCreateChild(uri) map {
-        sender ! GetCollectionResponse(_)
-      } getOrElse {
-        sender ! GetCollectionResponse(null)
-      }
+    case GetCollection(topic) =>
+      sender ! GetCollectionResponse(getOrCreateChild(topic))
   }
 
   /**
-   * Get an existing child value or create a new one.
+   * Get an existing child if one exists.
    */
-  private def getOrCreateChild(uri: String) =
-    ActorHelper.normalizeName(uri) map { name =>
-      context.child(name).getOrElse(context.actorOf(StreamCollection.props(models.StreamUri(uri)), name = name))
+  private def getExistingChild(topic: CollectionTopic) =
+    context.child(topic.value)
+
+  /**
+   * Get an existing child or create a new one.
+   */
+  private def getOrCreateChild(topic: CollectionTopic) =
+    topic match {
+      case StreamCollectionTopic(uri) =>
+        getExistingChild(topic).getOrElse(context.actorOf(StreamCollection.props(uri)))
     }
 
   /**
    * Invoked when a subscriber has been successfully registered.
    */
-  private def onSubscribe(path: String, subscriber: ActorRef): Unit = {
+  private def onSubscribe(path: CollectionTopic, subscriber: ActorRef): Unit = {
     getOrCreateChild(path) // ensure child exists
     subscriptions += ((path, subscriptions.getOrElse(path, Set()) + subscriber))
   }
@@ -86,7 +81,7 @@ class CollectionSupervisor extends Actor
    * If the subscriber count reaches zero, kicks off a job to potentially kill the
    * child collection actor if no other subscriptions are added.
    */
-  private def onUnsubscribe(path: String, subscriber: ActorRef): Unit = {
+  private def onUnsubscribe(path: CollectionTopic, subscriber: ActorRef): Unit = {
     val collectionSubscribers = subscriptions.getOrElse(path, Set()) - subscriber
     subscriptions += ((path, collectionSubscribers))
 
@@ -96,7 +91,7 @@ class CollectionSupervisor extends Actor
     }
   }
 
-  private def tryRemoveChild(path: String) =
+  private def tryRemoveChild(path: CollectionTopic) =
     context.system.scheduler.scheduleOnce(5 seconds) {
       subscriptions.get(path) map { subscribers =>
         if (subscribers.size == 0) {
@@ -107,8 +102,8 @@ class CollectionSupervisor extends Actor
       }
     }
 
-  private def removeChild(path: String) = {
-    context.child(path) map {
+  private def removeChild(path: CollectionTopic) = {
+    getExistingChild(path) map {
       _ ! PoisonPill
     }
   }
@@ -125,10 +120,10 @@ object CollectionSupervisor
   /**
    * Get the actor for a collection.
    */
-  private def getCollection(topic: models.StreamUri): Future[ActorRef] =
-    ask(supervisor, GetCollection(topic.value)).mapTo[GetCollectionResponse].map(_.actor)
+  private def getCollection(topic: CollectionTopic): Future[ActorRef] =
+    ask(supervisor, GetCollection(topic)).mapTo[GetCollectionResponse].map(_.actor)
 
-  private def getCollectionState(topic: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
+  private def getCollectionState(topic: CollectionTopic, limit: Int, offset: Int): Future[List[String]] =
     getCollection(topic) flatMap { collection =>
       ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
     }
@@ -137,7 +132,7 @@ object CollectionSupervisor
    * Get the in-memory state of a stream collection.
    */
   def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
-    getCollectionState(uri, limit, offset)
+    getCollectionState(CollectionTopic.forStream(uri), limit, offset)
 
   /**
    * Get the in-memory state of a tag collection.

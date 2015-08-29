@@ -5,33 +5,35 @@ import helper.ActorHelper
 /**
  * Name used on the event bus to identify stream collections.
  */
-case class CollectionTopic private(value: String)
+abstract class CollectionTopic {
+  val value: String
+}
 
-object CollectionTopic
-{
-  /**
-   * Get topic of already validated string path.
-   */
-  private def forString(path: String): CollectionTopic =
-    CollectionTopic(path.toLowerCase())
+case class StreamCollectionTopic(uri: models.StreamUri) extends CollectionTopic {
+  val value = ("@stream-collection/" +
+    uri.components()
+      .map(ActorHelper.normalizeName(_))
+      .mkString("/")).toLowerCase()
+}
 
+case class TagCollectionTopic(tag: models.StreamTag) extends CollectionTopic {
+  val value = ("@tag-collection/" +
+    ActorHelper.normalizeName(tag)).toLowerCase()
+}
+
+object CollectionTopic {
   /**
    * Get the topic of a stream.
    */
-  def forStream(path: models.StreamUri): Option[CollectionTopic] =
-    Some(forString("@stream-collection/" +
-      path.components()
-        .map(ActorHelper.normalizeName(_))
-        .mkString("/")))
+  def forStream(uri: models.StreamUri): StreamCollectionTopic =
+    StreamCollectionTopic(uri)
 
-  def forStream(stream: models.Stream): Option[CollectionTopic] =
+  def forStream(stream: models.Stream): StreamCollectionTopic =
     forStream(stream.getUri())
 
   /**
    * Get the topic of a tag.
    */
-  def forTag(tag: models.StreamTag): Option[CollectionTopic] =
-    ActorHelper.normalizeName(tag.value)
-      .filterNot(_.isEmpty)
-      .map(x => forString("@tag-collection/" + x))
+  def forTag(tag: models.StreamTag): TagCollectionTopic =
+    TagCollectionTopic(tag)
 }
