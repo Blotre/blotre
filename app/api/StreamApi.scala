@@ -6,7 +6,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.utils.UriEncoding
 
-import scala.collection.immutable.{List, Seq}
+import scala.collection.immutable.{List}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -232,18 +232,18 @@ object StreamApi
    *
    * TODO: normally should return list of ids which query params can expand to stream?
    */
-  def getChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
+  def getChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
     models.Stream.findByUri(uri) map { stream =>
       getChildren(stream, query, limit, offset)
     } getOrElse {
       Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
     }
 
-  def getChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
+  def getChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
     if (query.isEmpty) {
       // Get most recently updated children
       CollectionSupervisor.getStreamCollection(stream.getUri(), limit, offset) map { children =>
-        ApiOk(children.map(models.Stream.findByUri(_)).flatten[models.Stream])
+        ApiOk(children.flatMap(models.Stream.findByUri(_)))
       }
     } else {
       // Lookup children using query

@@ -9,7 +9,6 @@ import org.mongodb.morphia.query._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import org.mongodb.morphia.query.Query
-import scala.collection.immutable._
 import scala.collection.JavaConverters._
 import scala.annotation.meta._
 
@@ -340,7 +339,7 @@ object Stream
   /**
    * Query the children of a given stream
    */
-  def getChildrenByQuery(parent: Stream, query: String, limit: Int): List[Stream] = {
+  def getChildrenByQuery(parent: Stream, query: String, limit: Int): Seq[Stream] = {
     val q = childDb().limit(limit).filter("parentId =", parent.id)
     q.criteria("childName")
       .containsIgnoreCase(query)

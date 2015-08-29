@@ -5,6 +5,7 @@ import java.util.Date
 import scala.collection.{mutable}
 
 case class GetCollectionStatus(size: Int, offset: Int)
+case class CollectionStatusResponse(children: Seq[models.StreamUri])
 
 /**
  * Manages a collection.
@@ -73,7 +74,7 @@ class StreamCollection(streamUri: models.StreamUri) extends CollectionActorBase(
       }
 
     case GetCollectionStatus(size, offset) =>
-      sender ! updated.drop(offset).take(size).map(_.value).toList
+      sender ! CollectionStatusResponse(updated.drop(offset).take(size).toList)
 
     case _ =>
   }
@@ -131,7 +132,7 @@ class TagCollection(tag: models.StreamTag)  extends CollectionActorBase(models.S
       }
 
     case GetCollectionStatus(size, offset) =>
-      sender ! updated.drop(offset).take(size).map(_.value).toList
+      sender ! CollectionStatusResponse(updated.drop(offset).take(size).toList)
 
     case _ =>
   }

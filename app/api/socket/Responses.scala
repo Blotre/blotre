@@ -38,7 +38,7 @@ object CurrentStatusResponse
 /**
  * Current stream children response.
  */
-case class ApiChildrenResponse(uri: String, children: List[models.Stream], correlation: Int)
+case class ApiChildrenResponse(uri: String, children: Seq[models.Stream], correlation: Int)
 
 object ApiChildrenResponse
 {

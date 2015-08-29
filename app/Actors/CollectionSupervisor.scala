@@ -132,21 +132,23 @@ object CollectionSupervisor
   private def getCollection(topic: CollectionTopic): Future[ActorRef] =
     ask(supervisor, GetCollection(topic)).mapTo[GetCollectionResponse].map(_.actor)
 
-  private def getCollectionState(topic: CollectionTopic, limit: Int, offset: Int): Future[List[String]] =
+  private def getCollectionState(topic: CollectionTopic, limit: Int, offset: Int): Future[Seq[models.StreamUri]] =
     getCollection(topic) flatMap { collection =>
-      ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
+      ask(collection, GetCollectionStatus(limit, offset)).mapTo[CollectionStatusResponse]
+    } map {
+      _.children
     }
 
   /**
    * Get the in-memory state of a stream collection.
    */
-  def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
+  def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[Seq[models.StreamUri]] =
     getCollectionState(CollectionTopic.forStream(uri), limit, offset)
 
   /**
    * Get the in-memory state of a tag collection.
    */
-  def getTagCollection(tag: models.StreamTag, limit: Int, offset: Int): Future[List[String]] =
+  def getTagCollection(tag: models.StreamTag, limit: Int, offset: Int): Future[Seq[models.StreamUri]] =
     getCollectionState(CollectionTopic.forTag(tag), limit, offset)
 
   /**
