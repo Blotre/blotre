@@ -6,29 +6,29 @@ import helper.ActorHelper
 /**
  * Name used on the event bus to identify stream like objects.
  */
-case class Topic private(value: String)
+case class StreamTopic private(value: String)
 
-object Topic
+object StreamTopic
 {
   /**
    * Get the topic of a stream.
    */
-  def forStream(path: models.StreamUri): Option[Topic] =
-    Some(Topic(
+  def forStream(path: models.StreamUri): Option[StreamTopic] =
+    Some(StreamTopic(
       "@stream/" + path.value.split("/")
         .map(ActorHelper.normalizeName(_))
         .flatten
         .mkString("/")))
 
-  def forStream(stream: models.Stream): Option[Topic] =
+  def forStream(stream: models.Stream): Option[StreamTopic] =
     forStream(stream.getUri())
 
   /**
    * Get the topic of a tag.
    */
-  def forTag(tag: models.StreamTag): Option[Topic] =
+  def forTag(tag: models.StreamTag): Option[StreamTopic] =
     ActorHelper.normalizeName(tag.value)
       .filterNot(_.isEmpty)
       .map("@tag/" + _)
-      .map(Topic(_))
+      .map(StreamTopic(_))
 }
