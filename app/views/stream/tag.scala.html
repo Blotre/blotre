@@ -44,7 +44,7 @@
         </div>
         <ul class="stream-children" id="stream-search-results">
             <li class="no-results hidden">@Messages("blotre.stream.stream.noChildren")</li>
-            <!-- ko template: { name: 'stream-search-result-template', foreach: results } --><!-- /ko -->
+            <!-- ko template: { name: 'stream-search-result-template', foreach: children().children } --><!-- /ko -->
         </ul>
     </div>
 }

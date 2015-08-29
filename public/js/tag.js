@@ -19,8 +19,18 @@ var TagViewModel = function(tag, user, results) {
 
     self.tag = ko.observable(tag);
     self.user = ko.observable(user);
-    self.results = ko.observableArray(results);
+    self.children = ko.observable(new models.Collection(tag));
     self.query = ko.observable(undefined);
+
+    self.addChild = function(child) {
+        self.children().addChild(child);
+    };
+
+    self.removeChild = function(childUri) {
+        return self.children().children.remove(function(x) {
+             return x.uri() === childUri;
+         });
+    };
 };
 
 var normalizeQuery = function(query) {
@@ -46,7 +56,7 @@ var updateSearchResultsForQuery = function(model, query) {
     }).done(function(result) {
         $('.list-loading').addClass('hidden');
         model.query(query);
-        model.results((result || []).map(models.StreamModel.fromJson));
+        model.children().children((result || []).map(models.StreamModel.fromJson));
     });
 };
 
@@ -85,7 +95,7 @@ $(function(){
         }
     });
 
-    model.results.subscribe(function(results) {
+    model.children().children.subscribe(function(results) {
         if (results.length)
             $('.no-results').addClass('hidden');
         else
@@ -102,21 +112,19 @@ $(function(){
     });
 
     model.manager.subscribeCollection('#' + model.tag(), {
-        'StatusUpdated': function(msg) {
-            if (msg.from === model.stream().uri()) {
-                model.setColor(msg.status.color);
-                model.stream().updated(new Date(msg.status.created));
-                statusPicker.spectrum("set", msg.status.color);
-            }
-        },
-        'ParentAdded': function(msg) {
-            if (msg.from === model.stream().uri() && msg.parent.uri === model.user().userName())
-                model.favorite(FavoriteStatus.Yes);
-        },
-        'ParentRemoved': function(msg) {
-            if (msg.from === model.stream().uri() && msg.parent === model.user().userName())
-                model.favorite(FavoriteStatus.No);
-        },
+       'StatusUpdated': function(msg) {
+           var existingChild = model.removeChild(msg.from);
+           if (existingChild.length) {
+               existingChild[0].status(models.StatusModel.fromJson(msg.status));
+               model.addChild(existingChild[0]);
+           }
+       },
+       'ChildAdded': function(msg) {
+           model.addChild(models.StreamModel.fromJson(msg.child));
+       },
+       'ChildRemoved': function(msg) {
+           model.removeChild(msg.child);
+       }
     });
 
     window.onpopstate = function(e) {

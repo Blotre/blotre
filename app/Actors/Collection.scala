@@ -8,9 +8,9 @@ case class GetCollectionStatus(size: Int, offset: Int)
 case class CollectionStatusResponse(children: Seq[models.StreamUri])
 
 /**
- * Manages a collection.
+ * Base class for collection.
  *
- * Takes a snapshot of the stream's children on creation and subscribes to events on these children.
+ * Takes a snapshot of a set of children on creation and subscribes to events on these children.
  * Creates and maintains an in-memory representation of the children's state.
  */
 abstract class CollectionActorBase(val path: Address) extends Actor
@@ -117,7 +117,7 @@ class TagCollection(tag: models.StreamTag) extends CollectionActorBase(Address.c
   override def receive = {
     case StatusUpdatedEvent(source, status, _) =>
       updateChild(source, status)
-      
+
     case ChildRemovedEvent(source, childUri, _) =>
       removeChild(childUri)
 
@@ -137,7 +137,6 @@ class TagCollection(tag: models.StreamTag) extends CollectionActorBase(Address.c
     val children = loadChildren()
     StreamSupervisor.subscribe(self, children.map(_.getUri()))
   }
-
 }
 
 object TagCollection
