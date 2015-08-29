@@ -479,11 +479,11 @@ object StreamApi
   }
 
   /**
-   * Perform a tag de
+   * Perform a tag update.
    */
   private def doSetTags(stream: models.Stream.OwnedStream, tags: Seq[models.StreamTag]): Option[models.Stream] = {
-    StreamSupervisor.addedTags(stream.stream, stream.stream.getTags() diff tags)
-    StreamSupervisor.removedTags(stream.stream, tags diff stream.stream.getTags())
+    StreamSupervisor.addedTags(stream.stream, tags diff stream.stream.getTags())
+    StreamSupervisor.removedTags(stream.stream, stream.stream.getTags() diff tags)
     stream.setTags(tags)
   }
 }

@@ -23,30 +23,46 @@ object StreamSupervisor
     mediator ! DistributedPubSubMediator.Publish(topic.value, event)
 
   /**
-   * Subscribe to updates from a given stream.
+   * Subscribe to updates on a topic.
    */
-  def subscribe(subscriber: ActorRef, topic: StreamTopic): Unit =
+  private def subscribe(subscriber: ActorRef, topic: StreamTopic): Unit =
     mediator ! DistributedPubSubMediator.Subscribe(topic.value, subscriber)
+
+  /**
+   * Unsubscribe to updates on a topic.
+   */
+  private def unsubscribe(subscriber: ActorRef, topic: StreamTopic): Unit =
+    mediator ! DistributedPubSubMediator.Unsubscribe(topic.value, subscriber)
 
   /**
    * Subscribe to updates from a stream.
    */
-  def subscribe(subscriber: ActorRef, path: models.StreamUri): Unit =
+  def subscribeStream(subscriber: ActorRef, path: models.StreamUri): Unit =
     StreamTopic.forStream(path).foreach(subscribe(subscriber, _))
 
-  def subscribe(subscriber: ActorRef, paths: Iterable[models.StreamUri]): Unit =
-    paths.foreach(subscribe(subscriber, _))
+  def subscribeStream(subscriber: ActorRef, paths: Iterable[models.StreamUri]): Unit =
+    paths.foreach(subscribeStream(subscriber, _))
+
+  /**
+   * Subscribe to updates from a tag.
+   */
+  def subscribeTag(subscriber: ActorRef, path: models.StreamTag): Unit =
+    StreamTopic.forTag(path).foreach(subscribe(subscriber, _))
 
   /**
    * Unsubscribe from updates on a given stream.
    */
-  def unsubscribe(subscriber: ActorRef, path: models.StreamUri): Unit =
-    StreamTopic.forStream(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Unsubscribe(topic.value, subscriber)
-    }
+  def unsubscribeStream(subscriber: ActorRef, path: models.StreamUri): Unit =
+    StreamTopic.forStream(path).foreach(unsubscribe(subscriber, _))
 
-  def unsubscribe(subscriber: ActorRef, paths: Iterable[models.StreamUri]): Unit =
-    paths.foreach(unsubscribe(subscriber, _))
+  def unsubscribeStream(subscriber: ActorRef, paths: Iterable[models.StreamUri]): Unit =
+    paths.foreach(unsubscribeStream(subscriber, _))
+
+  /**
+   * Subscribe to updates from a tag.
+   */
+  def unsubscribeTag(subscriber: ActorRef, path: models.StreamTag): Unit =
+    StreamTopic.forTag(path).foreach(subscribe(subscriber, _))
 
   /**
    * Broadcast stream status updated.

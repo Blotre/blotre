@@ -242,7 +242,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       error("Subscription limit exceeded.")
     } else {
       models.Stream.findByUri(target) map { stream =>
-        StreamSupervisor.subscribe(self, target)
+        StreamSupervisor.subscribeStream(self, target)
         subscriptions += target.value
         statusUpdate(stream)(correlation, true)
       }
@@ -256,7 +256,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     unsubscribe(targets.map(models.StreamUri.fromString(_)).flatten)
 
   private def unsubscribe(targets: List[models.StreamUri]): Unit = {
-    StreamSupervisor.unsubscribe(self, targets)
+    StreamSupervisor.unsubscribeStream(self, targets)
     subscriptions = subscriptions -- targets.map(_.value)
   }
 

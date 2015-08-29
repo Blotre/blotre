@@ -42,7 +42,7 @@ abstract class CollectionActorBase(val path: Address) extends Actor
       child.getUri +=: updated
       state += (child.getUri -> child.status)
       CollectionSupervisor.broadcast(path, ChildAddedEvent(path, child, Some(path.value)))
-      StreamSupervisor.subscribe(self, child.getUri())
+      StreamSupervisor.subscribeStream(self, child.getUri())
     }
   }
 
@@ -50,7 +50,7 @@ abstract class CollectionActorBase(val path: Address) extends Actor
     if (hasChild(childUri)) {
       updated -= childUri
       state -= childUri
-      StreamSupervisor.unsubscribe(self, childUri)
+      StreamSupervisor.unsubscribeStream(self, childUri)
       CollectionSupervisor.broadcast(path, ChildRemovedEvent(path, childUri, Some(path.value)))
     }
   }
@@ -99,8 +99,8 @@ class StreamCollection(streamUri: models.StreamUri) extends CollectionActorBase(
 
   override def preStart(): Unit = {
     val children = loadChildren()
-    StreamSupervisor.subscribe(self, streamUri)
-    StreamSupervisor.subscribe(self, children.map(_.getUri()))
+    StreamSupervisor.subscribeStream(self, streamUri)
+    StreamSupervisor.subscribeStream(self, children.map(_.getUri()))
   }
 }
 
@@ -119,13 +119,17 @@ class TagCollection(tag: models.StreamTag) extends CollectionActorBase(Address.c
       updateChild(source, status)
 
     case ChildRemovedEvent(source, childUri, _) =>
-      removeChild(childUri)
+      if (source.value == path.value) { // Only monitor root stream child changes
+        removeChild(childUri)
+      }
 
     case StreamDeletedEvent(source, _) =>
       removeChild(source)
 
     case ChildAddedEvent(source, child, _) =>
+      if (source.value == path.value) { // Only monitor root stream child changes
         addChild(child)
+      }
 
     case msg => super.receive(msg)
   }
@@ -135,7 +139,8 @@ class TagCollection(tag: models.StreamTag) extends CollectionActorBase(Address.c
 
   override def preStart(): Unit = {
     val children = loadChildren()
-    StreamSupervisor.subscribe(self, children.map(_.getUri()))
+    StreamSupervisor.subscribeTag(self, tag)
+    StreamSupervisor.subscribeStream(self, children.map(_.getUri()))
   }
 }
 
