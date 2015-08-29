@@ -451,6 +451,12 @@ $(function(){
         saveTags(model);
     });
 
+    $('#tag-input input').keypress(function(e) {
+        if (e.keyCode === 13 /*enter*/) {
+            saveTags(model);
+        }
+    });
+
     // Child Search
     $('#stream-search-form button').on('click', function(e) {
         e.preventDefault();
@@ -458,7 +464,7 @@ $(function(){
     });
 
     $('#stream-search-form input').keypress(function(e) {
-        if (e.keyCode === 13) {
+        if (e.keyCode === 13 /*enter*/) {
             updateSearchResults(model);
             e.preventDefault();
         }

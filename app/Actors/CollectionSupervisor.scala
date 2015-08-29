@@ -146,7 +146,7 @@ object CollectionSupervisor
     //Topic.forTag(tag) map {
     //  getCollectionState(_, limit, offset)
     //} getOrElse {
-      Future.successful(null)
+      Future.successful(List())
     //}
 
   /**

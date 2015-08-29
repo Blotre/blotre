@@ -18,7 +18,7 @@ object StreamTag
   def fromString(name: String): Option[StreamTag] = {
     val trimmed = name.trim()
     if (trimmed.matches(pattern.toString))
-      Some(StreamTag(trimmed))
+      Some(StreamTag(trimmed.toLowerCase()))
     else
       None
   }
