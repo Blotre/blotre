@@ -1,6 +1,7 @@
 package models
 
 import java.util.Date
+import java.util.Arrays
 import helper.datasources.MorphiaObject
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
@@ -377,7 +378,7 @@ object Stream
    */
   def searchStreamWithTag(tag: StreamTag, query: String, limit: Int): Seq[Stream] = {
     val q = db().limit(limit)
-    q.field("tags").hasThisElement(tag.value)
+    q.field("tags").hasAnyOf(Arrays.asList(tag.value))
     q.criteria("name")
       .containsIgnoreCase(query)
     q.asList()
