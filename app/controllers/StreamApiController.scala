@@ -164,5 +164,13 @@ object StreamApiController extends Controller
   def removeTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
     toResponse(StreamApi.removeTag(request.user, streamId, tag))
   }
+
+  /**
+   * Lookup all streams with a given tag.
+   */
+  def getTagChildren(tag: String) = Action.async { implicit request =>
+      val query = request.getQueryString("query").getOrElse("")
+      TagApi.getTagChildren(tag, query, 20, 0).map(toResponse(_))
+  }
 }
 

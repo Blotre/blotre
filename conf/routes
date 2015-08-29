@@ -29,7 +29,7 @@ GET     /v0/oauth2/redeemSuccessful       controllers.OAuth2Controller.redeemSuc
 PUT     /v0/oauth2/disposable             controllers.OAuth2Controller.createDisposableClient()
 
 GET     /v0/oauth2/token_info              controllers.OAuth2Controller.tokenInfo(token: String)
-POST     /v0/oauth2/revoke                 controllers.OAuth2Controller.revoke(token: String)
+POST    /v0/oauth2/revoke                  controllers.OAuth2Controller.revoke(token: String)
 
 # Stream Api
 GET     /v0/api/stream                       controllers.StreamApiController.apiGetStreams()
@@ -47,6 +47,9 @@ GET     /v0/api/stream/:id/children          controllers.StreamApiController.api
 GET     /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiGetChild(id, child)
 PUT     /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiCreateChild(id, child)
 DELETE  /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiDeleteChild(id, child)
+
+# Tag Api
+GET     /v0/api/tag/:name/children          controllers.StreamApiController.apiGetChildren(name)
 
 # User Api
 GET     /v0/api/user/:id                   controllers.User.apiGetUser(id)

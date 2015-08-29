@@ -21,7 +21,7 @@ object StreamSupervisor
    * Get the Akka path of a stream.
    */
   private def getStreamTopic(path: models.StreamUri): Option[String] =
-    Some(ActorHelper.normalizeName(path.value))
+    ActorHelper.normalizeName(path.value)
       .filterNot(_.isEmpty)
       .map("streams/" + _)
 
@@ -32,7 +32,7 @@ object StreamSupervisor
    * Get the Akka path of a collection.
    */
   private def getCollectionTopic(tag: models.StreamTag): Option[String] =
-    Some(ActorHelper.normalizeName(tag.value))
+    ActorHelper.normalizeName(tag.value)
       .filterNot(_.isEmpty)
       .map("collections/" + _)
 

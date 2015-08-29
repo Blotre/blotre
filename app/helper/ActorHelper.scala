@@ -7,6 +7,10 @@ object ActorHelper
    * name using a whitelist. Replaces all unsupported characters with '+',
    * so there may be collisions between names.
    */
-  def normalizeName(name: String) =
-    if (name != null) name.replaceAll("""[^a-zA-Z0-9\-_$]""", "+") else ""
+  def normalizeName(name: String): Option[String] = {
+    if (name == null)
+      return None
+    val normalized = name.replaceAll( """[^a-zA-Z0-9\-_$]""", "+")
+    if (normalized.isEmpty) None else Some(normalized)
+  }
 }

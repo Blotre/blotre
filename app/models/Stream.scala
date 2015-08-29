@@ -362,5 +362,26 @@ object Stream
       .filter("childId =", childId)
       .get)
 
+  /**
+   * Lookup children by tag.
+   */
+  def getStreamWithTag(tag: StreamTag, limit: Int): Seq[Stream] = {
+    val q = db().limit(limit)
+    q.field("tags").hasThisElement(tag.value)
+    q.asList()
+      .asScala.toList
+  }
+
+  /**
+   * Lookup children by tag with a query
+   */
+  def searchStreamWithTag(tag: StreamTag, query: String, limit: Int): Seq[Stream] = {
+    val q = db().limit(limit)
+    q.field("tags").hasThisElement(tag.value)
+    q.criteria("name")
+      .containsIgnoreCase(query)
+    q.asList()
+      .asScala.toList
+  }
 
 }

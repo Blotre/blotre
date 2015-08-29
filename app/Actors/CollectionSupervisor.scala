@@ -56,16 +56,20 @@ class CollectionSupervisor extends Actor
       }
 
     case GetCollection(uri) =>
-      sender ! GetCollectionResponse(getOrCreateChild(uri))
+      getOrCreateChild(uri) map {
+        sender ! GetCollectionResponse(_)
+      } getOrElse {
+        sender ! GetCollectionResponse(null)
+      }
   }
 
   /**
    * Get an existing child value or create a new one.
    */
-  private def getOrCreateChild(uri: String) = {
-    val name = ActorHelper.normalizeName(uri)
-    context.child(name) getOrElse (context.actorOf(CollectionActor.props(uri), name = name))
-  }
+  private def getOrCreateChild(uri: String) =
+    ActorHelper.normalizeName(uri) map { name =>
+      context.child(name).getOrElse(context.actorOf(CollectionActor.props(uri), name = name))
+    }
 
   /**
    * Invoked when a subscriber has been successfully registered.
@@ -111,6 +115,25 @@ class CollectionSupervisor extends Actor
 
 object CollectionSupervisor
 {
+  /**
+   * Get the Akka path of a stream collection.
+   */
+  private def getStreamTopic(path: models.StreamUri): Option[String] =
+    ActorHelper.normalizeName(path.value)
+      .filterNot(_.isEmpty)
+      .map("streams/" + _)
+
+  private def getStreamTopic(path: String): Option[String] =
+    models.StreamUri.fromString(path).flatMap(getStreamTopic)
+
+  /**
+   * Get the Akka path of a tagcollection.
+   */
+  private def getTagTopic(tag: models.StreamTag): Option[String] =
+    Some(ActorHelper.normalizeName(tag.value))
+      .filterNot(_.isEmpty)
+      .map("tags/" + _)
+
   def props(): Props = Props(new CollectionSupervisor())
 
   lazy val supervisor = Akka.system.actorOf(props())
@@ -121,17 +144,30 @@ object CollectionSupervisor
    * Get the actor for a collection.
    */
   private def getCollection(uri: String): Future[ActorRef] =
-    models.Stream.findByUri(uri).map(getCollection(_)).getOrElse(Future.successful(null))
-
-  private def getCollection(stream: models.Stream): Future[ActorRef] =
-    ask(supervisor, GetCollection(stream.uri)).mapTo[GetCollectionResponse].map(_.actor)
+    ask(supervisor, GetCollection(uri)).mapTo[GetCollectionResponse].map(_.actor)
 
   /**
-   * Get the in-memory state of a collection.
+   * Get the in-memory state of a stream collection.
    */
-  def getCollectionState(uri: String, limit: Int, offset: Int): Future[List[String]] =
-    getCollection(uri) flatMap { collection =>
-      ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
+  def getStreamCollection(uri: models.StreamUri, limit: Int, offset: Int): Future[List[String]] =
+    getStreamTopic(uri) map { topic =>
+      getCollection(topic) flatMap { collection =>
+        ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
+      }
+    } getOrElse {
+      Future.successful(null)
+    }
+
+  /**
+   * Get the in-memory state of a tag collection.
+   */
+  def getTagCollection(tag: models.StreamTag, limit: Int, offset: Int): Future[List[String]] =
+    getTagTopic(tag) map { topic =>
+      getCollection(topic) flatMap { collection =>
+        ask(collection, GetCollectionStatus(limit, offset)).mapTo[List[String]]
+      }
+    } getOrElse {
+      Future.successful(null)
     }
 
   /**

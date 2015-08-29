@@ -247,7 +247,7 @@ object StreamApi
   def getChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[List[models.Stream]]] =
     if (query.isEmpty) {
       // Get most recently updated children
-      CollectionSupervisor.getCollectionState(stream.uri, limit, offset) map { children =>
+      CollectionSupervisor.getStreamCollection(stream.getUri(), limit, offset) map { children =>
         ApiOk(children.map(models.Stream.findByUri(_)).flatten[models.Stream])
       }
     } else {
