@@ -11,11 +11,17 @@ case class StreamTopic private(value: String)
 object StreamTopic
 {
   /**
+   * Get topic of already validated string path.
+   */
+  private def forString(path: String): StreamTopic =
+    StreamTopic(path.toLowerCase())
+
+  /**
    * Get the topic of a stream.
    */
   def forStream(path: models.StreamUri): Option[StreamTopic] =
-    Some(StreamTopic(
-      "@stream/" + path.components()
+    Some(forString("@stream/" +
+      path.components()
         .map(ActorHelper.normalizeName(_))
         .mkString("/")))
 
@@ -28,6 +34,5 @@ object StreamTopic
   def forTag(tag: models.StreamTag): Option[StreamTopic] =
     ActorHelper.normalizeName(tag.value)
       .filterNot(_.isEmpty)
-      .map("@tag/" + _)
-      .map(StreamTopic(_))
+      .map(x => forString("@tag/" + x))
 }
