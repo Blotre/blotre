@@ -52,25 +52,20 @@ object StreamSupervisor
   /**
    * Broadcast stream status updated.
    */
-  def updateStatus(stream: models.Stream, status: models.Status): Unit = {
-    StreamTopic.forStream(stream) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic.value, StatusUpdatedEvent(stream.getUri().value, status))
+  def updateStatus(stream: models.Stream, status: models.Status): Unit =
+    StreamTopic.forStream(stream) foreach {
+      broadcast(_, StatusUpdatedEvent(stream.getUri().value, status))
     }
-
-    stream.getTags().flatMap(StreamTopic.forTag(_)) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic.value, StatusUpdatedEvent(stream.getUri().value, status))
-    }
-  }
 
   /**
    * Broadcast stream child added.
    */
   def addChild(parent: models.Stream, child: models.Stream): Unit = {
-    StreamTopic.forStream(parent) foreach { parentTopic =>
-      mediator ! DistributedPubSubMediator.Publish(parentTopic.value, ChildAddedEvent(parent.getUri().value, child))
+    StreamTopic.forStream(parent) foreach {
+      broadcast(_, ChildAddedEvent(parent.getUri().value, child))
     }
-    StreamTopic.forStream(child) foreach { childTopic =>
-      mediator ! DistributedPubSubMediator.Publish(childTopic.value, ParentAddedEvent(child.getUri().value, parent))
+    StreamTopic.forStream(child) foreach {
+      broadcast(_, ParentAddedEvent(child.getUri().value, parent))
     }
   }
 
@@ -78,11 +73,11 @@ object StreamSupervisor
    * Broadcast stream child removed.
    */
   def removeChild(path: models.StreamUri, childUri: models.StreamUri): Unit = {
-    StreamTopic.forStream(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic.value, ChildRemovedEvent(path.value, childUri.value))
+    StreamTopic.forStream(path) foreach {
+      broadcast(_, ChildRemovedEvent(path.value, childUri.value))
     }
-    StreamTopic.forStream(childUri) foreach { childTopic =>
-      mediator ! DistributedPubSubMediator.Publish(childTopic.value, ParentRemovedEvent(childUri.value, path.value))
+    StreamTopic.forStream(childUri) foreach {
+      broadcast(_, ParentRemovedEvent(childUri.value, path.value))
     }
   }
 
@@ -90,8 +85,8 @@ object StreamSupervisor
    * Broadcast stream deleted.
    */
   def deleteStream(path: models.StreamUri): Unit =
-    StreamTopic.forStream(path) foreach { topic =>
-      mediator ! DistributedPubSubMediator.Publish(topic.value, StreamDeletedEvent(path.value))
+    StreamTopic.forStream(path) foreach {
+      broadcast(_, StreamDeletedEvent(path.value))
     }
 
   /**
