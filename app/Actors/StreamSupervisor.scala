@@ -53,7 +53,7 @@ object StreamSupervisor
    */
   def updateStatus(stream: models.Stream, status: models.Status): Unit =
     StreamTopic.forStream(stream) foreach {
-      broadcast(_, StatusUpdatedEvent(stream.getUri().value, status))
+      broadcast(_, StatusUpdatedEvent(stream.getUri(), status))
     }
 
   /**
@@ -61,10 +61,10 @@ object StreamSupervisor
    */
   def addChild(parent: models.Stream, child: models.Stream): Unit = {
     StreamTopic.forStream(parent) foreach {
-      broadcast(_, ChildAddedEvent(Address.forStream(parent), child))
+      broadcast(_, ChildAddedEvent(Address.create(parent), child))
     }
     StreamTopic.forStream(child) foreach {
-      broadcast(_, ParentAddedEvent(Address.forStream(child), parent))
+      broadcast(_, ParentAddedEvent(Address.create(child), parent))
     }
   }
 
@@ -73,10 +73,10 @@ object StreamSupervisor
    */
   def removeChild(path: models.StreamUri, childUri: models.StreamUri): Unit = {
     StreamTopic.forStream(path) foreach {
-      broadcast(_, ChildRemovedEvent(Address.forStream(path), childUri.value))
+      broadcast(_, ChildRemovedEvent(Address.create(path), childUri))
     }
     StreamTopic.forStream(childUri) foreach {
-      broadcast(_, ParentRemovedEvent(Address.forStream(path), path.value))
+      broadcast(_, ParentRemovedEvent(Address.create(path), path))
     }
   }
 
@@ -85,7 +85,7 @@ object StreamSupervisor
    */
   def deleteStream(path: models.StreamUri): Unit =
     StreamTopic.forStream(path) foreach {
-      broadcast(_, StreamDeletedEvent(path.value))
+      broadcast(_, StreamDeletedEvent(path))
     }
 
   /**
@@ -94,7 +94,7 @@ object StreamSupervisor
   def addedTags(stream: models.Stream, addedTags: Seq[models.StreamTag]): Unit =
     addedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
-        broadcast(_, ChildAddedEvent(Address.forTag(tag), stream))
+        broadcast(_, ChildAddedEvent(Address.create(tag), stream))
       }
     }
 
@@ -104,7 +104,7 @@ object StreamSupervisor
   def removedTags(stream: models.Stream, removedTags: Seq[models.StreamTag]): Unit =
     removedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
-        broadcast(_, ChildRemovedEvent(Address.forTag(tag), stream.getUri().value))
+        broadcast(_, ChildRemovedEvent(Address.create(tag), stream.getUri()))
       }
     }
 }

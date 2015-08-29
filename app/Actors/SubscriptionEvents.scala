@@ -5,7 +5,7 @@ import play.api.libs.json._
 /**
  * Stream status update event.
  */
-case class StatusUpdatedEvent(uri: String, status: models.Status, source: Option[String] = None)
+case class StatusUpdatedEvent(uri: models.StreamUri, status: models.Status, source: Option[String] = None)
 
 object StatusUpdatedEvent
 {
@@ -22,7 +22,7 @@ object StatusUpdatedEvent
 /**
  * Stream deleted event
  */
-case class StreamDeletedEvent(uri: String, source: Option[String] = None)
+case class StreamDeletedEvent(uri: models.StreamUri, source: Option[String] = None)
 
 object StreamDeletedEvent extends
 {
@@ -72,7 +72,7 @@ object ParentAddedEvent extends
 /**
  * Stream child removed event.
  */
-case class ChildRemovedEvent(uri: Address, child: String, source: Option[String] = None)
+case class ChildRemovedEvent(uri: Address, child: models.StreamUri, source: Option[String] = None)
 
 object ChildRemovedEvent extends
 {
@@ -89,7 +89,7 @@ object ChildRemovedEvent extends
 /**
  * Stream removed as the child of a stream.
  */
-case class ParentRemovedEvent(uri: Address, parent: String, source: Option[String] = None)
+case class ParentRemovedEvent(uri: Address, parent: models.StreamUri, source: Option[String] = None)
 
 object ParentRemovedEvent extends
 {

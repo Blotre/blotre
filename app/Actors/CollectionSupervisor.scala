@@ -17,7 +17,7 @@ case class GetCollectionResponse(actor: ActorRef)
 
 case class SubscribeCollection(topic: models.StreamUri, ref: ActorRef)
 case class UnsubscribeCollection(topic: models.StreamUri, ref: ActorRef)
-case class PublishCollection(topic: models.StreamUri, msg:  Any)
+case class PublishCollection(topic: CollectionTopic, msg:  Any)
 
 /**
  * Manages all collections in the system.
@@ -44,8 +44,7 @@ class CollectionSupervisor extends Actor
       onUnsubscribe(topic, subscriber)
       mediator ! DistributedPubSubMediator.Unsubscribe(topic.value, subscriber)
 
-    case PublishCollection(path, msg) =>
-      val topic = CollectionTopic.forStream(path)
+    case PublishCollection(topic, msg) =>
       mediator ! DistributedPubSubMediator.Publish(topic.value, msg)
 
     case GetCollection(topic) =>
@@ -166,6 +165,6 @@ object CollectionSupervisor
   /**
    * Broadcast an event for a collection.
    */
-  def broadcast[A](path: models.StreamUri, event: A): Unit =
-    supervisor ! PublishCollection(path, event)
+  def broadcast[A](publisher: Address, event: A): Unit =
+    supervisor ! PublishCollection(CollectionTopic.fromAddress(publisher), event)
 }

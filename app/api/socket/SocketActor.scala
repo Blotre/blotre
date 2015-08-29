@@ -193,7 +193,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     }
 
   private def statusUpdate(stream: models.Stream)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    ack(StatusUpdatedEvent(stream.uri, stream.status, None))
+    ack(StatusUpdatedEvent(stream.getUri, stream.status, None))
 
   /**
    * Get the status of a stream.

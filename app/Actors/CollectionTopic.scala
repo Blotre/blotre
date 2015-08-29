@@ -42,4 +42,13 @@ object CollectionTopic {
    */
   def forTag(tag: models.StreamTag): TagCollectionTopic =
     TagCollectionTopic(tag)
+
+  /**
+   * Create a topic from an address.
+   */
+  def fromAddress(address: Address): CollectionTopic =
+    address match {
+      case StreamAddress(uri) => forStream(uri)
+      case TagAddress(tag) => forTag(tag)
+    }
 }

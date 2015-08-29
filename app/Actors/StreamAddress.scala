@@ -25,15 +25,15 @@ object Address {
   /**
    * Get the topic of a stream.
    */
-  def forStream(uri: models.StreamUri): StreamAddress =
+  def create(uri: models.StreamUri): StreamAddress =
     StreamAddress(uri)
 
-  def forStream(stream: models.Stream): StreamAddress =
-    forStream(stream.getUri())
+  def create(stream: models.Stream): StreamAddress =
+    create(stream.getUri())
 
   /**
    * Get the topic of a tag.
    */
-  def forTag(tag: models.StreamTag): TagAddress =
+  def create(tag: models.StreamTag): TagAddress =
     TagAddress(tag)
 }
