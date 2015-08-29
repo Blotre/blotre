@@ -179,7 +179,7 @@ object Stream
    *
    * TODO: order by score
    */
-  def findByQuery(query: StreamQuery): List[Stream] = {
+  def findByQuery(query: StreamQuery): Seq[Stream] = {
     val q = db().limit(20)
     q.criteria("name")
       .containsIgnoreCase(query.value)
@@ -191,7 +191,7 @@ object Stream
    *
    * TODO: order by score
    */
-  def findByStatusQuery(query: StreamQuery): List[Stream] = {
+  def findByStatusQuery(query: StreamQuery): Seq[Stream] = {
     val q = db().limit(20)
     q.criteria("status.color")
       .containsIgnoreCase(query.value)
@@ -201,7 +201,7 @@ object Stream
   /**
    * Lookup streams by last updated time.
    */
-  def findByUpdated(): List[Stream] =
+  def findByUpdated(): Seq[Stream] =
     db()
       .order("-updated")
       .limit(20)
@@ -339,10 +339,10 @@ object Stream
   /**
    * Query the children of a given stream
    */
-  def getChildrenByQuery(parent: Stream, query: String, limit: Int): Seq[Stream] = {
+  def getChildrenByQuery(parent: Stream, query: StreamQuery, limit: Int): Seq[Stream] = {
     val q = childDb().limit(limit).filter("parentId =", parent.id)
     q.criteria("childName")
-      .containsIgnoreCase(query)
+      .containsIgnoreCase(query.value)
     q.asList()
       .asScala.toList
       .map(x => findById(x.childId)).flatten
@@ -370,11 +370,11 @@ object Stream
   /**
    * Lookup children by tag with a query
    */
-  def searchStreamWithTag(tag: StreamTag, query: String, limit: Int): Seq[Stream] = {
+  def searchStreamWithTag(tag: StreamTag, query: StreamQuery, limit: Int): Seq[Stream] = {
     val q = db().limit(limit).order("-updated")
     q.field("tags").hasAnyOf(Arrays.asList(tag.value))
     q.criteria("name")
-      .containsIgnoreCase(query)
+      .containsIgnoreCase(query.value)
     q.asList()
       .asScala.toList
   }

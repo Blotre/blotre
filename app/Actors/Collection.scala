@@ -36,16 +36,16 @@ abstract class CollectionActorBase(path: models.StreamUri) extends Actor
     if (!hasChild(child.getUri())) {
       child.getUri +=: updated
       state += (child.getUri -> child.status)
-      CollectionSupervisor.broadcast(path, ChildAddedEvent(path.value, child, Some(path.value)))
+      CollectionSupervisor.broadcast(path, ChildAddedEvent(Address.forStream(path), child, Some(path.value)))
       StreamSupervisor.subscribe(self, child.getUri())
     }
 
-  protected def removeChild(childUri:  models.StreamUri): Unit =
+  protected def removeChild(childUri: models.StreamUri): Unit =
     if (hasChild(childUri)) {
       updated -= childUri
       state -= childUri
       StreamSupervisor.unsubscribe(self, childUri)
-      CollectionSupervisor.broadcast(path, ChildRemovedEvent(path.value, childUri.value, Some(path.value)))
+      CollectionSupervisor.broadcast(path, ChildRemovedEvent(Address.forStream(path), childUri.value, Some(path.value)))
     }
 }
 
@@ -62,7 +62,7 @@ class StreamCollection(streamUri: models.StreamUri) extends CollectionActorBase(
 
     case ChildRemovedEvent(uri, childUri, _) =>
       if (uri == streamUri.value) { // Only monitor root stream child changes
-        models.StreamUri.fromString(uri).foreach(removeChild(_))
+        models.StreamUri.fromString(childUri).foreach(removeChild(_))
       }
 
     case StreamDeletedEvent(uri, _) =>
@@ -120,7 +120,7 @@ class TagCollection(tag: models.StreamTag)  extends CollectionActorBase(models.S
       models.StreamUri.fromString(uri).foreach(updateChild(_, status))
 
     case ChildRemovedEvent(uri, childUri, _) =>
-      models.StreamUri.fromString(uri).foreach(removeChild(_))
+      models.StreamUri.fromString(childUri).foreach(removeChild(_))
 
 
     case StreamDeletedEvent(uri, _) =>

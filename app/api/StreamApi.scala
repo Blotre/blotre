@@ -234,22 +234,24 @@ object StreamApi
    */
   def getChildren(uri: String, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
     models.Stream.findByUri(uri) map { stream =>
-      getChildren(stream, query, limit, offset)
+      models.StreamQuery.fromString(query) map {
+        getChildren(stream, _, limit, offset)
+      } getOrElse {
+        getChildren(stream, limit, offset)
+      }
     } getOrElse {
-      Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
+    Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
+  }
+
+  def getChildren(stream: models.Stream, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
+    CollectionSupervisor.getStreamCollection(stream.getUri(), limit, offset) map { children =>
+      ApiOk(children.flatMap(models.Stream.findByUri(_)))
     }
 
-  def getChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
-    if (query.isEmpty) {
-      // Get most recently updated children
-      CollectionSupervisor.getStreamCollection(stream.getUri(), limit, offset) map { children =>
-        ApiOk(children.flatMap(models.Stream.findByUri(_)))
-      }
-    } else {
-      // Lookup children using query
-      Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, limit)))
-    }
-  
+  def getChildren(stream: models.Stream, query: models.StreamQuery, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
+    Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, limit)))
+
+
   /**
    * Link an existing stream as a child of a stream.
    *

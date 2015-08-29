@@ -101,6 +101,24 @@ $(function(){
         window.history.pushState({ query: query }, '', url);
     });
 
+    model.manager.subscribe('#' + model.tag(), {
+        'StatusUpdated': function(msg) {
+            if (msg.from === model.stream().uri()) {
+                model.setColor(msg.status.color);
+                model.stream().updated(new Date(msg.status.created));
+                statusPicker.spectrum("set", msg.status.color);
+            }
+        },
+        'ParentAdded': function(msg) {
+            if (msg.from === model.stream().uri() && msg.parent.uri === model.user().userName())
+                model.favorite(FavoriteStatus.Yes);
+        },
+        'ParentRemoved': function(msg) {
+            if (msg.from === model.stream().uri() && msg.parent === model.user().userName())
+                model.favorite(FavoriteStatus.No);
+        },
+    });
+
     window.onpopstate = function(e) {
         updateFromQueryString(model);
     };

@@ -61,10 +61,10 @@ object StreamSupervisor
    */
   def addChild(parent: models.Stream, child: models.Stream): Unit = {
     StreamTopic.forStream(parent) foreach {
-      broadcast(_, ChildAddedEvent(parent.getUri().value, child))
+      broadcast(_, ChildAddedEvent(Address.forStream(parent), child))
     }
     StreamTopic.forStream(child) foreach {
-      broadcast(_, ParentAddedEvent(child.getUri().value, parent))
+      broadcast(_, ParentAddedEvent(Address.forStream(child), parent))
     }
   }
 
@@ -73,10 +73,10 @@ object StreamSupervisor
    */
   def removeChild(path: models.StreamUri, childUri: models.StreamUri): Unit = {
     StreamTopic.forStream(path) foreach {
-      broadcast(_, ChildRemovedEvent(path.value, childUri.value))
+      broadcast(_, ChildRemovedEvent(Address.forStream(path), childUri.value))
     }
     StreamTopic.forStream(childUri) foreach {
-      broadcast(_, ParentRemovedEvent(childUri.value, path.value))
+      broadcast(_, ParentRemovedEvent(Address.forStream(path), path.value))
     }
   }
 
@@ -94,7 +94,7 @@ object StreamSupervisor
   def addedTags(stream: models.Stream, addedTags: Seq[models.StreamTag]): Unit =
     addedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
-        broadcast(_, ChildAddedEvent("#" + tag.value, stream))
+        broadcast(_, ChildAddedEvent(Address.forTag(tag), stream))
       }
     }
 
@@ -104,7 +104,7 @@ object StreamSupervisor
   def removedTags(stream: models.Stream, removedTags: Seq[models.StreamTag]): Unit =
     removedTags foreach { tag =>
       StreamTopic.forTag(tag) foreach {
-        broadcast(_, ChildRemovedEvent("#" + tag.value, stream.getUri().value))
+        broadcast(_, ChildRemovedEvent(Address.forTag(tag), stream.getUri().value))
       }
     }
 }

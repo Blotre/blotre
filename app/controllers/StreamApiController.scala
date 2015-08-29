@@ -1,7 +1,6 @@
 package controllers
 
 import api._
-import play.api.data.validation._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -98,11 +97,7 @@ object StreamApiController extends Controller
    */
   def apiGetChildren(id: String) = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
-    models.Stream.findById(id) map { stream =>
-      StreamApi.getChildren(stream, query, 20, 0).map(toResponse(_))
-    } getOrElse {
-      Future.successful(NotFound(Json.toJson(ApiError("Stream does not exist."))))
-    }
+    StreamApi.getChildren(id, query, 20, 0).map(toResponse(_))
   }
 
   /**

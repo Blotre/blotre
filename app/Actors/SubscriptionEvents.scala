@@ -38,7 +38,7 @@ object StreamDeletedEvent extends
 /**
  * Stream child added event.
  */
-case class ChildAddedEvent(uri: String, child: models.Stream, source: Option[String] = None)
+case class ChildAddedEvent(uri: Address, child: models.Stream, source: Option[String] = None)
 
 object ChildAddedEvent extends
 {
@@ -55,7 +55,7 @@ object ChildAddedEvent extends
 /**
  * Stream added as the child of a stream.
  */
-case class ParentAddedEvent(uri: String, parent: models.Stream, source: Option[String] = None)
+case class ParentAddedEvent(uri: Address, parent: models.Stream, source: Option[String] = None)
 
 object ParentAddedEvent extends
 {
@@ -72,7 +72,7 @@ object ParentAddedEvent extends
 /**
  * Stream child removed event.
  */
-case class ChildRemovedEvent(uri: String, child: String, source: Option[String] = None)
+case class ChildRemovedEvent(uri: Address, child: String, source: Option[String] = None)
 
 object ChildRemovedEvent extends
 {
@@ -89,7 +89,7 @@ object ChildRemovedEvent extends
 /**
  * Stream removed as the child of a stream.
  */
-case class ParentRemovedEvent(uri: String, parent: String, source: Option[String] = None)
+case class ParentRemovedEvent(uri: Address, parent: String, source: Option[String] = None)
 
 object ParentRemovedEvent extends
 {
