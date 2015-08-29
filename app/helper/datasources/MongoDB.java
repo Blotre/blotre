@@ -1,9 +1,5 @@
 package helper.datasources;
 
-/**
- * Created by ntenisOT on 16/10/14.
- */
-
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import models.*;
@@ -22,7 +18,6 @@ public final class MongoDB
         MongoClientURI mongoURI = new MongoClientURI(_mongoURI);
 
         MorphiaObject.mongo = null;
-
         try {
             MorphiaObject.mongo = new MongoClient(mongoURI);
         } catch(UnknownHostException e) {
@@ -31,6 +26,8 @@ public final class MongoDB
 
         if (MorphiaObject.mongo != null) {
             MorphiaObject.morphia = new Morphia();
+            MorphiaObject.morphia.getMapper().getOptions().storeEmpties = true;
+
             MorphiaObject.datastore = MorphiaObject.morphia.createDatastore(MorphiaObject.mongo, mongoURI.getDatabase());
 
             // Map classes

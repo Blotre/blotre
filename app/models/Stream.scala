@@ -383,7 +383,7 @@ object Stream
    * Lookup children by tag with a query
    */
   def searchStreamWithTag(tag: StreamTag, query: String, limit: Int): Seq[Stream] = {
-    val q = db().limit(limit)
+    val q = db().limit(limit).order("-updated")
     q.field("tags").hasAnyOf(Arrays.asList(tag.value))
     q.criteria("name")
       .containsIgnoreCase(query)
