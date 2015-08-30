@@ -26,30 +26,30 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   private var collectionSubscriptions = Set[Actors.Address]()
   
   override def postStop() {
-    collectionSubscriptions.foreach(unsubscribeCollection(_))
+    collectionSubscriptions.foreach(unsubscribeCollection)
   }
 
   /**
    * Write a value to the socket.
    */
-  private def output[T](value: => T)(implicit w: Writes[T]) =
+  private def output[T](value: => T)(implicit w: Writes[T]): Unit =
    out ! Json.toJson(value)
 
   /**
    * Write a success message to the socket.
    */
-  private def ack[T](value: => T)(implicit w: Writes[T], acknowledge: Boolean) =
+  private def ack[T](value: => T)(implicit w: Writes[T], acknowledge: Boolean): Unit =
     if (acknowledge)
       output(value)
 
   /**
    * Write an error result to the socket.
    */
-  private def error(message: String)(implicit correlation: Int) =
+  private def error(message: String)(implicit correlation: Int): Unit =
     output(SocketError(message, correlation))
 
   private def recieveMessage[T](msg: JsValue)(f: T => Unit)(implicit r: Reads[T], correlation: Int) =
-    (Json.fromJson[T](msg)).fold(
+    Json.fromJson[T](msg).fold(
       valid = f,
       invalid = e =>
         error("Could not process request."))
@@ -95,6 +95,16 @@ class SocketActor(user: User, out: ActorRef) extends Actor
         case "SetStatus" =>
           recieveMessage[SetStatus](msg) { x =>
             setStatus(user, x.of, x.status)
+          }
+
+        case "GetTags" =>
+          recieveMessage[GetTags](msg) { x =>
+            getTags(x.of)
+          }
+
+        case "SetTags" =>
+          recieveMessage[SetTags](msg) { x =>
+            setTags(user, x.of, x.tags)
           }
 
         case "GetChildren" =>
@@ -187,6 +197,38 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   private def getStatus(stream: models.Stream)(implicit correlation: Int, acknowledge: Boolean): Unit =
     ack(CurrentStatusResponse(stream.uri, stream.status, correlation))
 
+  /**
+   * Get the tags of a stream.
+   */
+  private def getTags(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    models.StreamUri.fromString(uri) map { uri =>
+      StreamApi.getTags(uri) match {
+        case ApiSuccess(tags) =>
+          ack(StreamTagResponse(tags, correlation))
+
+        case ApiFailure(e) =>
+          error(e.error)
+      }
+    } getOrElse {
+      error("No such stream.")
+    }
+
+  private def setTags(user: models.User, uri: String, tags: api.ApiSetTagsData)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    models.StreamUri.fromString(uri) map { uri =>
+      StreamApi.setTags(user, uri, tags.tags) match {
+        case ApiSuccess(newTags) =>
+          ack(StreamTagResponse(newTags, correlation))
+
+        case ApiFailure(e) =>
+          error(e.error)
+      }
+    } getOrElse {
+      error("No such stream.")
+    }
+
+  /**
+   *
+   */
   private def statusUpdate(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     models.Stream.findByUri(uri) map (statusUpdate) getOrElse {
       error("No such stream.")

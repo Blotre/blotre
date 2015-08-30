@@ -8,8 +8,7 @@ import play.api.libs.json._
  */
 case class StreamResponse(stream: models.Stream, correlation: Int)
 
-object StreamResponse
-{
+object StreamResponse {
   implicit val statusWrites = new Writes[StreamResponse] {
     def writes(x: StreamResponse): JsValue =
       Json.obj(
@@ -64,6 +63,21 @@ object SocketError
       Json.obj(
         "type" -> "Error",
         "error" -> x.error,
+        "correlation" -> x.correlation)
+  }
+}
+
+/**
+ * Stream tag response.
+ */
+case class StreamTagResponse(tags: Seq[models.StreamTag], correlation: Int)
+
+object StreamTagResponse {
+  implicit val statusWrites = new Writes[StreamTagResponse] {
+    def writes(x: StreamTagResponse): JsValue =
+      Json.obj(
+        "type" -> "StreamTags",
+        "tags" -> x.tags,
         "correlation" -> x.correlation)
   }
 }

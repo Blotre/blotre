@@ -342,7 +342,14 @@ object StreamApi
    */
   def getTags(streamId: String): ApiResult[Seq[models.StreamTag]] =
     models.Stream.findById(streamId) map { stream =>
-      ApiOk(stream.getTags)
+      ApiOk(stream.getTags())
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  def getTags(streamId: models.StreamUri): ApiResult[Seq[models.StreamTag]] =
+    models.Stream.findByUri(streamId) map { stream =>
+      ApiOk(stream.getTags())
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
     }
@@ -350,23 +357,36 @@ object StreamApi
   /**
    * Update the tags associated with a given stream.
    */
-  def setTags(user: models.User, streamId: String, data: ApiSetTagsData) : ApiResult[models.Stream] =
+  def setTags(user: models.User, streamId: String, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] =
     models.Stream.findById(streamId) map {
-      setTags(user, _, data)
+      setTags(user, _, tags)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
     }
 
-  def setTags(user: models.User, stream: models.Stream, data: ApiSetTagsData) : ApiResult[models.Stream] =
+  def setTags(user: models.User, uri: models.StreamUri, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] =
+    models.Stream.findByUri(uri) map {
+      setTags(user, _, tags)
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
+
+  def setTags(user: models.User, stream: models.Stream, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] =
     models.Stream.asOwner(stream, user) map {
-      setTags(_, data)
+      setTags(_, tags)
     } getOrElse {
       ApiUnauthroized(ApiError("User does not have permission to add tags."))
     }
 
-  def setTags(stream: models.Stream.OwnedStream, data: ApiSetTagsData) : ApiResult[models.Stream] = {
-    doSetTags(stream, data.tags)
-    ApiOk(stream.stream)
+  def setTags(stream: models.Stream.OwnedStream, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] = {
+    if (tags.size > models.Stream.maxTags) {
+      ApiCouldNotProccessRequest(ApiError("Too many tags."))
+    } else if (tags.distinct.size != tags.size) {
+      ApiCouldNotProccessRequest(ApiError("Duplicate tags not allowed."))
+    } else {
+      doSetTags(stream, tags)
+      ApiOk(stream.stream.getTags())
+    }
   }
 
   /**

@@ -50,6 +50,40 @@ object GetStatus {
 /**
  *
  */
+case class SetStatus(of: String, status: ApiSetStatusData)
+
+object SetStatus {
+  implicit val reads: Reads[SetStatus] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "status").read[ApiSetStatusData]
+    )(SetStatus.apply _)
+}
+
+/**
+ *
+ */
+case class GetTags(of: String)
+
+object GetTags {
+  implicit val reads: Reads[GetTags] =
+    (JsPath \ "of").read[String].map(GetTags.apply)
+}
+
+/**
+ *
+ */
+case class SetTags(of: String, tags: api.ApiSetTagsData)
+
+object SetTags {
+  implicit val reads: Reads[SetTags] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "tags").read[api.ApiSetTagsData]
+    )(SetTags.apply _)
+}
+
+/**
+ *
+ */
 case class GetChildren(of: String, query: Option[String], limit: Option[Int], offset: Option[Int])
 
 object GetChildren {
@@ -61,17 +95,6 @@ object GetChildren {
     )(GetChildren.apply _)
 }
 
-/**
- *
- */
-case class SetStatus(of: String, status: ApiSetStatusData)
-
-object SetStatus {
-  implicit val reads: Reads[SetStatus] = (
-    (JsPath \ "of").read[String] and
-      (JsPath \ "status").read[ApiSetStatusData]
-    )(SetStatus.apply _)
-}
 
 /**
  *

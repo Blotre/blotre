@@ -137,7 +137,7 @@ object StreamApiController extends Controller
    */
   def setTags(streamId: String) = AuthorizedAction(parse.json) { implicit request =>
     Json.fromJson[ApiSetTagsData](request.body) map { tags =>
-      toResponse(StreamApi.setTags(request.user, streamId, tags))
+      toResponse(StreamApi.setTags(request.user, streamId, tags.tags))
     } recoverTotal { e =>
       UnprocessableEntity(Json.toJson(ApiError("Could not process request.", e)))
     }
