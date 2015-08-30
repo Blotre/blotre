@@ -7,96 +7,88 @@ import play.api.libs.functional.syntax._
 /**
  *
  */
-case class SocketApiGetStreams(query: Option[String], limit: Option[Int], offset: Option[Int])
+case class GetStreams(query: Option[String], limit: Option[Int], offset: Option[Int])
 
-object SocketApiGetStreams
-{
-  implicit val socketApiGetStreamsReasds: Reads[SocketApiGetStreams] = (
+object GetStreams {
+  implicit val reads: Reads[GetStreams] = (
     (JsPath \ "query").readNullable[String] and
       (JsPath \ "limit").readNullable[Int] and
       (JsPath \ "offset").readNullable[Int]
-    )(SocketApiGetStreams.apply _)
+    )(GetStreams.apply _)
 }
 
 /**
  *
  */
-case class SocketApiGetStream(uri: String)
+case class GetStream(uri: String)
 
-object SocketApiGetStream
-{
-  implicit val socketApiGetStreamReads: Reads[SocketApiGetStream] =
-    (JsPath \ "uri").read[String].map(SocketApiGetStream.apply)
+object GetStream {
+  implicit val reads: Reads[GetStream] =
+    (JsPath \ "uri").read[String].map(GetStream.apply)
 }
 
 /**
  *
  */
-case class SocketApiDeleteStream(uri: String)
+case class DeleteStream(uri: String)
 
-object SocketApiDeleteStream
-{
-  implicit val socketApiDeleteStreamReads: Reads[SocketApiDeleteStream] =
-    (JsPath \ "uri").read[String].map(SocketApiDeleteStream.apply)
+object DeleteStream {
+  implicit val reads: Reads[DeleteStream] =
+    (JsPath \ "uri").read[String].map(DeleteStream.apply)
 }
 
 /**
  *
  */
-case class SocketApiGetStatus(of: String)
+case class GetStatus(of: String)
 
-object SocketApiGetStatus
-{
-  implicit val socketApiGetStatusReads: Reads[SocketApiGetStatus] =
-    (JsPath \ "of").read[String].map(SocketApiGetStatus.apply)
+object GetStatus {
+  implicit val reads: Reads[GetStatus] =
+    (JsPath \ "of").read[String].map(GetStatus.apply)
 }
 
 /**
  *
  */
-case class SocketApiGetChildren(of: String, query: Option[String], limit: Option[Int], offset: Option[Int])
+case class GetChildren(of: String, query: Option[String], limit: Option[Int], offset: Option[Int])
 
-object SocketApiGetChildren
-{
-  implicit val socketApiGetChildrenReads: Reads[SocketApiGetChildren] = (
+object GetChildren {
+  implicit val socketApiGetChildrenReads: Reads[GetChildren] = (
     (JsPath \ "of").read[String] and
       (JsPath \ "query").readNullable[String] and
       (JsPath \ "limit").readNullable[Int] and
       (JsPath \ "offset").readNullable[Int]
-    )(SocketApiGetChildren.apply _)
+    )(GetChildren.apply _)
 }
 
 /**
  *
  */
-case class SocketApiSetStatus(of: String, status: ApiSetStatusData)
+case class SetStatus(of: String, status: ApiSetStatusData)
 
-object SocketApiSetStatus
-{
-  implicit val socketApiSetStatusReads: Reads[SocketApiSetStatus] = (
+object SetStatus {
+  implicit val reads: Reads[SetStatus] = (
     (JsPath \ "of").read[String] and
       (JsPath \ "status").read[ApiSetStatusData]
-    )(SocketApiSetStatus.apply _)
+    )(SetStatus.apply _)
 }
 
 /**
  *
  */
-case class SocketApiSubscribe(to: List[String])
+case class Subscribe(to: List[String])
 
-object SocketApiSubscribe
-{
-  implicit val socketApiSubscribeReads: Reads[SocketApiSubscribe] =
-    (JsPath \ "to").read[List[String]].map(SocketApiSubscribe.apply)
+object Subscribe {
+  implicit val reads: Reads[Subscribe] =
+    (JsPath \ "to").read[List[String]].map(Subscribe.apply)
 }
 
 /**
  *
  */
-case class SocketApiSubscribeCollection(to: String)
+case class SubscribeCollection(to: String)
 
-object SocketApiSubscribeCollection
-{
-  implicit val socketApiSubscribeCollectionReads: Reads[SocketApiSubscribeCollection] =
-    (JsPath \ "to").read[String].map(SocketApiSubscribeCollection.apply)
+object SubscribeCollection {
+  implicit val reads: Reads[SubscribeCollection] =
+    (JsPath \ "to").read[String].map(SubscribeCollection.apply)
 }

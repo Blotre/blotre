@@ -68,7 +68,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
         case "GetStreams" =>
-          recieveMessage[SocketApiGetStreams](msg) { x =>
+          recieveMessage[GetStreams](msg) { x =>
             getStreams(x.query.getOrElse(""))
           }
 
@@ -78,47 +78,47 @@ class SocketActor(user: User, out: ActorRef) extends Actor
           }
 
         case "GetStream" =>
-          recieveMessage[SocketApiGetStream](msg) { x =>
+          recieveMessage[GetStream](msg) { x =>
             getStream(x.uri)
           }
 
         case "DeleteStream" =>
-          recieveMessage[SocketApiDeleteStream](msg) { x =>
+          recieveMessage[DeleteStream](msg) { x =>
             deleteStream(user, x.uri)
           }
 
         case "GetStatus" =>
-          recieveMessage[SocketApiGetStatus](msg) { x =>
+          recieveMessage[GetStatus](msg) { x =>
             getStatus(x.of)
           }
 
         case "SetStatus" =>
-          recieveMessage[SocketApiSetStatus](msg) { x =>
+          recieveMessage[SetStatus](msg) { x =>
             setStatus(user, x.of, x.status)
           }
 
         case "GetChildren" =>
-          recieveMessage[SocketApiGetChildren](msg) { x =>
+          recieveMessage[GetChildren](msg) { x =>
             getChildren(x.of, 20, 0)
           }
 
         case "Subscribe" =>
-          recieveMessage[SocketApiSubscribe](msg) { x =>
+          recieveMessage[Subscribe](msg) { x =>
             subscribe(x.to)
           }
 
         case "Unsubscribe" =>
-          recieveMessage[SocketApiSubscribe](msg) { x =>
+          recieveMessage[Subscribe](msg) { x =>
             unsubscribe(x.to)
           }
           
         case "SubscribeCollection" =>
-          recieveMessage[SocketApiSubscribeCollection](msg) { x =>
+          recieveMessage[SubscribeCollection](msg) { x =>
             subscribeCollection(x.to)
           }
 
         case "UnsubscribeCollection" =>
-          recieveMessage[SocketApiSubscribeCollection](msg) { x =>
+          recieveMessage[SubscribeCollection](msg) { x =>
             unsubscribeCollection(x.to)
           }
 
