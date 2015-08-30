@@ -142,85 +142,13 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   }
 
   /**
-   * Try to create a new stream.
+   * Translate an api result to the send/response socket API.
    */
-  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.createStream(user, name, uri, status) match {
-      case ApiSuccess(stream) =>
-        ack(StreamResponse(stream, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
+  private def fromApi[T, R](response: ApiResult[T])(f: T => R)(implicit w: Writes[R], correlation: Int, acknowledge: Boolean) =
+    response match {
+      case ApiSuccess(result) => ack(f(result))
+      case ApiFailure(e) => error(e.error)
     }
-
-  /**
-   * Get the status of a stream.
-   */
-  private def getStream(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.getStream(models.StreamKey.forUri(uri)) match {
-      case ApiSuccess(streams) =>
-        ack(StreamResponse(streams, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
-    }
-
-  /**
-   *
-   */
-  private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.getStreams(query) match {
-      case ApiSuccess(streams) =>
-        ack(streams)
-
-      case ApiFailure(e) =>
-        error(e.error)
-    }
-
-  /**
-   * Delete a stream.
-   */
-  private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.apiDeleteStream(user, models.StreamKey.forUri(uri)) match {
-      case ApiSuccess(stream) =>
-        ack(StreamResponse(stream, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
-    }
-
-  /**
-   * Get the status of a stream.
-   */
-  private def getStatus(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    models.Stream.findByUri(uri) map getStatus getOrElse {
-      error("No such stream.")
-    }
-
-  private def getStatus(stream: models.Stream)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    ack(CurrentStatusResponse(stream.uri, stream.status, correlation))
-
-  /**
-   * Get the tags of a stream.
-   */
-  private def getTags(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.getTags(models.StreamKey.forUri(uri)) match {
-      case ApiSuccess(tags) =>
-        ack(StreamTagResponse(tags, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
-    }
-
-  private def setTags(user: models.User, uri: String, tags: api.ApiSetTagsData)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.setTags(user, models.StreamKey.forUri(uri), tags.tags) match {
-      case ApiSuccess(newTags) =>
-        ack(StreamTagResponse(newTags, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
-    }
-
 
   /**
    * Broadcast a status update message for a stream
@@ -234,28 +162,77 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     ack(StatusUpdatedEvent(stream.getUri(), stream.status, None))
 
   /**
+   * Try to create a new stream.
+   */
+  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.createStream(user, name, uri, status)) { stream =>
+      StreamResponse(stream, correlation)
+    }
+
+  /**
+   * Get the status of a stream.
+   */
+  private def getStream(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.getStream(models.StreamKey.forUri(uri))) { streams =>
+      StreamResponse(streams, correlation)
+    }
+
+  /**
+   *
+   */
+  private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.getStreams(query)) { streams =>
+      streams
+    }
+
+  /**
+   * Delete a stream.
+   */
+  private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.apiDeleteStream(user, models.StreamKey.forUri(uri))) { stream =>
+      StreamResponse(stream, correlation)
+    }
+
+  /**
+   * Get the status of a stream.
+   */
+  private def getStatus(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.getStreamStatus(models.StreamKey.forUri(uri))) { status =>
+      CurrentStatusResponse(uri, status, correlation)
+    }
+
+  /**
+   * Get the tags of a stream.
+   */
+  private def getTags(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.getTags(models.StreamKey.forUri(uri))) { tags =>
+      StreamTagResponse(tags, correlation)
+    }
+
+  /**
+   *
+   */
+  private def setTags(user: models.User, uri: String, tags: api.ApiSetTagsData)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.setTags(user, models.StreamKey.forUri(uri), tags.tags)) { newTags =>
+      StreamTagResponse(newTags, correlation)
+    }
+
+  /**
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.setStreamStatus(user, models.StreamKey.forUri(uri), status) match {
-      case ApiSuccess(newStatus) =>
-        ack(CurrentStatusResponse(uri, newStatus, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
+    fromApi(StreamApi.setStreamStatus(user, models.StreamKey.forUri(uri), status)) { newStatus =>
+      CurrentStatusResponse(uri, newStatus, correlation)
     }
 
   /**
    * Get the children of a stream.
    */
   private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.getChildren(models.StreamKey.forUri(uri), "", limit, offset) map {
-      case ApiSuccess(children) =>
-        ack(ApiChildrenResponse(uri, children, correlation))
-
-      case ApiFailure(e) =>
-        error(e.error)
-    }
+    StreamApi.getChildren(models.StreamKey.forUri(uri), "", limit, offset) map { r =>
+      fromApi(r) { children =>
+        ApiChildrenResponse(uri, children, correlation)
+      }}
 
   /**
    * Subscribe to a stream's updates.
