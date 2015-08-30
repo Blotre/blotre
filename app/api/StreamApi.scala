@@ -5,7 +5,6 @@ import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.utils.UriEncoding
-
 import scala.collection.immutable.{List}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -139,9 +138,9 @@ object StreamApi
    */
   def getChild(parentId: String, childId: String): ApiResult[models.Stream] =
     (for {
-      parent <- stringToObjectId(parentId);
-      child <- stringToObjectId(childId);
-      childData <- models.Stream.getChildById(parent, child);
+      parent <- stringToObjectId(parentId)
+      child <- stringToObjectId(childId)
+      childData <- models.Stream.getChildById(parent, child)
       child <- models.Stream.findById(childData.childId)
     } yield ApiOk(child)) getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -155,11 +154,13 @@ object StreamApi
   def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
     models.StreamName.fromString(name) map { validatedName =>
       StreamHelper.getParentFromPath(uri) map { case (parent, childUri) =>
-        if (!(models.StreamUri.fromName(validatedName).value.equalsIgnoreCase(childUri.value)))
+        if (!models.StreamUri.fromName(validatedName).value.equalsIgnoreCase(childUri.value))
           ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
         else
           createStream(user, parent, uri, validatedName, status)
-      } getOrElse (ApiNotFound(ApiError("Parent stream does not exist.")))
+      } getOrElse {
+        ApiNotFound(ApiError("Parent stream does not exist."))
+      }
     } getOrElse {
       ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
     }
@@ -178,9 +179,13 @@ object StreamApi
           createDescendant(parent, validatedName).flatMap(models.Stream.asOwner(_, user)) map { newStream =>
             status.map(s => updateStreamStatus(newStream, s.color))
             ApiCreated(newStream.stream)
-          } getOrElse (ApiInternalError())
+          } getOrElse {
+            ApiInternalError()
+          }
       }
-    } getOrElse (ApiUnauthroized(ApiError("User does not have permission to add child.")))
+    } getOrElse {
+      ApiUnauthroized(ApiError("User does not have permission to add child."))
+    }
 
   /**
    * Delete an existing stream.
@@ -190,7 +195,9 @@ object StreamApi
   def apiDeleteStream(user: models.User, uri: String): ApiResult[models.Stream] =
     models.Stream.findByUri(uri) map { stream =>
       apiDeleteStream(user, stream)
-    } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
 
   def apiDeleteStream(user: models.User, stream: models.Stream): ApiResult[models.Stream] =
     models.Stream.asOwner(stream, user) map { ownedStream =>
@@ -217,7 +224,9 @@ object StreamApi
   def apiSetStreamStatusForUri(user: models.User, streamUri: String, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.findByUri(streamUri) map { stream =>
       setStreamStatus(user, stream, status)
-    } getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
+    } getOrElse {
+      ApiNotFound(ApiError("Stream does not exist."))
+    }
 
   def setStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.asOwner(stream, user) map { stream =>
@@ -312,7 +321,9 @@ object StreamApi
         addChild(parent, false, child) map { _ =>
           ApiCreated(child)
         }
-      } getOrElse (ApiInternalError())
+      } getOrElse {
+        ApiInternalError()
+      }
 
   /**
    * Remove a linked child stream.
@@ -326,7 +337,7 @@ object StreamApi
       parent <- models.Stream.findById(parentId);
       childData <- models.Stream.getChildById(parentId, childId)
       child <- models.Stream.findById(childId)
-    } yield (
+    } yield
         models.Stream.asOwner(parent, user) map { ownedStream =>
           if (childData.hierarchical)
             ApiCouldNotProccessRequest(ApiError("Cannot remove hierarchical child."))
@@ -334,7 +345,7 @@ object StreamApi
             removeChild(ownedStream, child)
             ApiOk(child)
           }
-        } getOrElse ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
+        } getOrElse ApiUnauthroized(ApiError("User does not have permission to edit stream."))
       ) getOrElse (ApiNotFound(ApiError("Stream does not exist.")))
 
   /**
@@ -401,8 +412,7 @@ object StreamApi
 
   def getTag(stream: models.Stream, tag: String): ApiResult[String] =
     stream.getTags()
-      .filter(streamTag => streamTag.value == tag)
-      .headOption
+      .find(streamTag => streamTag.value == tag)
       .map(tag => ApiOk(tag.value))
       .getOrElse(ApiNotFound(ApiError("Tag does not exist.")))
 
@@ -424,7 +434,7 @@ object StreamApi
     }
 
   /**
-   * r a tag to a stream.
+   * Add a tag to a stream.
    */
   def addTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
@@ -435,10 +445,10 @@ object StreamApi
 
   def addTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
     modifyTags(user, streamId) { stream =>
-      if (stream.stream.hasTag(tag))
+      if (stream.stream.hasTag(tag)) {
         ApiOk(tag.value)
-      else {
-        stream.setTags(stream.stream.getTags() :+ tag)
+      } else {
+        doSetTags(stream, stream.stream.getTags() :+ tag)
         ApiCreated(tag.value)
       }
     }
@@ -455,10 +465,10 @@ object StreamApi
 
   def removeTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
     modifyTags(user, streamId) { stream =>
-      if (!stream.stream.hasTag(tag))
+      if (!stream.stream.hasTag(tag)) {
         ApiOk("")
-      else {
-        stream.setTags(stream.stream.getTags() diff List(tag))
+      } else {
+        doSetTags(stream, stream.stream.getTags() diff List(tag))
         ApiOk(tag.value)
       }
     }

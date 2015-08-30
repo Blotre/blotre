@@ -22,7 +22,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   val SUBSCRIPTION_LIMIT = 256
   val COLLECTION_SUBSCRIPTION_LIMIT = 8
 
-  private var subscriptions = Set[String]()
+  private var subscriptions = Set[models.StreamUri]()
   private var collectionSubscriptions = Set[Actors.Address]()
   
   override def postStop() {
@@ -48,7 +48,10 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   private def error(message: String)(implicit correlation: Int): Unit =
     output(SocketError(message, correlation))
 
-  private def recieveMessage[T](msg: JsValue)(f: T => Unit)(implicit r: Reads[T], correlation: Int) =
+  /**
+   * Parse a Json message an invoke f with the result.
+   */
+  private def receiveMessage[T](msg: JsValue)(f: T => Unit)(implicit r: Reads[T], correlation: Int): Unit =
     Json.fromJson[T](msg).fold(
       valid = f,
       invalid = e =>
@@ -68,67 +71,67 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
       ((__ \ "type").read[String]).reads(msg) map { x => x match {
         case "GetStreams" =>
-          recieveMessage[GetStreams](msg) { x =>
+          receiveMessage[GetStreams](msg) { x =>
             getStreams(x.query.getOrElse(""))
           }
 
         case "CreateStream" =>
-          recieveMessage[ApiCreateStreamData](msg) { x =>
+          receiveMessage[ApiCreateStreamData](msg) { x =>
             createStream(user, x.name, x.uri, x.status)
           }
 
         case "GetStream" =>
-          recieveMessage[GetStream](msg) { x =>
+          receiveMessage[GetStream](msg) { x =>
             getStream(x.uri)
           }
 
         case "DeleteStream" =>
-          recieveMessage[DeleteStream](msg) { x =>
+          receiveMessage[DeleteStream](msg) { x =>
             deleteStream(user, x.uri)
           }
 
         case "GetStatus" =>
-          recieveMessage[GetStatus](msg) { x =>
+          receiveMessage[GetStatus](msg) { x =>
             getStatus(x.of)
           }
 
         case "SetStatus" =>
-          recieveMessage[SetStatus](msg) { x =>
+          receiveMessage[SetStatus](msg) { x =>
             setStatus(user, x.of, x.status)
           }
 
         case "GetTags" =>
-          recieveMessage[GetTags](msg) { x =>
+          receiveMessage[GetTags](msg) { x =>
             getTags(x.of)
           }
 
         case "SetTags" =>
-          recieveMessage[SetTags](msg) { x =>
+          receiveMessage[SetTags](msg) { x =>
             setTags(user, x.of, x.tags)
           }
 
         case "GetChildren" =>
-          recieveMessage[GetChildren](msg) { x =>
+          receiveMessage[GetChildren](msg) { x =>
             getChildren(x.of, 20, 0)
           }
 
         case "Subscribe" =>
-          recieveMessage[Subscribe](msg) { x =>
+          receiveMessage[Subscribe](msg) { x =>
             subscribe(x.to)
           }
 
         case "Unsubscribe" =>
-          recieveMessage[Subscribe](msg) { x =>
+          receiveMessage[Subscribe](msg) { x =>
             unsubscribe(x.to)
           }
           
         case "SubscribeCollection" =>
-          recieveMessage[SubscribeCollection](msg) { x =>
+          receiveMessage[SubscribeCollection](msg) { x =>
             subscribeCollection(x.to)
           }
 
         case "UnsubscribeCollection" =>
-          recieveMessage[SubscribeCollection](msg) { x =>
+          receiveMessage[SubscribeCollection](msg) { x =>
             unsubscribeCollection(x.to)
           }
 
@@ -190,7 +193,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def getStatus(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    models.Stream.findByUri(uri) map (getStatus) getOrElse {
+    models.Stream.findByUri(uri) map getStatus getOrElse {
       error("No such stream.")
     }
 
@@ -227,23 +230,23 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     }
 
   /**
-   *
+   * Broadcast a status update message for a stream
    */
-  private def statusUpdate(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    models.Stream.findByUri(uri) map (statusUpdate) getOrElse {
+  private def statusUpdate(uri: models.StreamUri)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    models.Stream.findByUri(uri) map statusUpdate getOrElse {
       error("No such stream.")
     }
 
   private def statusUpdate(stream: models.Stream)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    ack(StatusUpdatedEvent(stream.getUri, stream.status, None))
+    ack(StatusUpdatedEvent(stream.getUri(), stream.status, None))
 
   /**
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
     StreamApi.apiSetStreamStatusForUri(user, uri, status) match {
-      case ApiSuccess(status) =>
-        ack(CurrentStatusResponse(uri, status, correlation))
+      case ApiSuccess(newStatus) =>
+        ack(CurrentStatusResponse(uri, newStatus, correlation))
 
       case ApiFailure(e) =>
         error(e.error)
@@ -270,24 +273,20 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     targets.foreach(subscribe)
 
   private def subscribe(target: String)(implicit correlation: Int): Unit =
-    models.StreamUri.fromString(target) map { uri =>
-      subscribe(uri)
-    }
+    models.StreamUri.fromString(target).foreach(subscribe)
 
   private def subscribe(target: models.StreamUri)(implicit correlation: Int): Unit = {
-    if (subscriptions.contains(target.value)) {
-      statusUpdate(target.value)(correlation, true)
+    if (subscriptions.contains(target)) {
+      statusUpdate(target)(correlation, true)
       return
     }
 
     if (subscriptions.size >= SUBSCRIPTION_LIMIT) {
       error("Subscription limit exceeded.")
     } else {
-      models.Stream.findByUri(target) map { stream =>
-        StreamSupervisor.subscribeStream(self, target)
-        subscriptions += target.value
-        statusUpdate(stream)(correlation, true)
-      }
+      StreamSupervisor.subscribeStream(self, target)
+      subscriptions += target
+      statusUpdate(target)(correlation, true)
     }
   }
 
@@ -295,18 +294,18 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Unsubscribe from a stream's updates
    */
   private def unsubscribe(targets: List[String])(implicit correlation: Int): Unit =
-    unsubscribe(targets.map(models.StreamUri.fromString(_)).flatten)
+    unsubscribe(targets.flatMap(models.StreamUri.fromString))
 
   private def unsubscribe(targets: List[models.StreamUri]): Unit = {
     StreamSupervisor.unsubscribeStream(self, targets)
-    subscriptions = subscriptions -- targets.map(_.value)
+    subscriptions = subscriptions -- targets
   }
 
   /**
    * Subscribe to collection updates.
    */
   private def subscribeCollection(target: String)(implicit correlation: Int): Unit =
-    Actors.Address.fromUser(target).map(subscribeCollection(_))
+    Actors.Address.fromUser(target).foreach(subscribeCollection)
 
   private def subscribeCollection(target: Actors.Address)(implicit correlation: Int): Unit = {
     if (collectionSubscriptions.contains(target))
@@ -324,7 +323,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Unsubscribe from collection updates.
    */
   private def unsubscribeCollection(target: String)(implicit correlation: Int): Unit =
-    Actors.Address.fromUser(target).map(unsubscribeCollection(_))
+    Actors.Address.fromUser(target).foreach(unsubscribeCollection)
 
   private def unsubscribeCollection(target: Actors.Address): Unit = {
     CollectionSupervisor.unsubscribeCollection(self, target)

@@ -5,8 +5,6 @@ import java.util.Date
 import helper.datasources.MorphiaObject
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations.{Id, Entity}
-import org.mongodb.morphia.query.Query
-import scala.annotation.meta.field
 import scala.collection.JavaConverters._
 
 
