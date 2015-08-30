@@ -204,30 +204,23 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the tags of a stream.
    */
   private def getTags(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    models.StreamUri.fromString(uri) map { uri =>
-      StreamApi.getTags(uri) match {
-        case ApiSuccess(tags) =>
-          ack(StreamTagResponse(tags, correlation))
+    StreamApi.getTags(models.StreamKey.forUri(uri)) match {
+      case ApiSuccess(tags) =>
+        ack(StreamTagResponse(tags, correlation))
 
-        case ApiFailure(e) =>
-          error(e.error)
-      }
-    } getOrElse {
-      error("No such stream.")
+      case ApiFailure(e) =>
+        error(e.error)
     }
 
   private def setTags(user: models.User, uri: String, tags: api.ApiSetTagsData)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    models.StreamUri.fromString(uri) map { uri =>
-      StreamApi.setTags(user, uri, tags.tags) match {
-        case ApiSuccess(newTags) =>
-          ack(StreamTagResponse(newTags, correlation))
+    StreamApi.setTags(user, models.StreamKey.forUri(uri), tags.tags) match {
+      case ApiSuccess(newTags) =>
+        ack(StreamTagResponse(newTags, correlation))
 
-        case ApiFailure(e) =>
-          error(e.error)
-      }
-    } getOrElse {
-      error("No such stream.")
+      case ApiFailure(e) =>
+        error(e.error)
     }
+
 
   /**
    * Broadcast a status update message for a stream
@@ -256,7 +249,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the children of a stream.
    */
   private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.getChildren(uri, "", limit, offset) map {
+    StreamApi.getChildren(models.StreamKey.forUri(uri), "", limit, offset) map {
       case ApiSuccess(children) =>
         ack(ApiChildrenResponse(uri, children, correlation))
 

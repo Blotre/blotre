@@ -91,9 +91,9 @@ object StreamApiController extends Controller
    *
    * TODO: normally should return list of ids which query params can expand to stream?
    */
-  def apiGetChildren(id: String) = Action.async { implicit request =>
+  def apiGetChildren(streamId: String) = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
-    StreamApi.getChildren(id, query, 20, 0).map(toResponse(_))
+    StreamApi.getChildren(models.StreamKey.forId(streamId), query, 20, 0).map(toResponse(_))
   }
 
   /**
@@ -109,7 +109,7 @@ object StreamApiController extends Controller
    * Does not delete the target stream and cannot be used to delete hierarchical children.
    */
   def apiDeleteChild(parentId: String, childId: String) = AuthorizedAction { implicit request =>
-    toResponse(StreamApi.apiDeleteChild(request.user, parentId, childId))
+    toResponse(StreamApi.apiDeleteChild(request.user, models.StreamKey.forId(parentId), models.StreamKey.forId(childId)))
   }
 
   /**
@@ -118,14 +118,14 @@ object StreamApiController extends Controller
    * Noop if the child already exists.
    */
   def apiCreateChild(parentId: String, childId: String) = AuthorizedAction { implicit request => {
-    toResponse(StreamApi.createChild(request.user, parentId, childId))
+    toResponse(StreamApi.createChild(request.user, models.StreamKey.forId(parentId), models.StreamKey.forId(childId)))
   }}
 
   /**
    * Get all tags associated with a given stream.
    */
   def getTags(streamId: String) = Action { implicit request =>
-    toResponse(StreamApi.getTags(streamId))
+    toResponse(StreamApi.getTags(models.StreamKey.forId(streamId)))
   }
 
   /**
@@ -133,7 +133,7 @@ object StreamApiController extends Controller
    */
   def setTags(streamId: String) = AuthorizedAction(parse.json) { implicit request =>
     Json.fromJson[ApiSetTagsData](request.body) map { tags =>
-      toResponse(StreamApi.setTags(request.user, streamId, tags.tags))
+      toResponse(StreamApi.setTags(request.user, models.StreamKey.forId(streamId), tags.tags))
     } recoverTotal { e =>
       UnprocessableEntity(Json.toJson(ApiError("Could not process request.", e)))
     }
@@ -143,21 +143,21 @@ object StreamApiController extends Controller
    * Lookup a tag on a given stream.
    */
   def getTag(streamId: String, tag: String) = Action { implicit request =>
-    toResponse(StreamApi.getTag(streamId, tag))
+    toResponse(StreamApi.getTag(models.StreamKey.forId(streamId), tag))
   }
 
   /**
    * Set a tag on a given stream.
    */
   def setTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
-    toResponse(StreamApi.addTag(request.user, streamId, tag))
+    toResponse(StreamApi.addTag(request.user, models.StreamKey.forId(streamId), tag))
   }
 
   /**
    * Remove a tag on a given stream.
    */
   def removeTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
-    toResponse(StreamApi.removeTag(request.user, streamId, tag))
+    toResponse(StreamApi.removeTag(request.user, models.StreamKey.forId(streamId), tag))
   }
 
   /**

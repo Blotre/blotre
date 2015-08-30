@@ -237,15 +237,8 @@ object StreamApi
    *
    * TODO: normally should return list of ids which query params can expand to stream?
    */
-  def getChildren(uri: models.StreamUri, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
-    models.Stream.findByUri(uri) map {
-     getChildren(_, query, limit, offset)
-    } getOrElse {
-      Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
-    }
-
-  def getChildren(id: String, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
-    models.Stream.findById(id) map {
+  def getChildren(key: models.StreamKey, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
+    models.Stream.findByKey(key) map {
       getChildren(_, query, limit, offset)
     } getOrElse {
       Future.successful(ApiNotFound(ApiError("Stream does not exist.")))
@@ -282,25 +275,25 @@ object StreamApi
    *
    * Noop if the child already exists.
    */
-  def createChild(user: models.User, parentId: String, childId: String): ApiResult[models.Stream] =
-    models.Stream.findById(parentId) map { parent =>
+  def createChild(user: models.User, parentKey: models.StreamKey, childKey: models.StreamKey): ApiResult[models.Stream] =
+    models.Stream.findByKey(parentKey) map { parent =>
       if (parent.childCount >= models.Stream.maxChildren)
         ApiCouldNotProccessRequest(ApiError("Too many children."))
       else
-        createChild(user, parent, childId)
+        createChild(user, parent, childKey)
     } getOrElse {
       ApiNotFound(ApiError("Parent stream does not exist."))
     }
 
-  def createChild(user: models.User, parent: models.Stream, childId: String): ApiResult[models.Stream] =
+  def createChild(user: models.User, parent: models.Stream, childKey: models.StreamKey): ApiResult[models.Stream] =
     models.Stream.asOwner(parent, user) map { parent =>
-      createChild(parent, childId)
+      createChild(parent, childKey)
     } getOrElse {
       ApiUnauthroized(ApiError("User does not have permission to add child."))
     }
 
-  def createChild(parent: models.Stream.OwnedStream, childId: String): ApiResult[models.Stream] =
-    models.Stream.findById(childId) map { child =>
+  def createChild(parent: models.Stream.OwnedStream, childKey: models.StreamKey): ApiResult[models.Stream] =
+    models.Stream.findByKey(childKey) map { child =>
       createChild(parent, child)
     } getOrElse {
       ApiNotFound(ApiError("Child stream does not exist."))
@@ -325,13 +318,11 @@ object StreamApi
    *
    * Does not delete the target stream and cannot be used to delete hierarchical children.
    */
-  def apiDeleteChild(user: models.User, parentId: String, childId: String): ApiResult[models.Stream] =
+  def apiDeleteChild(user: models.User, parentKey: models.StreamKey, childKey: models.StreamKey): ApiResult[models.Stream] =
     (for {
-      parentId <- stringToObjectId(parentId);
-      childId <- stringToObjectId(childId);
-      parent <- models.Stream.findById(parentId);
-      childData <- models.Stream.getChildById(parentId, childId)
-      child <- models.Stream.findById(childId)
+      parent <- models.Stream.findByKey(parentKey)
+      childData <- models.Stream.getChildById(parentKey, childKey)
+      child <- models.Stream.findByKey(childKey)
     } yield
         models.Stream.asOwner(parent, user) map { ownedStream =>
           if (childData.hierarchical)
@@ -346,15 +337,8 @@ object StreamApi
   /**
    * Get the tags for a given stream.
    */
-  def getTags(streamId: String): ApiResult[Seq[models.StreamTag]] =
-    models.Stream.findById(streamId) map { stream =>
-      ApiOk(stream.getTags())
-    } getOrElse {
-      ApiNotFound(ApiError("Stream does not exist."))
-    }
-
-  def getTags(streamId: models.StreamUri): ApiResult[Seq[models.StreamTag]] =
-    models.Stream.findByUri(streamId) map { stream =>
+  def getTags(streamKey: models.StreamKey): ApiResult[Seq[models.StreamTag]] =
+    models.Stream.findByKey(streamKey) map { stream =>
       ApiOk(stream.getTags())
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -363,15 +347,8 @@ object StreamApi
   /**
    * Update the tags associated with a given stream.
    */
-  def setTags(user: models.User, streamId: String, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] =
-    models.Stream.findById(streamId) map {
-      setTags(user, _, tags)
-    } getOrElse {
-      ApiNotFound(ApiError("Stream does not exist."))
-    }
-
-  def setTags(user: models.User, uri: models.StreamUri, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] =
-    models.Stream.findByUri(uri) map {
+  def setTags(user: models.User, streamKey: models.StreamKey, tags: Seq[models.StreamTag]) : ApiResult[Seq[models.StreamTag]] =
+    models.Stream.findByKey(streamKey) map {
       setTags(user, _, tags)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -398,8 +375,8 @@ object StreamApi
   /**
    * Lookup a tag on a given stream.
    */
-  def getTag(streamId: String, tag: String): ApiResult[String] =
-    models.Stream.findById(streamId) map { stream =>
+  def getTag(streamKey: models.StreamKey, tag: String): ApiResult[String] =
+    models.Stream.findByKey(streamKey) map { stream =>
       getTag(stream, tag)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -414,8 +391,8 @@ object StreamApi
   /**
    * Change the tags on a stream.
    */
-  private def modifyTags(user: models.User, streamId: String)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
-    models.Stream.findById(streamId) map {
+  private def modifyTags(user: models.User, streamKey: models.StreamKey)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
+    models.Stream.findByKey(streamKey) map {
       modifyTags(user, _)(modify)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -431,15 +408,15 @@ object StreamApi
   /**
    * Add a tag to a stream.
    */
-  def addTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
+  def addTag(user: models.User, streamKey: models.StreamKey, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      addTag(user, streamId, _)
+      addTag(user, streamKey, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def addTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
-    modifyTags(user, streamId) { stream =>
+  def addTag(user: models.User, streamKey: models.StreamKey, tag: models.StreamTag): ApiResult[String] =
+    modifyTags(user, streamKey) { stream =>
       if (stream.stream.hasTag(tag)) {
         ApiOk(tag.value)
       } else {
@@ -451,15 +428,15 @@ object StreamApi
   /**
    * Remove a tag on a given stream.
    */
-  def removeTag(user: models.User, streamId: String, tag: String): ApiResult[String] =
+  def removeTag(user: models.User, streamKey: models.StreamKey, tag: String): ApiResult[String] =
     models.StreamTag.fromString(tag) map {
-      addTag(user, streamId, _)
+      addTag(user, streamKey, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def removeTag(user: models.User, streamId: String, tag: models.StreamTag): ApiResult[String] =
-    modifyTags(user, streamId) { stream =>
+  def removeTag(user: models.User, streamKey: models.StreamKey, tag: models.StreamTag): ApiResult[String] =
+    modifyTags(user, streamKey) { stream =>
       if (!stream.stream.hasTag(tag)) {
         ApiOk("")
       } else {
@@ -477,9 +454,9 @@ object StreamApi
       s.status
     }
 
-  private def addChild(parent: models.Stream.OwnedStream, heirarchical: Boolean, child: models.Stream): Option[models.Stream] =
+  private def addChild(parent: models.Stream.OwnedStream, hierarchical: Boolean, child: models.Stream): Option[models.Stream] =
     if (parent.stream.childCount < models.Stream.maxChildren)
-      parent.addChild(heirarchical, child) map { newChildData =>
+      parent.addChild(hierarchical, child) map { newChildData =>
         StreamSupervisor.addChild(parent.stream, child)
         child
       }
