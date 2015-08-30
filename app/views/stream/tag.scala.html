@@ -16,6 +16,10 @@
     @_streamSearchResultTemplate { }
 
     <script data-main="@routes.Assets.at("js/tag.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+
+    <script>
+        window.initialTag = @Html(Json.toJson(tag).toString());
+    </script>
 }
 
 @main(tag.value, "tag", navHeader = navHeader, extraScripts = extraScripts) {

@@ -79,7 +79,7 @@ var updateFromQueryString = function(model) {
 
 $(function(){
     var model = new TagViewModel(
-        'fads',
+        window.initialTag,
         application_model.initialUser(),
         []);
 
