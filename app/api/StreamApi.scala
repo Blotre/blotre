@@ -99,7 +99,9 @@ object StreamApi
     }
 
   /**
-   * Lookup multiple streams.
+   * Lookup multiple streams with an optional query.
+   *
+   * If not query is provided, searches using status, tag, or by name.
    */
   def getStreams(query: String): ApiResult[Seq[models.Stream]] =
     models.StreamQuery.fromString(query) map {
@@ -109,10 +111,18 @@ object StreamApi
     }
 
   def getStreams(query: models.StreamQuery): ApiResult[Seq[models.Stream]] =
-    if (query.value.startsWith("#"))
-      ApiOk(models.Stream.findByStatusQuery(query))
-    else
+    models.Color.fromString(query.value) map { color =>
+      ApiOk(models.Stream.findByStatus(color))
+    } orElse {
+      Some(query.value)
+        .filter(_.startsWith("#"))
+        .flatMap(tag => models.StreamTag.fromString(tag.substring(1)))
+        .map { tag =>
+          ApiOk(models.Stream.getStreamWithTag(tag, 20))
+        }
+    } getOrElse {
       ApiOk(models.Stream.findByQuery(query))
+    }
 
   /**
    * Get the status of a stream.
@@ -238,8 +248,8 @@ object StreamApi
     }
 
   def getChildren(stream: models.Stream, query: String, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
-    models.StreamQuery.fromString(query) map {
-      getChildren(stream, _, limit, offset)
+    models.StreamQuery.fromString(query) map { query =>
+      Future.successful(getChildren(stream, query, limit, offset))
     } getOrElse {
       getChildren(stream, limit, offset)
     }
@@ -249,9 +259,19 @@ object StreamApi
       ApiOk(children.flatMap(models.Stream.findByUri(_)))
     }
 
-  def getChildren(stream: models.Stream, query: models.StreamQuery, limit: Int, offset: Int): Future[ApiResult[Seq[models.Stream]]] =
-    Future.successful(ApiOk(models.Stream.getChildrenByQuery(stream, query, limit)))
-
+  def getChildren(parent: models.Stream, query: models.StreamQuery, limit: Int, offset: Int): ApiResult[Seq[models.Stream]] =
+    models.Color.fromString(query.value) map { color =>
+      ApiOk(models.Stream.getChildrenByStatus(parent, color, 20))
+    } orElse {
+      Some(query.value)
+        .filter(_.startsWith("#"))
+        .flatMap(tag => models.StreamTag.fromString(tag.substring(1)))
+        .map { tag =>
+          ApiOk(models.Stream.getChildrenWithTag(parent, tag, 20))
+       }
+    } getOrElse {
+      ApiOk(models.Stream.getChildrenByQuery(parent, query, limit))
+    }
 
   /**
    * Link an existing stream as a child of a stream.

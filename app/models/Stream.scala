@@ -9,6 +9,7 @@ import org.mongodb.morphia.query._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import org.mongodb.morphia.query.Query
+import scala.collection.JavaConversions
 import scala.collection.JavaConverters._
 import scala.annotation.meta._
 
@@ -189,12 +190,12 @@ object Stream
   /**
    * Lookup streams by status.
    *
-   * TODO: order by score
+   * Ordered by most recently updated.
    */
-  def findByStatusQuery(query: StreamQuery): Seq[Stream] = {
+  def findByStatus(color: Color): Seq[Stream] = {
     val q = db().limit(20)
     q.criteria("status.color")
-      .containsIgnoreCase(query.value)
+      .containsIgnoreCase(color.value)
     q.order("-updated").asList().asScala.toList
   }
 
@@ -345,7 +346,34 @@ object Stream
       .containsIgnoreCase(query.value)
     q.asList()
       .asScala.toList
-      .map(x => findById(x.childId)).flatten
+      .flatMap(x => findById(x.childId))
+  }
+
+  /**
+   * Lookup the children of a stream that have a given status.
+   *
+   * TODO: See if a more efficient query is possible
+   */
+  def getChildrenByStatus(parent: Stream, color: Color, limit: Int): Seq[Stream] = {
+    val children = childDb().filter("parentId =", parent.id)
+    val q = db().limit(limit)
+    q.field("id").in(JavaConversions.bufferAsJavaList(children.asList().asScala.map(_.childId)))
+    q.criteria("status.color")
+      .containsIgnoreCase(color.value)
+    q.asList().asScala.toList
+  }
+
+  /**
+   * Lookup the children of a stream that have a given tag
+   *
+   * TODO: See if a more efficient query is possible
+   */
+  def getChildrenWithTag(parent: Stream, tag: StreamTag, limit: Int): Seq[Stream] = {
+    val children = childDb().filter("parentId =", parent.id)
+    val q = db().limit(limit)
+    q.field("id").in(JavaConversions.bufferAsJavaList(children.asList().asScala.map(_.childId)))
+    q.field("tags").hasAnyOf(Arrays.asList(tag.value))
+    q.asList().asScala.toList
   }
 
   /**
