@@ -88,10 +88,10 @@ object StreamApi
   import models.Serializable._
 
   /**
-   * Lookup a stream by Id
+   * Lookup a stream.
    */
-  def getStream(id: String): ApiResult[models.Stream] =
-    models.Stream.findById(id) map { stream =>
+  def getStream(key: models.StreamKey): ApiResult[models.Stream] =
+    models.Stream.findByKey(key) map { stream =>
       ApiOk(stream)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -126,8 +126,8 @@ object StreamApi
   /**
    * Get the status of a stream.
    */
-  def getStreamStatus(id: String): ApiResult[models.Status] =
-    models.Stream.findById(id) map { stream =>
+  def getStreamStatus(key: models.StreamKey): ApiResult[models.Status] =
+    models.Stream.findByKey(key) map { stream =>
       ApiOk(stream.status)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -136,11 +136,9 @@ object StreamApi
   /**
    * Get a child of a stream.
    */
-  def getChild(parentId: String, childId: String): ApiResult[models.Stream] =
+  def getChild(parentKey: models.StreamKey, childKey: models.StreamKey): ApiResult[models.Stream] =
     (for {
-      parent <- stringToObjectId(parentId)
-      child <- stringToObjectId(childId)
-      childData <- models.Stream.getChildById(parent, child)
+      childData <- models.Stream.getChildById(parentKey, childKey)
       child <- models.Stream.findById(childData.childId)
     } yield ApiOk(child)) getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))

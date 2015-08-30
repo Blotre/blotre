@@ -33,7 +33,7 @@ object StreamApiController extends Controller
    * Lookup a stream by id.
    */
   def apiGetStream(id: String) = Action { implicit request =>
-    toResponse(StreamApi.getStream(id))
+    toResponse(StreamApi.getStream(models.StreamKey.forId(id)))
   }
 
   /**
@@ -48,7 +48,7 @@ object StreamApiController extends Controller
    * Get the status of a stream.
    */
   def apiGetStreamStatus(id: String) = Action { implicit request =>
-    toResponse(StreamApi.getStreamStatus(id))
+    toResponse(StreamApi.getStreamStatus(models.StreamKey.forId(id)))
   }
 
   /**
@@ -104,7 +104,7 @@ object StreamApiController extends Controller
    * Get a child of a stream.
    */
   def apiGetChild(parentId: String, childId: String) = Action { implicit request =>
-    toResponse(StreamApi.getChild(parentId, childId))
+    toResponse(StreamApi.getChild(models.StreamKey.forId(parentId), models.StreamKey.forId(childId)))
   }
 
   /**

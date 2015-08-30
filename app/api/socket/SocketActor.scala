@@ -8,12 +8,10 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-
 /**
  *
  */
-object SocketActor
-{
+object SocketActor {
   def props(user: User, out: ActorRef): Props = Props(new SocketActor(user, out))
 }
 
@@ -33,7 +31,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Write a value to the socket.
    */
   private def output[T](value: => T)(implicit w: Writes[T]): Unit =
-   out ! Json.toJson(value)
+    out ! Json.toJson(value)
 
   /**
    * Write a success message to the socket.
@@ -159,10 +157,12 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def getStream(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    models.Stream.findByUri(uri) map { stream =>
-      ack(StreamResponse(stream, correlation))
-    } getOrElse {
-      error("No such stream.")
+    StreamApi.getStream(models.StreamKey.forUri(uri)) match {
+      case ApiSuccess(streams) =>
+        ack(StreamResponse(streams, correlation))
+
+      case ApiFailure(e) =>
+        error(e.error)
     }
 
   /**

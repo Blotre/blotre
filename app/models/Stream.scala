@@ -5,7 +5,6 @@ import java.util.Arrays
 import helper.datasources.MorphiaObject
 import org.bson.types.ObjectId
 import org.mongodb.morphia.annotations._
-import org.mongodb.morphia.query._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import org.mongodb.morphia.query.Query
@@ -174,6 +173,16 @@ object Stream
 
   def findByUri(uri: String): Option[Stream] =
     StreamUri.fromString(uri).flatMap(findByUri)
+
+  /**
+   * Lookup a stream by key.
+   */
+  def findByKey(key: StreamKey): Option[Stream] =
+    key match {
+      case IdStreamKey(id) => findById(id)
+      case UriStreamKey(uri) => findByUri(uri)
+      case NoneStreamKey => None
+    }
 
   /**
    * Lookup streams using a search term.
@@ -385,14 +394,36 @@ object Stream
       .filter("childId =", childId)
       .get)
 
+  private def filterParent(q: Query[ChildStream], parentKey: StreamKey): Option[Query[ChildStream]] =
+    parentKey match {
+      case IdStreamKey(id) => Some(q.filter("parentId", id))
+      case UriStreamKey(uri) => Some(q.filter("parentUri", uri))
+      case NoneStreamKey => None
+    }
+
+  private def filterChild(q: Query[ChildStream], childKey: StreamKey): Option[Query[ChildStream]] =
+    childKey match {
+      case IdStreamKey(id) => Some(q.filter("childId", id))
+      case UriStreamKey(uri) => Some(q.filter("childUri", uri))
+      case NoneStreamKey => None
+    }
+
+  def getChildById(parentKey: StreamKey, childKey: StreamKey): Option[ChildStream] =
+    if (parentKey == NoneStreamKey || childKey == NoneStreamKey) {
+      None
+    } else {
+      filterParent(childDb(), parentKey)
+        .flatMap(q => filterChild(q, childKey))
+        .flatMap(q => Some(q.get))
+    }
+
   /**
    * Lookup children by tag.
    */
   def getStreamWithTag(tag: StreamTag, limit: Int): Seq[Stream] = {
     val q = db().limit(limit)
     q.field("tags").hasAnyOf(Arrays.asList(tag.value))
-    q.asList()
-      .asScala.toList
+    q.asList().asScala.toList
   }
 
   /**
