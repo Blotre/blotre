@@ -56,7 +56,7 @@ object StreamApiController extends Controller
    */
   def apiSetStreamStatus(id: String) = AuthorizedAction(parse.json) { implicit request =>
     Json.fromJson[ApiSetStatusData](request.body) map { status =>
-      toResponse(StreamApi.setStreamStatus(request.user, id, status))
+      toResponse(StreamApi.setStreamStatus(request.user, models.StreamKey.forId(id), status))
     } recoverTotal { e =>
       BadRequest(Json.toJson(ApiError("Could not process request", e)))
     }
@@ -81,11 +81,7 @@ object StreamApiController extends Controller
    * Cannot delete root streams.
    */
   def apiDeleteStream(id: String) = AuthorizedAction { implicit request =>
-    toResponse(models.Stream.findById(id) map { stream =>
-      StreamApi.apiDeleteStream(request.user, stream)
-    } getOrElse {
-      ApiNotFound(ApiError("Stream does not exist."))
-    })
+    toResponse(StreamApi.apiDeleteStream(request.user, models.StreamKey.forId(id)))
   }
 
   /**

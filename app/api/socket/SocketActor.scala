@@ -181,7 +181,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Delete a stream.
    */
   private def deleteStream(user: models.User, uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.apiDeleteStream(user, uri) match {
+    StreamApi.apiDeleteStream(user, models.StreamKey.forUri(uri)) match {
       case ApiSuccess(stream) =>
         ack(StreamResponse(stream, correlation))
 
@@ -244,7 +244,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.apiSetStreamStatusForUri(user, uri, status) match {
+    StreamApi.setStreamStatus(user, models.StreamKey.forUri(uri), status) match {
       case ApiSuccess(newStatus) =>
         ack(CurrentStatusResponse(uri, newStatus, correlation))
 

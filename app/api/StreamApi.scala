@@ -190,8 +190,8 @@ object StreamApi
    *
    * Cannot delete root streams.
    */
-  def apiDeleteStream(user: models.User, uri: String): ApiResult[models.Stream] =
-    models.Stream.findByUri(uri) map { stream =>
+  def apiDeleteStream(user: models.User, key: models.StreamKey): ApiResult[models.Stream] =
+    models.Stream.findByKey(key) map { stream =>
       apiDeleteStream(user, stream)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -212,15 +212,8 @@ object StreamApi
   /**
    * Set the status of a stream.
    */
-  def setStreamStatus(user: models.User, streamId: String, status: ApiSetStatusData): ApiResult[models.Status]  =
-    models.Stream.findById(streamId) map { stream =>
-      setStreamStatus(user, stream, status)
-    } getOrElse {
-      ApiNotFound(ApiError("Stream does not exist."))
-    }
-
-  def apiSetStreamStatusForUri(user: models.User, streamUri: String, status: ApiSetStatusData): ApiResult[models.Status]  =
-    models.Stream.findByUri(streamUri) map { stream =>
+  def setStreamStatus(user: models.User, key: models.StreamKey, status: ApiSetStatusData): ApiResult[models.Status]  =
+    models.Stream.findByKey(key) map { stream =>
       setStreamStatus(user, stream, status)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
@@ -230,8 +223,12 @@ object StreamApi
     models.Stream.asOwner(stream, user) map { stream =>
       updateStreamStatus(stream, status.color) map { stream =>
         ApiOk(stream)
-      } getOrElse (ApiInternalError())
-    } getOrElse (ApiUnauthroized(ApiError("User does not have permission to edit stream.")))
+      } getOrElse {
+        ApiInternalError()
+      }
+    } getOrElse {
+      ApiUnauthroized(ApiError("User does not have permission to edit stream."))
+    }
 
   /**
    * Get children of a stream.
