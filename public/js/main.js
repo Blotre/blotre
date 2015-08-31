@@ -300,7 +300,7 @@ var updateStreamTags = function(model, tags) {
         }
     }).done(function(result) {
         model.stream().tags(
-            result.tags.map(function(tag) {
+            result.map(function(tag) {
                 return new models.TagModel(tag);
             }));
     });
