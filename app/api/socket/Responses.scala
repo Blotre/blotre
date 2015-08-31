@@ -80,16 +80,32 @@ object SocketError {
 }
 
 /**
- * Stream tag response.
+ * Stream tags response.
  */
-case class StreamTagResponse(tags: Seq[models.StreamTag], correlation: Int)
+case class StreamTagsResponse(uri: String, tags: Seq[models.StreamTag], correlation: Int)
+
+object StreamTagsResponse {
+  implicit val writes = new Writes[StreamTagsResponse] {
+    def writes(x: StreamTagsResponse): JsValue =
+      Json.obj(
+        "type" -> "StreamTags",
+        "url" -> x.uri,
+        "tags" -> x.tags,
+        "correlation" -> x.correlation)
+  }
+}
+
+/**
+ * Stream single tag response.
+ */
+case class StreamTagResponse(uri: String, tag: models.StreamTag, correlation: Int)
 
 object StreamTagResponse {
   implicit val writes = new Writes[StreamTagResponse] {
     def writes(x: StreamTagResponse): JsValue =
       Json.obj(
-        "type" -> "StreamTags",
-        "tags" -> x.tags,
-        "correlation" -> x.correlation)
+        "type" -> "StreamTag",
+        "url" -> x.uri,
+        "correlation" -> x.correlation) ++ Json.toJson(x.tag).as[JsObject]
   }
 }

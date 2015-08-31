@@ -242,7 +242,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def getTags(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.getTags(models.StreamKey.forUri(uri))) { tags =>
-      StreamTagResponse(tags, correlation)
+      StreamTagsResponse(uri, tags, correlation)
     }
 
   /**
@@ -250,7 +250,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def setTags(user: models.User, uri: String, tags: api.ApiSetTagsData)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.setTags(user, models.StreamKey.forUri(uri), tags.tags)) { newTags =>
-      StreamTagResponse(newTags, correlation)
+      StreamTagsResponse(uri, newTags, correlation)
     }
 
   /**
@@ -258,7 +258,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def getTag(uri: String, tag: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.getTag(models.StreamKey.forUri(uri), tag)) { tag =>
-      StreamTagResponse(List(tag), correlation)
+      StreamTagResponse(uri, tag, correlation)
     }
 
   /**
@@ -266,7 +266,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def setTag(user: models.User, uri: String, tag: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.setTag(user, models.StreamKey.forUri(uri), tag)) { newTag =>
-      StreamTagResponse(List(newTag), correlation)
+      StreamTagResponse(uri, newTag, correlation)
     }
 
   /**
@@ -274,7 +274,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def deleteTag(user: models.User, uri: String, tag: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.removeTag(user, models.StreamKey.forUri(uri), tag)) { removedTag =>
-      StreamTagResponse(List(removedTag), correlation)
+      StreamTagResponse(uri, removedTag, correlation)
     }
 
   /**

@@ -12,11 +12,13 @@ object StreamTag {
   val pattern = ("(?![a-fA-F0-9]{6}$)" + StreamName.validCharacter + "{1,32}").r
 
   implicit val writes = new Writes[StreamTag] {
-    def writes(x: StreamTag): JsValue = Json.toJson(x.value)
+    def writes(x: StreamTag): JsValue =
+      Json.obj(
+        "tag" -> x.value)
   }
 
   implicit val reads: Reads[models.StreamTag] =
-    Reads.StringReads
+    (__ \  "tag").read[String]
       .map(fromString)
       .filter(ValidationError("Tag is not valid."))(_.isDefined)
       .map(_.get)

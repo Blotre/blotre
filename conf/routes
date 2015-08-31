@@ -42,7 +42,7 @@ GET     /v0/api/stream/:id/tags              controllers.StreamApiController.get
 POST    /v0/api/stream/:id/tags              controllers.StreamApiController.setTags(id)
 GET     /v0/api/stream/:id/tags/:tag         controllers.StreamApiController.getTag(id, tag)
 PUT     /v0/api/stream/:id/tags/:tag         controllers.StreamApiController.setTag(id, tag)
-PUT     /v0/api/stream/:id/tags/:tag         controllers.StreamApiController.removeTag(id, tag)
+DELETE  /v0/api/stream/:id/tags/:tag         controllers.StreamApiController.removeTag(id, tag)
 GET     /v0/api/stream/:id/children          controllers.StreamApiController.apiGetChildren(id)
 GET     /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiGetChild(id, child)
 PUT     /v0/api/stream/:id/children/:child   controllers.StreamApiController.apiCreateChild(id, child)
