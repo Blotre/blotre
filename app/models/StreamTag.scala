@@ -8,8 +8,7 @@ import play.api.libs.json._
  */
 case class StreamTag(value: String)
 
-object StreamTag
-{
+object StreamTag {
   val pattern = ("(?![a-fA-F0-9]{6}$)" + StreamName.validCharacter + "{1,32}").r
 
   implicit val writes = new Writes[StreamTag] {

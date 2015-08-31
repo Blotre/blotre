@@ -8,8 +8,7 @@ import play.api.libs.json.Reads
  */
 case class Color private(value: String)
 
-object Color
-{
+object Color {
   val pattern = """#[0-9a-fA-F]{6}""".r
 
   val default = Color("#aaaaaa")

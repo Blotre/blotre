@@ -1,54 +1,10 @@
 package api
 
 import Actors.{CollectionSupervisor, StreamSupervisor}
-import play.api.data.validation.ValidationError
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
 import play.utils.UriEncoding
 import scala.collection.immutable.{List}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
-/**
- *
- */
-case class ApiSetStatusData(color: models.Color)
-
-object ApiSetStatusData {
-  implicit val apiSetStatusDataReads: Reads[ApiSetStatusData] =
-    (__ \ "color")
-      .read(models.Color.readColor)
-      .map(ApiSetStatusData.apply(_))
-}
-
-/**
- *
- */
-case class ApiSetTagsData(tags: Seq[models.StreamTag])
-
-object ApiSetTagsData {
-  implicit val apiSetStatusDataReads: Reads[ApiSetTagsData] =
-    Reads.list[models.StreamTag]
-      .filter(ValidationError("Too many tags."))(tags => tags.size <= models.Stream.maxTags)
-      .filter(ValidationError("Duplicate tags not allowed."))(tags => tags.distinct.size == tags.size)
-      .map(ApiSetTagsData(_))
-}
-
-/**
- *
- */
-case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData], tags: Option[ApiSetTagsData])
-
-object ApiCreateStreamData {
-  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
-
-  implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
-    (JsPath \ "name").read[String](nameValidate) and
-      (JsPath \ "uri").read[String] and
-      (JsPath \ "status").readNullable[ApiSetStatusData] and
-      (JsPath \ "tags").readNullable[ApiSetTagsData]
-    )(ApiCreateStreamData.apply _)
-}
 
 object StreamHelper
 {
@@ -83,10 +39,7 @@ object StreamHelper
 /**
  * Stream api.
  */
-object StreamApi
-{
-  import models.Serializable._
-
+object StreamApi {
   /**
    * Lookup a stream.
    */
@@ -169,17 +122,18 @@ object StreamApi
         status.map(s => updateStreamStatus(existing, s.color))
         ApiOk(existing.stream)
       } getOrElse {
-        if (parent.stream.childCount >= models.Stream.maxChildren)
+        if (parent.stream.childCount >= models.Stream.maxChildren) {
           ApiCouldNotProccessRequest(ApiError("Too many children."))
-        else if (user.streamCount >= models.User.streamLimit)
+        } else if (user.streamCount >= models.User.streamLimit) {
           ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
-        else
+        } else {
           createDescendant(parent, validatedName).flatMap(models.Stream.asOwner(_, user)) map { newStream =>
             status.map(s => updateStreamStatus(newStream, s.color))
             ApiCreated(newStream.stream)
           } getOrElse {
             ApiInternalError()
           }
+        }
       }
     } getOrElse {
       ApiUnauthroized(ApiError("User does not have permission to add child."))
@@ -199,7 +153,7 @@ object StreamApi
 
   def apiDeleteStream(user: models.User, stream: models.Stream): ApiResult[models.Stream] =
     models.Stream.asOwner(stream, user) map { ownedStream =>
-      if (ownedStream.stream.name == ownedStream.stream.uri) {
+      if (ownedStream.stream.name.equalsIgnoreCase(ownedStream.stream.uri)) {
         ApiCouldNotProccessRequest(ApiError("Cannot delete root streams."))
       } else {
         deleteStream(stream)
