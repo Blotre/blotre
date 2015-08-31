@@ -291,7 +291,7 @@ var updateStreamTags = function(model, tags) {
         type: "POST",
         url: jsRoutes.controllers.StreamApiController.setTags(model.stream().id()).url,
         contentType: 'application/json',
-        data: JSON.stringify(tags.map(function(x) { return x.value(); })),
+        data: JSON.stringify(tags.map(function(x) { return { "tag": x.value() }; })),
         headers: {
             accept: "application/json"
         },
@@ -301,7 +301,7 @@ var updateStreamTags = function(model, tags) {
     }).done(function(result) {
         model.stream().tags(
             result.map(function(tag) {
-                return new models.TagModel(tag);
+                return new models.TagModel(tag.tag);
             }));
     });
 };

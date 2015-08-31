@@ -54,7 +54,6 @@ var StreamManager = function() {
         };
 
         socket.onmessage = function(event) {
-            console.log(event);
             var data = JSON.parse(event.data);
             if (data)
                 processMessage(data);

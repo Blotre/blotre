@@ -105,7 +105,7 @@ StreamModel.fromJson = function(data) {
         data && data.uri,
         StatusModel.fromJson(data && data.status),
         new Date(data && data.updated),
-        (data && data.tags || []).map(function(x){ return new TagModel(x); }));
+        (data && data.tags || []).map(function(x){ return new TagModel(x.tag); }));
 };
 
 /**

@@ -79,7 +79,7 @@ var updateFromQueryString = function(model) {
 
 $(function(){
     var model = new TagViewModel(
-        window.initialTag,
+        window.initialTag.tag,
         application_model.initialUser(),
         []);
 
