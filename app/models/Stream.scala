@@ -413,13 +413,9 @@ object Stream
     }
 
   def getChildById(parentKey: StreamKey, childKey: StreamKey): Option[ChildStream] =
-    if (parentKey == NoneStreamKey || childKey == NoneStreamKey) {
-      None
-    } else {
-      filterParent(childDb(), parentKey)
-        .flatMap(q => filterChild(q, childKey))
-        .flatMap(q => Some(q.get))
-    }
+    filterParent(childDb(), parentKey)
+      .flatMap(q => filterChild(q, childKey))
+      .flatMap(q => Option(q.get))
 
   /**
    * Lookup children by tag.
