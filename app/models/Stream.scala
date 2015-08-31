@@ -260,6 +260,8 @@ object Stream
    * Registers a new child for a given stream.
    */
   private def addChild(hierarchical: Boolean, parent: Stream, child: Stream, user: User): Option[ChildStream] = {
+    if (parent.childCount > maxChildren)
+      return None
     val s = save(ChildStream(null, hierarchical, parent.id, parent.name, parent.uri, child.id, child.name, child.uri, new Date()))
     MorphiaObject.datastore.update(
       db().filter("id", parent.id),
@@ -298,6 +300,8 @@ object Stream
    * Set the tags of a stream.
    */
   private def setTags(stream: Stream, tags: Seq[StreamTag]): Option[Stream] = {
+    if (tags.size > maxTags)
+      return None
     val tagList = tags.map(_.value).asJava
     MorphiaObject.datastore.update(
       db().filter("id", stream.id),

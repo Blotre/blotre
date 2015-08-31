@@ -84,6 +84,78 @@ object SetTags {
 /**
  *
  */
+case class GetTag(of: String, tag: String)
+
+object GetTag {
+  implicit val reads: Reads[GetTag] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "tag").read[String]
+    )(GetTag.apply _)
+}
+
+/**
+ *
+ */
+case class SetTag(of: String, tag: String)
+
+object SetTag {
+  implicit val reads: Reads[SetTag] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "tag").read[String]
+    )(SetTag.apply _)
+}
+
+/**
+ *
+ */
+case class DeleteTag(of: String, tag: String)
+
+object DeleteTag {
+  implicit val reads: Reads[DeleteTag] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "tag").read[String]
+    )(DeleteTag.apply _)
+}
+
+/**
+ *
+ */
+case class GetChild(of: String, child: String)
+
+object GetChild {
+  implicit val socketApiGetChildrenReads: Reads[GetChild] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "child").read[String]
+    )(GetChild.apply _)
+}
+
+/**
+ *
+ */
+case class DeleteChild(of: String, child: String)
+
+object DeleteChild {
+  implicit val socketApiGetChildrenReads: Reads[DeleteChild] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "child").read[String]
+    )(DeleteChild.apply _)
+}
+
+/**
+ *
+ */
+case class CreateChild(of: String, child: String)
+
+object CreateChild {
+  implicit val socketApiGetChildrenReads: Reads[CreateChild] = (
+    (JsPath \ "of").read[String] and
+      (JsPath \ "child").read[String]
+    )(CreateChild.apply _)
+}
+
+/**
+ *
+ */
 case class GetChildren(of: String, query: Option[String], limit: Option[Int], offset: Option[Int])
 
 object GetChildren {
@@ -94,7 +166,6 @@ object GetChildren {
       (JsPath \ "offset").readNullable[Int]
     )(GetChildren.apply _)
 }
-
 
 /**
  *

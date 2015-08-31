@@ -375,30 +375,30 @@ object StreamApi
   /**
    * Lookup a tag on a given stream.
    */
-  def getTag(streamKey: models.StreamKey, tag: String): ApiResult[String] =
+  def getTag(streamKey: models.StreamKey, tag: String): ApiResult[models.StreamTag] =
     models.Stream.findByKey(streamKey) map { stream =>
       getTag(stream, tag)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
     }
 
-  def getTag(stream: models.Stream, tag: String): ApiResult[String] =
+  def getTag(stream: models.Stream, tag: String): ApiResult[models.StreamTag] =
     stream.getTags()
       .find(streamTag => streamTag.value == tag)
-      .map(tag => ApiOk(tag.value))
+      .map(tag => ApiOk(tag))
       .getOrElse(ApiNotFound(ApiError("Tag does not exist.")))
 
   /**
    * Change the tags on a stream.
    */
-  private def modifyTags(user: models.User, streamKey: models.StreamKey)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
+  private def modifyTags[R](user: models.User, streamKey: models.StreamKey)(modify: (models.Stream.OwnedStream) => ApiResult[R]): ApiResult[R] =
     models.Stream.findByKey(streamKey) map {
       modifyTags(user, _)(modify)
     } getOrElse {
       ApiNotFound(ApiError("Stream does not exist."))
     }
 
-  private def modifyTags(user: models.User, stream: models.Stream)(modify: (models.Stream.OwnedStream) => ApiResult[String]): ApiResult[String] =
+  private def modifyTags[R](user: models.User, stream: models.Stream)(modify: (models.Stream.OwnedStream) => ApiResult[R]): ApiResult[R] =
     models.Stream.asOwner(stream, user) map {
       modify(_)
     } getOrElse {
@@ -408,40 +408,42 @@ object StreamApi
   /**
    * Add a tag to a stream.
    */
-  def addTag(user: models.User, streamKey: models.StreamKey, tag: String): ApiResult[String] =
+  def setTag(user: models.User, streamKey: models.StreamKey, tag: String): ApiResult[models.StreamTag] =
     models.StreamTag.fromString(tag) map {
-      addTag(user, streamKey, _)
+      setTag(user, streamKey, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def addTag(user: models.User, streamKey: models.StreamKey, tag: models.StreamTag): ApiResult[String] =
+  def setTag(user: models.User, streamKey: models.StreamKey, tag: models.StreamTag): ApiResult[models.StreamTag] =
     modifyTags(user, streamKey) { stream =>
       if (stream.stream.hasTag(tag)) {
-        ApiOk(tag.value)
+        ApiOk(tag)
+      } else if (stream.stream.tags.size >= models.Stream.maxTags) {
+        ApiCouldNotProccessRequest(ApiError("Too many tags."))
       } else {
         doSetTags(stream, stream.stream.getTags() :+ tag)
-        ApiCreated(tag.value)
+        ApiCreated(tag)
       }
     }
 
   /**
    * Remove a tag on a given stream.
    */
-  def removeTag(user: models.User, streamKey: models.StreamKey, tag: String): ApiResult[String] =
+  def removeTag(user: models.User, streamKey: models.StreamKey, tag: String): ApiResult[models.StreamTag] =
     models.StreamTag.fromString(tag) map {
-      addTag(user, streamKey, _)
+      setTag(user, streamKey, _)
     } getOrElse {
       ApiNotFound(ApiError("Tag is not valid."))
     }
 
-  def removeTag(user: models.User, streamKey: models.StreamKey, tag: models.StreamTag): ApiResult[String] =
+  def removeTag(user: models.User, streamKey: models.StreamKey, tag: models.StreamTag): ApiResult[models.StreamTag] =
     modifyTags(user, streamKey) { stream =>
       if (!stream.stream.hasTag(tag)) {
-        ApiOk("")
+        ApiNotFound(ApiError("No such tag."))
       } else {
         doSetTags(stream, stream.stream.getTags() diff List(tag))
-        ApiOk(tag.value)
+        ApiOk(tag)
       }
     }
 

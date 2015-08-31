@@ -4,12 +4,12 @@ import play.api.libs.json._
 
 
 /**
- * Stream response.
+ * Single stream response.
  */
 case class StreamResponse(stream: models.Stream, correlation: Int)
 
 object StreamResponse {
-  implicit val statusWrites = new Writes[StreamResponse] {
+  implicit val writes = new Writes[StreamResponse] {
     def writes(x: StreamResponse): JsValue =
       Json.obj(
         "type" -> "Stream",
@@ -18,14 +18,28 @@ object StreamResponse {
 }
 
 /**
+ * Multiple stream response.
+ */
+case class StreamsResponse(streams: Seq[models.Stream], correlation: Int)
+
+object StreamsResponse {
+  implicit val statusWrites = new Writes[StreamsResponse] {
+    def writes(x: StreamsResponse): JsValue =
+      Json.obj(
+        "type" -> "Streams",
+        "streams" -> x.streams,
+        "correlation" -> x.correlation)
+  }
+}
+
+/**
  * Current stream status response.
  */
-case class CurrentStatusResponse(uri: String, status: models.Status, correlation: Int)
+case class StreamStatusResponse(uri: String, status: models.Status, correlation: Int)
 
-object CurrentStatusResponse
-{
-  implicit val statusWrites = new Writes[CurrentStatusResponse] {
-    def writes(x: CurrentStatusResponse): JsValue =
+object StreamStatusResponse {
+  implicit val writes = new Writes[StreamStatusResponse] {
+    def writes(x: StreamStatusResponse): JsValue =
       Json.obj(
         "type" -> "StreamStatus",
         "url" -> x.uri,
@@ -39,9 +53,8 @@ object CurrentStatusResponse
  */
 case class ApiChildrenResponse(uri: String, children: Seq[models.Stream], correlation: Int)
 
-object ApiChildrenResponse
-{
-  implicit val statusWrites = new Writes[ApiChildrenResponse] {
+object ApiChildrenResponse {
+  implicit val writes = new Writes[ApiChildrenResponse] {
     def writes(x: ApiChildrenResponse): JsValue =
       Json.obj(
         "type" -> "StreamChildren",
@@ -56,9 +69,8 @@ object ApiChildrenResponse
  */
 case class SocketError(error: String, correlation: Int)
 
-object SocketError
-{
-  implicit val statusWrites = new Writes[SocketError] {
+object SocketError {
+  implicit val writes = new Writes[SocketError] {
     def writes(x: SocketError): JsValue =
       Json.obj(
         "type" -> "Error",
@@ -73,7 +85,7 @@ object SocketError
 case class StreamTagResponse(tags: Seq[models.StreamTag], correlation: Int)
 
 object StreamTagResponse {
-  implicit val statusWrites = new Writes[StreamTagResponse] {
+  implicit val writes = new Writes[StreamTagResponse] {
     def writes(x: StreamTagResponse): JsValue =
       Json.obj(
         "type" -> "StreamTags",

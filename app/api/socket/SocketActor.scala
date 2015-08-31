@@ -67,27 +67,20 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       implicit val correlation = (msg \ "correlation").asOpt[Int].getOrElse(0)
       implicit val acknowledge = (msg \ "acknowledge").asOpt[String].getOrElse("") != "error"
 
-      ((__ \ "type").read[String]).reads(msg) map { x => x match {
-        case "GetStreams" =>
-          receiveMessage[GetStreams](msg) { x =>
-            getStreams(x.query.getOrElse(""))
-          }
+      ((__ \ "type").read[String]).reads(msg) map {
 
-        case "CreateStream" =>
-          receiveMessage[ApiCreateStreamData](msg) { x =>
-            createStream(user, x.name, x.uri, x.status)
-          }
-
+      // Stream lookup
         case "GetStream" =>
           receiveMessage[GetStream](msg) { x =>
             getStream(x.uri)
           }
 
-        case "DeleteStream" =>
-          receiveMessage[DeleteStream](msg) { x =>
-            deleteStream(user, x.uri)
+        case "GetStreams" =>
+          receiveMessage[GetStreams](msg) { x =>
+            getStreams(x.query.getOrElse(""))
           }
 
+      // Stream.status
         case "GetStatus" =>
           receiveMessage[GetStatus](msg) { x =>
             getStatus(x.of)
@@ -98,6 +91,39 @@ class SocketActor(user: User, out: ActorRef) extends Actor
             setStatus(user, x.of, x.status)
           }
 
+      // Stream operations
+        case "CreateStream" =>
+          receiveMessage[ApiCreateStreamData](msg) { x =>
+            createStream(user, x.name, x.uri, x.status)
+          }
+
+        case "DeleteStream" =>
+          receiveMessage[DeleteStream](msg) { x =>
+            deleteStream(user, x.uri)
+          }
+
+      // Stream.children
+        case "GetChildren" =>
+          receiveMessage[GetChildren](msg) { x =>
+            getChildren(x.of, x.query, 20, 0)
+          }
+
+        case "GetChild" =>
+          receiveMessage[GetChild](msg) { x =>
+            getChild(x.of, x.child)
+          }
+
+        case "CreateChild" =>
+          receiveMessage[CreateChild](msg) { x =>
+            createChild(user, x.of, x.child)
+          }
+
+        case "DeleteChild" =>
+          receiveMessage[DeleteChild](msg) { x =>
+            deleteChild(user, x.of, x.child)
+          }
+
+      // Stream.tags
         case "GetTags" =>
           receiveMessage[GetTags](msg) { x =>
             getTags(x.of)
@@ -108,11 +134,22 @@ class SocketActor(user: User, out: ActorRef) extends Actor
             setTags(user, x.of, x.tags)
           }
 
-        case "GetChildren" =>
-          receiveMessage[GetChildren](msg) { x =>
-            getChildren(x.of, 20, 0)
+        case "GetTag" =>
+          receiveMessage[GetTag](msg) { x =>
+            getTag(x.of, x.tag)
           }
 
+        case "SetTag" =>
+          receiveMessage[SetTag](msg) { x =>
+            setTag(user, x.of, x.tag)
+          }
+
+        case "DeleteTag" =>
+          receiveMessage[DeleteTag](msg) { x =>
+            deleteTag(user, x.of, x.tag)
+          }
+
+      // Subscriptions
         case "Subscribe" =>
           receiveMessage[Subscribe](msg) { x =>
             subscribe(x.to)
@@ -135,7 +172,6 @@ class SocketActor(user: User, out: ActorRef) extends Actor
 
         case _ =>
           error("Unknown type.")
-      }
     } recoverTotal { _ =>
         error("Could not process request.")
     }
@@ -173,16 +209,16 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    * Get the status of a stream.
    */
   private def getStream(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    fromApi(StreamApi.getStream(models.StreamKey.forUri(uri))) { streams =>
-      StreamResponse(streams, correlation)
+    fromApi(StreamApi.getStream(models.StreamKey.forUri(uri))) { stream =>
+      StreamResponse(stream, correlation)
     }
 
   /**
-   *
+   * Lookup streams with an optional query.
    */
   private def getStreams(query: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.getStreams(query)) { streams =>
-      streams
+      StreamsResponse(streams, correlation)
     }
 
   /**
@@ -198,7 +234,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def getStatus(uri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.getStreamStatus(models.StreamKey.forUri(uri))) { status =>
-      CurrentStatusResponse(uri, status, correlation)
+      StreamStatusResponse(uri, status, correlation)
     }
 
   /**
@@ -210,7 +246,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     }
 
   /**
-   *
+   * Sets the tags of a stream.
    */
   private def setTags(user: models.User, uri: String, tags: api.ApiSetTagsData)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.setTags(user, models.StreamKey.forUri(uri), tags.tags)) { newTags =>
@@ -218,21 +254,69 @@ class SocketActor(user: User, out: ActorRef) extends Actor
     }
 
   /**
+   * Get a tag of a stream.
+   */
+  private def getTag(uri: String, tag: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.getTag(models.StreamKey.forUri(uri), tag)) { tag =>
+      StreamTagResponse(List(tag), correlation)
+    }
+
+  /**
+   * Set a tag of a stream.
+   */
+  private def setTag(user: models.User, uri: String, tag: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.setTag(user, models.StreamKey.forUri(uri), tag)) { newTag =>
+      StreamTagResponse(List(newTag), correlation)
+    }
+
+  /**
+   * Remove a tag from a stream.
+   */
+  private def deleteTag(user: models.User, uri: String, tag: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.removeTag(user, models.StreamKey.forUri(uri), tag)) { removedTag =>
+      StreamTagResponse(List(removedTag), correlation)
+    }
+
+  /**
    * Get the status of a stream.
    */
   private def setStatus(user: models.User, uri: String, status: ApiSetStatusData)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.setStreamStatus(user, models.StreamKey.forUri(uri), status)) { newStatus =>
-      CurrentStatusResponse(uri, newStatus, correlation)
+      StreamStatusResponse(uri, newStatus, correlation)
+    }
+
+  /**
+   * Get a child of stream.
+   */
+  private def getChild(uri: String, childUri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.getChild(models.StreamKey.forUri(uri), models.StreamKey.forUri(childUri))) { r =>
+      StreamResponse(r, correlation)
     }
 
   /**
    * Get the children of a stream.
    */
-  private def getChildren(uri: String, limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
-    StreamApi.getChildren(models.StreamKey.forUri(uri), "", limit, offset) map { r =>
+  private def getChildren(uri: String, query: Option[String], limit: Int, offset: Int)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    StreamApi.getChildren(models.StreamKey.forUri(uri), query.getOrElse(""), limit, offset) map { r =>
       fromApi(r) { children =>
         ApiChildrenResponse(uri, children, correlation)
       }}
+
+  /**
+   * Get a child of stream.
+   */
+  private def createChild(user: models.User, uri: String, childUri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.createChild(user, models.StreamKey.forUri(uri), models.StreamKey.forUri(childUri))) { r =>
+      StreamResponse(r, correlation)
+    }
+
+  /**
+   * Get a child of stream.
+   */
+  private def deleteChild(user: models.User, uri: String, childUri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.apiDeleteChild(user, models.StreamKey.forUri(uri), models.StreamKey.forUri(childUri))) { r =>
+      StreamResponse(r, correlation)
+    }
 
   /**
    * Subscribe to a stream's updates.

@@ -11,8 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
  * Stream REST api controller.
  */
-object StreamApiController extends Controller
-{
+object StreamApiController extends Controller {
   /**
    * Convert an API result into a HTTP response.
    */
@@ -88,8 +87,6 @@ object StreamApiController extends Controller
    * Get children of a stream.
    *
    * Returns either the most recent children or children from the query
-   *
-   * TODO: normally should return list of ids which query params can expand to stream?
    */
   def apiGetChildren(streamId: String) = Action.async { implicit request =>
     val query = request.getQueryString("query").getOrElse("")
@@ -150,7 +147,7 @@ object StreamApiController extends Controller
    * Set a tag on a given stream.
    */
   def setTag(streamId: String, tag: String) = AuthorizedAction { implicit request =>
-    toResponse(StreamApi.addTag(request.user, models.StreamKey.forId(streamId), tag))
+    toResponse(StreamApi.setTag(request.user, models.StreamKey.forId(streamId), tag))
   }
 
   /**
