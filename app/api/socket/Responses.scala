@@ -49,7 +49,7 @@ object StreamStatusResponse {
 }
 
 /**
- * Current stream children response.
+ * Stream children response.
  */
 case class ApiChildrenResponse(uri: String, children: Seq[models.Stream], correlation: Int)
 
@@ -60,6 +60,22 @@ object ApiChildrenResponse {
         "type" -> "StreamChildren",
         "url" -> x.uri,
         "children" -> x.children,
+        "correlation" -> x.correlation)
+  }
+}
+
+/**
+ * Stream children response.
+ */
+case class ApiChildResponse(uri: String, children: models.Stream, correlation: Int)
+
+object ApiChildResponse {
+  implicit val writes = new Writes[ApiChildResponse] {
+    def writes(x: ApiChildResponse): JsValue =
+      Json.obj(
+        "type" -> "StreamChild",
+        "url" -> x.uri,
+        "child" -> x.children,
         "correlation" -> x.correlation)
   }
 }

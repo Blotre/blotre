@@ -290,7 +290,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def getChild(uri: String, childUri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.getChild(models.StreamKey.forUri(uri), models.StreamKey.forUri(childUri))) { r =>
-      StreamResponse(r, correlation)
+      ApiChildResponse(uri, r, correlation)
     }
 
   /**
@@ -307,7 +307,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def createChild(user: models.User, uri: String, childUri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.createChild(user, models.StreamKey.forUri(uri), models.StreamKey.forUri(childUri))) { r =>
-      StreamResponse(r, correlation)
+      ApiChildResponse(uri, r, correlation)
     }
 
   /**
@@ -315,7 +315,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
    */
   private def deleteChild(user: models.User, uri: String, childUri: String)(implicit correlation: Int, acknowledge: Boolean): Unit =
     fromApi(StreamApi.apiDeleteChild(user, models.StreamKey.forUri(uri), models.StreamKey.forUri(childUri))) { r =>
-      StreamResponse(r, correlation)
+      ApiChildResponse(uri, r, correlation)
     }
 
   /**
