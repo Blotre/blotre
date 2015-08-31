@@ -24,8 +24,7 @@ case class StreamUri(value: String)
     value.split(StreamUri.sep).map(StreamName(_))
 }
 
-object StreamUri
-{
+object StreamUri {
   /**
    * Path component separator.
    */
@@ -65,6 +64,6 @@ object StreamUri
    * Names are subsets of uris.
    */
   def fromName(uri: StreamName): StreamUri  =
-    StreamUri(uri.value.toLowerCase())
+    StreamUri(uri.value.toLowerCase().replace(" ", "+"))
 }
 
