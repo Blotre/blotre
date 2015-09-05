@@ -318,8 +318,8 @@ var tagsToString = function(tags) {
     Convert a string to a list of tags.
 */
 var stringToTags = function(tags) {
-    return (tags.match(/([a-z\$])+/ig) || []).map(function(tag) {
-        return new models.TagModel(tag);
+    return (tags.match(/([a-zA-Z0-9_\-$])+/ig) || []).map(function(tag) {
+        return new models.TagModel(tag.trim());
     });
 };
 

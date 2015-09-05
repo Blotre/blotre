@@ -9,7 +9,7 @@ import play.api.libs.json._
 case class StreamTag(value: String)
 
 object StreamTag {
-  val pattern = ("(?![a-fA-F0-9]{6}$)" + StreamName.validCharacter + "{1,32}").r
+  private val pattern = """[a-zA-Z0-9_\-$]{1,32}"""
 
   implicit val writes = new Writes[StreamTag] {
     def writes(x: StreamTag): JsValue =
@@ -25,7 +25,7 @@ object StreamTag {
 
   def fromString(name: String): Option[StreamTag] = {
     val trimmed = name.trim()
-    if (trimmed.matches(pattern.toString))
+    if (trimmed.matches(pattern) && Color.fromString("#" + trimmed).isEmpty)
       Some(StreamTag(trimmed.toLowerCase()))
     else
       None

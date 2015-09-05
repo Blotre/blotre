@@ -35,10 +35,8 @@ object ApiSetTagsData {
 case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData], tags: Option[ApiSetTagsData])
 
 object ApiCreateStreamData {
-  def nameValidate = Reads.StringReads.filter(ValidationError("Name is not valid."))(_.matches(models.StreamName.pattern.toString))
-
   implicit val apiCreateStreamDataReads: Reads[ApiCreateStreamData] = (
-    (JsPath \ "name").read[String](nameValidate) and
+    (JsPath \ "name").read[String] and
       (JsPath \ "uri").read[String] and
       (JsPath \ "status").readNullable[ApiSetStatusData] and
       (JsPath \ "tags").readNullable[ApiSetTagsData]

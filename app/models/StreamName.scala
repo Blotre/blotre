@@ -15,7 +15,7 @@ object StreamName
 {
   val validCharacter = """[ a-zA-Z0-9_\-$]"""
 
-  val pattern = (validCharacter + "{1,64}").r
+  private val pattern = (validCharacter + "{1,64}").r
 
   /**
    * Create a stream name from a string.
