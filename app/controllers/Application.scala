@@ -17,6 +17,24 @@ import scala.concurrent._
 object Application extends Controller
 {
   /**
+   * Validate that the requested redirect creates a valid url from the request host.
+   */
+  private def getRedirect(request: RequestHeader, unvalidatedRedirect: String): Option[String] =
+    try
+    {
+      val url = new java.net.URI(
+        (if (request.secure) "https://" else "http://")
+          + request.host
+          + (if (unvalidatedRedirect.startsWith("/")) "" else "/")
+          + unvalidatedRedirect)
+      Some(url.toString)
+    }
+    catch
+    {
+      case e: Exception => None
+    }
+
+  /**
    * Get the access token value from a request.
    */
   private def extractAccessTokenFromRequest(request: RequestHeader): Option[String] =
@@ -94,6 +112,10 @@ object Application extends Controller
     Ok(views.html.meta.policy.render(request))
   }
 
+  def terms = Action { implicit request =>
+    Ok(views.html.meta.terms.render(request))
+  }
+
   /**
    * Login page.
    */
@@ -102,24 +124,6 @@ object Application extends Controller
       .withSession(
         "redirect" -> request.getQueryString("redirect").getOrElse(""))
   }
-
-  /**
-   * Validate that the requested redirect creates a valid url from the request host.
-   */
-  private def getRedirect(request: RequestHeader, unvalidatedRedirect: String): Option[String] =
-    try
-    {
-      val url = new java.net.URI(
-        (if (request.secure) "https://" else "http://")
-          + request.host
-          + (if (unvalidatedRedirect.startsWith("/")) "" else "/")
-          + unvalidatedRedirect)
-      Some(url.toString)
-    }
-    catch
-    {
-      case e: Exception => None
-    }
 
   /**
    * Post login handler.

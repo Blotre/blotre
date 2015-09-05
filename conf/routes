@@ -6,7 +6,8 @@
 GET     /                           controllers.Application.index()
 
 # Meta
-GET     /ThePolicy                     controllers.Application.policy()
+GET     /ThePolicy                 controllers.Application.policy()
+GET     /terms                     controllers.Application.terms()
 
 # Streams
 GET     /s                          controllers.Stream.index()

@@ -1,5 +1,10 @@
 # ChangeLog
 
+# 0.2.1 - September 4, 2015
+* Fixed client JS not allowing tags with numbers.
+* The Policy is great, but also added link to terms.
+** +100 legits
+ 
 # 0.2.0 - August 31, 2015
 * Added tags!
 ** Tags add metadata about how a stream is used.
