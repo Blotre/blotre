@@ -1,5 +1,8 @@
 # ChangeLog
 
+# 0.2.2 - September 6, 2015
+* Allow setting or updating tags with StreamCreate APIs.
+
 # 0.2.1 - September 4, 2015
 * Fixed client JS not allowing tags with numbers.
 * The Policy is great, but also added link to terms.
