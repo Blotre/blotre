@@ -40,7 +40,8 @@ $(function(){
             contentType: 'application/json',
             data: JSON.stringify({
               name: name,
-              uri: uri
+              uri: uri,
+              tags: [{tag: 'x'}]
             }),
             error: function(e) {
                 shared.unlockButton(btn);

@@ -144,7 +144,7 @@ object StreamApi {
 
   private def updateStream(stream: models.Stream.OwnedStream, status: Option[ApiSetStatusData], tags: Option[Seq[models.StreamTag]]): Option[models.Stream] =
     Some(stream)
-      .flatMap(_ => status flatMap { s => updateStreamStatus(stream, s.color) })
+      .flatMap(_ => status flatMap { s => updateStreamStatus(stream, s.color) } orElse { Some(stream) })
       .flatMap { _ =>
         tags flatMap { tags =>
           setTags(stream, tags) match {
