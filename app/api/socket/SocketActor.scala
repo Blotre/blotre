@@ -94,7 +94,7 @@ class SocketActor(user: User, out: ActorRef) extends Actor
       // Stream operations
         case "CreateStream" =>
           receiveMessage[ApiCreateStreamData](msg) { x =>
-            createStream(user, x.name, x.uri, x.status)
+            createStream(user, x.name, x.uri, x.status, x.tags)
           }
 
         case "DeleteStream" =>
@@ -200,8 +200,8 @@ class SocketActor(user: User, out: ActorRef) extends Actor
   /**
    * Try to create a new stream.
    */
-  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData])(implicit correlation: Int, acknowledge: Boolean): Unit =
-    fromApi(StreamApi.createStream(user, name, uri, status)) { stream =>
+  private def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData], tags: Option[ApiSetTagsData])(implicit correlation: Int, acknowledge: Boolean): Unit =
+    fromApi(StreamApi.createStream(user, name, uri, status, tags.map(_.tags))) { stream =>
       StreamResponse(stream, correlation)
     }
 

@@ -70,8 +70,8 @@ object StreamApi {
         .filter(_.startsWith("#"))
         .flatMap(tag => models.StreamTag.fromString(tag.substring(1)))
         .map { tag =>
-          ApiOk(models.Stream.getStreamWithTag(tag, 20))
-        }
+        ApiOk(models.Stream.getStreamWithTag(tag, 20))
+      }
     } getOrElse {
       ApiOk(models.Stream.findByQuery(query))
     }
@@ -102,13 +102,13 @@ object StreamApi {
    *
    * Cannot create root streams.
    */
-  def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
+  def createStream(user: models.User, name: String, uri: String, status: Option[ApiSetStatusData], tags: Option[Seq[models.StreamTag]]): ApiResult[models.Stream] =
     models.StreamName.fromString(name) map { validatedName =>
       StreamHelper.getParentFromPath(uri) map { case (parent, childUri) =>
         if (!models.StreamUri.fromName(validatedName).value.equalsIgnoreCase(childUri.value))
           ApiCouldNotProccessRequest(ApiError("Stream name and uri do not match."))
         else
-          createStream(user, parent, uri, validatedName, status)
+          createStream(user, parent, uri, validatedName, status, tags)
       } getOrElse {
         ApiNotFound(ApiError("Parent stream does not exist."))
       }
@@ -116,28 +116,43 @@ object StreamApi {
       ApiCouldNotProccessRequest(ApiError("Stream name is invalid."))
     }
 
-  def createStream(user: models.User, parent: models.Stream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData]): ApiResult[models.Stream] =
+  def createStream(user: models.User, parent: models.Stream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData], tags: Option[Seq[models.StreamTag]]): ApiResult[models.Stream] =
     models.Stream.asOwner(parent, user) map { parent =>
-      models.Stream.findByUri(uri).flatMap(models.Stream.asOwner(_, user)) map { existing =>
-        status.map(s => updateStreamStatus(existing, s.color))
-        ApiOk(existing.stream)
-      } getOrElse {
-        if (parent.stream.childCount >= models.Stream.maxChildren) {
-          ApiCouldNotProccessRequest(ApiError("Too many children."))
-        } else if (user.streamCount >= models.User.streamLimit) {
-          ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
-        } else {
-          createDescendant(parent, validatedName).flatMap(models.Stream.asOwner(_, user)) map { newStream =>
-            status.map(s => updateStreamStatus(newStream, s.color))
-            ApiCreated(newStream.stream)
-          } getOrElse {
-            ApiInternalError()
-          }
-        }
-      }
+      createStream(parent, uri, validatedName, status, tags)
     } getOrElse {
       ApiUnauthroized(ApiError("User does not have permission to add child."))
     }
+
+  def createStream(parent: models.Stream.OwnedStream, uri: String, validatedName: models.StreamName, status: Option[ApiSetStatusData], tags: Option[Seq[models.StreamTag]]): ApiResult[models.Stream] =
+    models.Stream.findByUri(uri).flatMap(models.Stream.asOwner(_, parent.user)) map { existing =>
+      updateStream(existing, status, tags)
+      ApiOk(existing.stream)
+    } getOrElse {
+      if (parent.stream.childCount >= models.Stream.maxChildren) {
+        ApiCouldNotProccessRequest(ApiError("Too many children."))
+      } else if (parent.user.streamCount >= models.User.streamLimit) {
+        ApiCouldNotProccessRequest(ApiError("Too many streams for user."))
+      } else {
+        createDescendant(parent, validatedName) map { newStream =>
+          updateStream(newStream, status, tags)
+          ApiCreated(newStream.stream)
+        } getOrElse {
+          ApiInternalError()
+        }
+      }
+    }
+
+  private def updateStream(stream: models.Stream.OwnedStream, status: Option[ApiSetStatusData], tags: Option[Seq[models.StreamTag]]): Option[models.Stream] =
+    Some(stream)
+      .flatMap(_ => status flatMap { s => updateStreamStatus(stream, s.color) })
+      .flatMap { _ =>
+        tags flatMap { tags =>
+          setTags(stream, tags) match {
+            case ApiSuccess(_) => Some(stream.stream)
+            case ApiFailure(_) => None
+          }
+        }
+      }
 
   /**
    * Delete an existing stream.
@@ -176,7 +191,7 @@ object StreamApi {
   def setStreamStatus(user: models.User, stream: models.Stream, status: ApiSetStatusData): ApiResult[models.Status]  =
     models.Stream.asOwner(stream, user) map { stream =>
       updateStreamStatus(stream, status.color) map { stream =>
-        ApiOk(stream)
+        ApiOk(stream.status)
       } getOrElse {
         ApiInternalError()
       }
@@ -402,12 +417,12 @@ object StreamApi {
     }
 
   /**
-   *
+   * Update the status of a stream
    */
-  private def updateStreamStatus(stream: models.Stream.OwnedStream, color: models.Color): Option[models.Status] =
+  private def updateStreamStatus(stream: models.Stream.OwnedStream, color: models.Color): Option[models.Stream] =
     stream.updateStatus(color) map { s =>
       StreamSupervisor.updateStatus(s, s.status)
-      s.status
+      s
     }
 
   private def addChild(parent: models.Stream.OwnedStream, hierarchical: Boolean, child: models.Stream): Option[models.Stream] =
@@ -419,9 +434,11 @@ object StreamApi {
     else
       None
 
-  private def createDescendant(parent: models.Stream.OwnedStream, name: models.StreamName): Option[models.Stream] =
+  private def createDescendant(parent: models.Stream.OwnedStream, name: models.StreamName): Option[models.Stream.OwnedStream] =
     parent.createDescendant(name) flatMap { newChild =>
       addChild(parent, true, newChild)
+    } flatMap { child =>
+      models.Stream.asOwner(child, parent.user)
     }
 
   private def removeChild(parent: models.Stream.OwnedStream, child: models.Stream): Option[models.Stream] = {

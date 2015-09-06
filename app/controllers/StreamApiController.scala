@@ -68,7 +68,7 @@ object StreamApiController extends Controller {
    */
   def apiCreateStream() = AuthorizedAction(parse.json) { implicit request =>
     Json.fromJson[ApiCreateStreamData](request.body) map { value =>
-      toResponse(StreamApi.createStream(request.user, value.name, value.uri, value.status))
+      toResponse(StreamApi.createStream(request.user, value.name, value.uri, value.status, value.tags.map(_.tags)))
     } recoverTotal  { e =>
       BadRequest(Json.toJson(ApiError("Could not process request", e)))
     }
