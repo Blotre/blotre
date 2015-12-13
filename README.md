@@ -22,9 +22,9 @@ By 2016, literally everything, including your toaster, will connect to the inter
 But don’t take our word for it. Check out what people are saying:
 
 > At first, I was like, WTF? This is the revolutionary new app everyone at work has been talking about? It’s soooo simple. And yet, that’s really the genius of it. I must have spent three days solid just thinking up new ways Blot’re could simplify my life.
-
+ 
 > Perfect #996515 toast once again, thanks Blot’re!!!
-
+ 
 > As an early adopter, I ironically liked Blot're to appear cool. But then that got too popular. Now I just like it meta ironically.
 
 
