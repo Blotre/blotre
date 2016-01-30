@@ -104,6 +104,10 @@ var AppViewModel = function(user, stream) {
             });
         }
     };
+
+    self.childSelected = function(child) {
+
+    };
 };
 
 AppViewModel.prototype.checkFavorite = function() {

@@ -1,4 +1,4 @@
-@import url(//fonts.googleapis.com/css?family=Lato:300,400,700);
+@import "variables";
 
 html {
     min-height: 100%;
@@ -10,7 +10,7 @@ body {
     position: relative;
     min-height: 100%;
     width: 100%;
-    font-family: 'Lato', sans-serif;
+    font-family: @Lato;
     color: #444;
 }
 
@@ -25,13 +25,10 @@ body:before {
     z-index: -9999;
 }
 
-
 body > * {
     z-index: 1
 }
 
-/**
-*/
 ul {
     list-style: none;
     padding: 0;
@@ -70,7 +67,7 @@ form .info {
 */
 .deadly-diamond {
     position: relative;
-    font-family: "HelveticaNeueUltraLight", "HelveticaNeue-Ultra-Light", "Helvetica Neue Ultra Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+    font-family: @HelveticaNeue;
     font-weight: 100;
     font-size: 3.5rem;
     opacity: 0.80;
