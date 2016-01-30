@@ -1,49 +1,45 @@
-define([],
-function() {
-"use-strict";
+'use strict';
 
-var showLoadingScreen = function() {
-    $('#loading-overlay').removeClass('hidden');
-};
+define([], function () {
+    "use-strict";
 
-var hideLoadingScreen = function() {
-    $('#loading-overlay').addClass('hidden');
-};
+    var showLoadingScreen = function showLoadingScreen() {
+        $('#loading-overlay').removeClass('hidden');
+    };
 
-/**
-    Remove all alerts.
-*/
-var clearAlerts = function() {
-    $('#alerts').empty();
-};
+    var hideLoadingScreen = function hideLoadingScreen() {
+        $('#loading-overlay').addClass('hidden');
+    };
 
-/**
-    Append a new alert
-*/
-var addAlert = function(type, content) {
-    $('#alerts').append(
-        $('<li class="alert" role="alert">')
-            .addClass(type)
-            .append(
-                '<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>',
-                content));
-};
+    /**
+        Remove all alerts.
+    */
+    var clearAlerts = function clearAlerts() {
+        $('#alerts').empty();
+    };
 
-/**
-    Set the current alert, removing all existing one.
-*/
-var setAlert = function(type, content) {
-    clearAlerts();
-    addAlert(type, content);
-};
+    /**
+        Append a new alert
+    */
+    var addAlert = function addAlert(type, content) {
+        $('#alerts').append($('<li class="alert" role="alert">').addClass(type).append('<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>', content));
+    };
 
-return {
-    'showLoadingScreen': showLoadingScreen,
-    'hideLoadingScreen': hideLoadingScreen,
+    /**
+        Set the current alert, removing all existing one.
+    */
+    var setAlert = function setAlert(type, content) {
+        clearAlerts();
+        addAlert(type, content);
+    };
 
-    'clearAlerts': clearAlerts,
-    'addAlert': addAlert,
-    'setAlert': setAlert
-};
+    return {
+        'showLoadingScreen': showLoadingScreen,
+        'hideLoadingScreen': hideLoadingScreen,
 
+        'clearAlerts': clearAlerts,
+        'addAlert': addAlert,
+        'setAlert': setAlert
+    };
 });
+//# sourceMappingURL=ui.js.map

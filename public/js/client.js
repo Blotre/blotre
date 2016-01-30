@@ -1,104 +1,94 @@
-require([
-    './models',
-    './application_model',
-    './ui'],
-function(
-    models,
-    application_model,
-    ui)
-{
-"use-strict";
+'use strict';
 
-/**
-*/
-var StreamIndexViewModel = function(user, clientId) {
-    var self = this;
-    application_model.AppViewModel.call(this, user);
+require(['./models', './application_model', './ui'], function (models, application_model, ui) {
+    "use-strict";
 
-    self.clientId = ko.observable(clientId);
-};
+    /**
+    */
 
+    var StreamIndexViewModel = function StreamIndexViewModel(user, clientId) {
+        var self = this;
+        application_model.AppViewModel.call(this, user);
 
-var updateRedirects = function(clientId, rediectBlob) {
-    ui.showLoadingScreen();
-    $.ajax({
-        type: "POST",
-        url: jsRoutes.controllers.DeveloperController.setRedirects(clientId).url,
-        data: JSON.stringify(rediectBlob.split('\n')),
-        contentType: 'application/json',
-        error: function(e) {
-            ui.setAlert('alert-danger', e.status == 422 ? "Specified redirects are invalid. Must be at most 10 http(s) urls." : "An error occurred.");
-            ui.hideLoadingScreen();
-        }
-    }).done(function(result) {
-        ui.clearAlerts();
-        ui.hideLoadingScreen();
-    });
-};
+        self.clientId = ko.observable(clientId);
+    };
 
-/**
-    Actually delete the client.
-
-    Redirects to the developer home page on success.
-*/
-var deleteClient = function(clientId) {
-    ui.showLoadingScreen();
-    $.ajax({
-        type: "DELETE",
-        url: jsRoutes.controllers.DeveloperController.deleteClient(clientId).url,
-        error: function() {
-            ui.setAlert('alert-danger', "Could not delete client, please try again.");
-            ui.hideLoadingScreen();
-        }
-    }).done(function(result) {
-        window.location = jsRoutes.controllers.DeveloperController.index().url;
-    });
-};
-
-/**
-    Prompt the user to ensure they really want to delete the client.
-*/
-var askDeleteClient = function(clientId) {
-    bootbox.confirm({
-        title: "Are you sure?",
-        animate: false,
-        closeButton: false,
-        message: "This will permanently delete this client and invalidate all token for it.",
-        callback: function(result) {
-            if (result) {
-                deleteClient(clientId);
+    var updateRedirects = function updateRedirects(clientId, rediectBlob) {
+        ui.showLoadingScreen();
+        $.ajax({
+            type: "POST",
+            url: jsRoutes.controllers.DeveloperController.setRedirects(clientId).url,
+            data: JSON.stringify(rediectBlob.split('\n')),
+            contentType: 'application/json',
+            error: function error(e) {
+                ui.setAlert('alert-danger', e.status == 422 ? "Specified redirects are invalid. Must be at most 10 http(s) urls." : "An error occurred.");
+                ui.hideLoadingScreen();
             }
-        }
-    });
-};
+        }).done(function (result) {
+            ui.clearAlerts();
+            ui.hideLoadingScreen();
+        });
+    };
 
-/**
-*/
-$(function() {
-    var model = new StreamIndexViewModel(
-        application_model.initialUser(),
-        window.clientId);
+    /**
+        Actually delete the client.
+    
+        Redirects to the developer home page on success.
+    */
+    var deleteClient = function deleteClient(clientId) {
+        ui.showLoadingScreen();
+        $.ajax({
+            type: "DELETE",
+            url: jsRoutes.controllers.DeveloperController.deleteClient(clientId).url,
+            error: function error() {
+                ui.setAlert('alert-danger', "Could not delete client, please try again.");
+                ui.hideLoadingScreen();
+            }
+        }).done(function (result) {
+            window.location = jsRoutes.controllers.DeveloperController.index().url;
+        });
+    };
 
-    var currentRedirects =  $('#redirects-textbox').val();
+    /**
+        Prompt the user to ensure they really want to delete the client.
+    */
+    var askDeleteClient = function askDeleteClient(clientId) {
+        bootbox.confirm({
+            title: "Are you sure?",
+            animate: false,
+            closeButton: false,
+            message: "This will permanently delete this client and invalidate all token for it.",
+            callback: function callback(result) {
+                if (result) {
+                    deleteClient(clientId);
+                }
+            }
+        });
+    };
 
-    $('#cancel-redirects-button').on('click', function(e) {
-        $('#redirects-textbox').val(currentRedirects);
-        $('#save-redirects-button, #cancel-redirects-button')
-            .attr("disabled", true);
-    });
+    /**
+    */
+    $(function () {
+        var model = new StreamIndexViewModel(application_model.initialUser(), window.clientId);
 
-    $('#redirects-textbox').on('input', function(e) {
-        $('#save-redirects-button, #cancel-redirects-button')
-            .attr("disabled", false);
-    });
+        var currentRedirects = $('#redirects-textbox').val();
 
-    $('#save-redirects-button').on('click', function() {
-        updateRedirects(model.clientId(), $('#redirects-textbox').val());
-    });
+        $('#cancel-redirects-button').on('click', function (e) {
+            $('#redirects-textbox').val(currentRedirects);
+            $('#save-redirects-button, #cancel-redirects-button').attr("disabled", true);
+        });
 
-    $('#delete-client-button').on('click', function(e) {
-        askDeleteClient(model.clientId());
+        $('#redirects-textbox').on('input', function (e) {
+            $('#save-redirects-button, #cancel-redirects-button').attr("disabled", false);
+        });
+
+        $('#save-redirects-button').on('click', function () {
+            updateRedirects(model.clientId(), $('#redirects-textbox').val());
+        });
+
+        $('#delete-client-button').on('click', function (e) {
+            askDeleteClient(model.clientId());
+        });
     });
 });
-
-});
+//# sourceMappingURL=client.js.map
