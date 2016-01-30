@@ -1,9 +1,11 @@
-var babel = require("gulp-babel");
-var gulp = require("gulp");
-var sourcemaps = require("gulp-sourcemaps");
-var plumber = require('gulp-plumber');
+"use strict";
+const babel = require("gulp-babel");
+const gulp = require("gulp");
+const sourcemaps = require("gulp-sourcemaps");
+const plumber = require('gulp-plumber');
+const jshint = require('gulp-jshint');
 
-var path = {
+const path = {
     js: ['./client/js/*.js'],
     watch: ['client/**/*.*']
 };
@@ -18,6 +20,11 @@ gulp.task('js:compile', () =>
         .pipe(sourcemaps.write("."))
         .pipe(gulp.dest('./public/js/')));
 
-gulp.task("default", ['js:compile'], () => {
-    gulp.watch(path.watch, ['js:compile']);
+gulp.task('js:lint', () =>
+  gulp.src(path.js)
+    .pipe(jshint())
+    .pipe(jshint.reporter('default')));
+
+gulp.task("default", ['js:lint', 'js:compile'], () => {
+    gulp.watch(path.watch, ['js:lint', 'js:compile']);
 });
