@@ -6,7 +6,7 @@ scalaVersion := "2.11.6"
 
 val appDependencies = Seq(
   "be.objectify"  %% "deadbolt-java"     % "2.4.0",
-  "com.feth"      %% "play-authenticate" % "0.7.0-SNAPSHOT",
+  "com.feth"      %% "play-authenticate" % "0.7.1",
   "org.mongodb" % "mongo-java-driver" % "2.13.0",
   "org.mongodb.morphia" % "morphia" % "0.109",
   "org.mongodb.morphia" % "morphia-logging-slf4j" % "0.109",
