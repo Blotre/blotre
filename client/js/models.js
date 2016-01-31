@@ -1,10 +1,10 @@
 "use strict";
 const slice = Function.prototype.call.bind(Array.prototype.slice);
 
-export const  DEFAULT_COLOR = '#777777';
+export const DEFAULT_COLOR = '#777777';
 
 /**
-*/
+ */
 export const normalizeUri = function(uri) {
     return decodeURI(uri)
         .trim()
@@ -15,7 +15,7 @@ export const normalizeUri = function(uri) {
 /**
     Pretty prints a data.
 */
-export const dateToDisplay = (function(){
+export const dateToDisplay = (function() {
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     var pad = function(min, input) {
@@ -36,10 +36,10 @@ export const dateToDisplay = (function(){
 }());
 
 /**
-*/
+ */
 export const StatusModel = function(color) {
-   var self = this;
-   self.color = ko.observable(color);
+    var self = this;
+    self.color = ko.observable(color);
 };
 
 StatusModel.empty = function() {
@@ -51,18 +51,26 @@ StatusModel.fromJson = function(data) {
 };
 
 /**
-*/
+ */
 export const TagModel = function(value) {
-   var self = this;
-   self.value = ko.observable(value);
+    var self = this;
+    self.value = ko.observable(value);
 
     self.url = ko.computed(function() {
-       return jsRoutes.controllers.Stream.getTag(self.value()).url;
-   });
+        return jsRoutes.controllers.Stream.getTag(self.value()).url;
+    });
 };
 
 /**
-*/
+ */
+const PathComponent = function(name, uri) {
+    const self = this;
+    self.name = ko.observable(name);
+    self.uri = ko.observable('/s' + uri);
+};
+
+/**
+ */
 export const StreamModel = function(id, name, uri, status, updated, tags) {
     var self = this;
     self.id = ko.observable(id);
@@ -95,6 +103,16 @@ export const StreamModel = function(id, name, uri, status, updated, tags) {
         var ownerUri = normalizeUri(user.userName());
         return (ownerUri === self.uri() || self.uri().indexOf(ownerUri + '/') === 0);
     };
+
+    self.pathComponents = ko.computed(function() {
+        const paths = [];
+        self.uri().split('/').reduce((path, c) => {
+            path += '/' + c;
+            paths.push(new PathComponent(c, path));
+            return path;
+        }, '');
+        return paths;
+    });
 };
 
 StreamModel.fromJson = function(data) {
@@ -103,12 +121,13 @@ StreamModel.fromJson = function(data) {
         data && data.name,
         data && data.uri,
         StatusModel.fromJson(data && data.status),
-        new Date(data && data.updated),
-        (data && data.tags || []).map(function(x){ return new TagModel(x.tag); }));
+        new Date(data && data.updated), (data && data.tags || []).map(function(x) {
+            return new TagModel(x.tag);
+        }));
 };
 
 /**
-*/
+ */
 export const UserModel = function(userName, status, rootStream) {
     var self = this;
     self.userName = ko.observable(userName || '');
@@ -129,14 +148,14 @@ UserModel.fromJson = function(data) {
 };
 
 /**
-*/
+ */
 export const Collection = function(uri) {
     var self = this;
     self.uri = ko.observable(uri);
     self.children = ko.observableArray();
 
-     self.addChild = function(child) {
-       self.children.remove(function(x) {
+    self.addChild = function(child) {
+        self.children.remove(function(x) {
             return x.uri() === child.uri();
         });
         self.children.unshift(child);

@@ -1,7 +1,6 @@
 @(
     stream: models.Stream,
-    children: scala.collection.immutable.List[models.Stream],
-    uriPath: scala.collection.immutable.Seq[(String, String)])(implicit request: RequestHeader)
+    children: scala.collection.immutable.List[models.Stream])(implicit request: RequestHeader)
 
 @import play.api.libs.json._
 @import helper._
@@ -16,10 +15,8 @@
 }
 
 @navHeader = {
-    <ul class="breadcrumbs stream-breadcrumbs">
-        @for((name, path) <- uriPath) {
-            <li><a href="/s@path">@name</a></li>
-        }
+    <ul class="breadcrumbs stream-breadcrumbs" data-bind="foreach: stream().pathComponents">
+        <li><a data-bind="attr: { href: uri }, text: name"></a></li>
     </ul>
 }
 

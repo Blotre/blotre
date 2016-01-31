@@ -14,13 +14,6 @@ object Stream extends Controller {
 
   val AcceptsPng = Accepting("image/png")
 
-  def uriMap(uri: String): Seq[(String, String)] =
-    (uri
-      .split('/')
-      .foldLeft(("", Seq[(String, String)]())) { (p, c) =>
-      (p._1 + "/" + c, p._2 :+(c, (p._1 + "/" + c)))
-    })._2
-
   /**
    * Stream root index page.
    *
@@ -61,7 +54,7 @@ object Stream extends Controller {
    */
   def renderStream(user: models.User, uri: String)(implicit request: RequestHeader) =
     models.Stream.findByUri(uri) map { s =>
-      Ok(views.html.stream.stream.render(s, s.getChildren(), uriPath = uriMap(s.uri), request))
+      Ok(views.html.stream.stream.render(s, s.getChildren(), request))
     } getOrElse {
       tryCreateDescendant(user, uri)
     }
