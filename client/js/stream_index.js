@@ -5,7 +5,7 @@ import * as application_model from './application_model';
 import * as shared from './shared';
 
 /**
-*/
+ */
 var StreamIndexViewModel = function(user, results) {
     var self = this;
     application_model.AppViewModel.call(this, user);
@@ -59,10 +59,9 @@ var updateFromQueryString = function(model) {
     updateSearchResultsForQuery(model, query);
 };
 
-$(function(){
+$(function() {
     var model = new StreamIndexViewModel(
-        application_model.initialUser(),
-        []);
+        application_model.initialUser(), []);
 
     $('#stream-search-form button').click(function(e) {
         e.preventDefault();
@@ -89,14 +88,18 @@ $(function(){
             return;
         var path = window.location.origin + window.location.pathname;
         var url = (query ? path + "?query=" + encodeURIComponent(query) : path);
-        window.history.pushState({ query: query }, '', url);
+        window.history.pushState({
+            query: query
+        }, '', url);
     });
 
     window.onpopstate = function(e) {
         updateFromQueryString(model);
     };
 
-    window.history.replaceState({ query: getQueryFromQueryString() }, '', window.location.href);
+    window.history.replaceState({
+        query: getQueryFromQueryString()
+    }, '', window.location.href);
 
     updateFromQueryString(model);
 

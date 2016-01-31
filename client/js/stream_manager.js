@@ -7,11 +7,11 @@ var socketPath = function() {
 };
 
 /**
-*/
+ */
 export const StreamManager = function() {
     var self = this;
-    self.streams = { };
-    self.collections = { };
+    self.streams = {};
+    self.collections = {};
 
     var processMessage = function(msg) {
         if (!msg || !msg.type)
@@ -82,7 +82,9 @@ StreamManager.prototype.subscribeAll = function(paths, callback) {
         if (current) {
             current.listeners.push(callback);
         } else {
-            self.streams[path] = { listeners: [callback] };
+            self.streams[path] = {
+                listeners: [callback]
+            };
             newSubscriptions.push(path);
         }
     });
@@ -105,7 +107,9 @@ StreamManager.prototype.subscribeCollection = function(path, callback) {
     if (current) {
         current.listeners.push(callback);
     } else {
-        self.collections[path] = { listeners: [callback] };
+        self.collections[path] = {
+            listeners: [callback]
+        };
         if (self.ready) {
             self.socket.send(JSON.stringify({
                 "type": "SubscribeCollection",

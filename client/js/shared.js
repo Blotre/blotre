@@ -6,7 +6,10 @@ export const parseQueryString = (queryString) => {
             var kv = item.split("=");
             var k = kv[0];
             var v = decodeURIComponent(kv[1]);
-            if (k in dict) dict[k].push(v); else dict[k] = [v];
+            if (k in dict)
+                dict[k].push(v);
+            else
+                dict[k] = [v];
             return dict;
         }, {});
 };
@@ -16,15 +19,15 @@ export const getQueryString = () => {
 };
 
 export const lockButton = (sel) => {
-     sel
+    sel
         .prop("disabled", true)
         .children('.glyphicon')
-            .addClass('glyphicon-refresh glyphicon-refresh-animate');
+        .addClass('glyphicon-refresh glyphicon-refresh-animate');
 };
 
 export const unlockButton = (sel) => {
     sel
-       .prop("disabled", false)
-       .children('.glyphicon')
-           .removeClass('glyphicon-refresh  glyphicon-refresh-animate');
+        .prop("disabled", false)
+        .children('.glyphicon')
+        .removeClass('glyphicon-refresh  glyphicon-refresh-animate');
 };

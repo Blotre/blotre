@@ -5,7 +5,7 @@ import * as application_model from './application_model';
 import * as shared from './shared';
 
 /**
-*/
+ */
 var TagViewModel = function(tag, user, results) {
     var self = this;
     application_model.AppViewModel.call(this, user);
@@ -21,8 +21,8 @@ var TagViewModel = function(tag, user, results) {
 
     self.removeChild = function(childUri) {
         return self.children().children.remove(function(x) {
-             return x.uri() === childUri;
-         });
+            return x.uri() === childUri;
+        });
     };
 };
 
@@ -70,11 +70,10 @@ var updateFromQueryString = function(model) {
     updateSearchResultsForQuery(model, query);
 };
 
-$(function(){
+$(function() {
     var model = new TagViewModel(
         window.initialTag.tag,
-        application_model.initialUser(),
-        []);
+        application_model.initialUser(), []);
 
     $('#stream-search-form button').click(function(e) {
         e.preventDefault();
@@ -101,30 +100,34 @@ $(function(){
             return;
         var path = window.location.origin + window.location.pathname;
         var url = (query ? path + "?query=" + encodeURIComponent(query) : path);
-        window.history.pushState({ query: query }, '', url);
+        window.history.pushState({
+            query: query
+        }, '', url);
     });
 
     model.manager.subscribeCollection('#' + model.tag(), {
-       'StatusUpdated': function(msg) {
-           var existingChild = model.removeChild(msg.from);
-           if (existingChild.length) {
-               existingChild[0].status(models.StatusModel.fromJson(msg.status));
-               model.addChild(existingChild[0]);
-           }
-       },
-       'ChildAdded': function(msg) {
-           model.addChild(models.StreamModel.fromJson(msg.child));
-       },
-       'ChildRemoved': function(msg) {
-           model.removeChild(msg.child);
-       }
+        'StatusUpdated': function(msg) {
+            var existingChild = model.removeChild(msg.from);
+            if (existingChild.length) {
+                existingChild[0].status(models.StatusModel.fromJson(msg.status));
+                model.addChild(existingChild[0]);
+            }
+        },
+        'ChildAdded': function(msg) {
+            model.addChild(models.StreamModel.fromJson(msg.child));
+        },
+        'ChildRemoved': function(msg) {
+            model.removeChild(msg.child);
+        }
     });
 
     window.onpopstate = function(e) {
         updateFromQueryString(model);
     };
 
-    window.history.replaceState({ query: getQueryFromQueryString() }, '', window.location.href);
+    window.history.replaceState({
+        query: getQueryFromQueryString()
+    }, '', window.location.href);
 
     updateFromQueryString(model);
 

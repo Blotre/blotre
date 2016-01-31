@@ -20,7 +20,7 @@ var AppViewModel = function(user) {
             type: "DELETE",
             url: jsRoutes.controllers.Account.revokeAuthorization(authorization.clientId()).url,
         }).then(function() {
-           self.removeAuthorization(authorization.clientId());
+            self.removeAuthorization(authorization.clientId());
         });
     };
 };
@@ -33,22 +33,22 @@ var Authorization = function(clientId, clientName, issued) {
     self.issued = ko.observable(issued);
 };
 
-$(function(){
+$(function() {
     var model = new AppViewModel(
         application_model.initialUser());
 
     $.ajax({
-        type: "GET",
-        url: jsRoutes.controllers.Account.authorizations().url,
-        headers: {
-             Accept : "application/json"
-        }
-    })
-    .then(function(result) {
-        model.authorizations(result.map(function(x) {
-            return new Authorization(x.clientId, x.clientName, x.issued);
-        }));
-    });
+            type: "GET",
+            url: jsRoutes.controllers.Account.authorizations().url,
+            headers: {
+                Accept: "application/json"
+            }
+        })
+        .then(function(result) {
+            model.authorizations(result.map(function(x) {
+                return new Authorization(x.clientId, x.clientName, x.issued);
+            }));
+        });
 
     ko.applyBindings(model);
 });

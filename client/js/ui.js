@@ -19,12 +19,11 @@ export const clearAlerts = () => {
     Append a new alert
 */
 export const addAlert = (type, content) => {
-    $('#alerts').append(
-        $('<li class="alert" role="alert">')
-            .addClass(type)
-            .append(
-                '<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>',
-                content));
+    $('#alerts').append($('<li class="alert" role="alert">')
+        .addClass(type)
+        .append(
+            '<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>',
+            content));
 };
 
 /**

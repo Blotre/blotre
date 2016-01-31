@@ -3,8 +3,8 @@ import * as models from './models';
 import * as stream_manager from './stream_manager';
 
 /**
-*/
-var AppViewModel = function(user, page) {
+ */
+export const AppViewModel = function(user, page) {
     var self = this;
     self.user = ko.observable(user);
     self.page = ko.observable(page);
@@ -18,8 +18,8 @@ var AppViewModel = function(user, page) {
 
     self.removeFavorite = function(childUri) {
         return self.favorites().children.remove(function(x) {
-             return x.uri() === childUri;
-         });
+            return x.uri() === childUri;
+        });
     };
 
     // Subscribe to user status updates
@@ -38,12 +38,14 @@ var AppViewModel = function(user, page) {
         headers: {
             accept: "application/json"
         },
-        error: function(e) { console.error(e); }
+        error: function(e) {
+            console.error(e);
+        }
     }).done(function(result) {
         self.favorites().children((result || []).map(models.StreamModel.fromJson));
     });
 
-     // Subscribe to user collection updates
+    // Subscribe to user collection updates
     self.manager.subscribeCollection(user.userName(), {
         'StatusUpdated': function(msg) {
             var existingChild = self.removeFavorite(msg.from);
@@ -61,11 +63,6 @@ var AppViewModel = function(user, page) {
     });
 };
 
-var initialUser = function() {
+export const initialUser = function() {
     return models.UserModel.fromJson(window.initialUserData);
-};
-
-module.exports = {
-    AppViewModel: AppViewModel,
-    initialUser: initialUser
 };

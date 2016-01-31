@@ -4,7 +4,7 @@ import * as ui from './ui';
 import * as application_model from './application_model';
 
 /**
-*/
+ */
 var StreamIndexViewModel = function(user, clientId) {
     var self = this;
     application_model.AppViewModel.call(this, user);
@@ -67,13 +67,13 @@ var askDeleteClient = function(clientId) {
 };
 
 /**
-*/
+ */
 $(function() {
     var model = new StreamIndexViewModel(
         application_model.initialUser(),
         window.clientId);
 
-    var currentRedirects =  $('#redirects-textbox').val();
+    var currentRedirects = $('#redirects-textbox').val();
 
     $('#cancel-redirects-button').on('click', function(e) {
         $('#redirects-textbox').val(currentRedirects);
