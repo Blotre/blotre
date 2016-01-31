@@ -25,18 +25,21 @@ var isRootStream = function(uri) {
 };
 
 /**
-*/
+ */
 var AppViewModel = function(user, stream) {
     var self = this;
     application_model.AppViewModel.call(this, user);
 
     self.stream = ko.observable(stream);
-    self.children = ko.observable(new models.Collection(stream.uri()));
     self.query = ko.observable();
     self.favorite = ko.observable(FavoriteStatus.Unknown);
 
-    self.color = ko.computed(function() {
-        var stream = self.stream();
+    self.children = ko.computed(() => {
+        return new models.Collection(self.stream().uri());
+    });
+
+    self.color = ko.computed(() => {
+        const stream = self.stream();
         return (stream ? stream.color() : models.DEFAULT_COLOR);
     });
 
@@ -52,8 +55,8 @@ var AppViewModel = function(user, stream) {
 
     self.removeChild = function(childUri) {
         return self.children().children.remove(function(x) {
-             return x.uri() === childUri;
-         });
+            return x.uri() === childUri;
+        });
     };
 
     self.deleteStream = function(child) {
@@ -64,13 +67,13 @@ var AppViewModel = function(user, stream) {
 
             }
         }).then(function() {
-           self.removeChild(child.uri());
+            self.removeChild(child.uri());
         });
     };
 
     self.isParentOwner = ko.computed(function() {
-         return (!!self.stream() && stream.isOwner(self.user()));
-     });
+        return (!!self.stream() && stream.isOwner(self.user()));
+    });
 
     self.removeChildButtonClick = function(child, event) {
         if (isHierarchical(self.stream().uri(), child.uri())) {
@@ -86,20 +89,20 @@ var AppViewModel = function(user, stream) {
                 }
             });
         } else {
-             $.ajax({
+            $.ajax({
                 type: "DELETE",
                 url: jsRoutes.controllers.StreamApiController.apiDeleteChild(self.stream().id(), child.id()).url,
                 error: function(e) {
 
                 }
             }).then(function() {
-               self.removeChild(child.uri());
+                self.removeChild(child.uri());
             });
         }
     };
 
-    self.childSelected = function(child) {
-
+    self.onChildSelected = (child) => {
+        self.stream(child);
     };
 };
 
@@ -121,7 +124,7 @@ AppViewModel.prototype.checkFavorite = function() {
                 }
             }
         }).then(function() {
-           self.favorite(FavoriteStatus.Yes);
+            self.favorite(FavoriteStatus.Yes);
         });
     }
 };
@@ -145,7 +148,7 @@ var updateFavicon = function(color) {
 };
 
 /**
-*/
+ */
 var enableFavoriteButton = function(existing) {
     $('.stream-favorite')
         .prop('disabled', false)
@@ -164,7 +167,7 @@ var disableFavoriteButton = function() {
 };
 
 /**
-*/
+ */
 var hideChildForm = function() {
     $('#create-child-name-input, #create-child-cancel-button').addClass('hidden');
     $('#create-child-name-input input').val('');
@@ -209,8 +212,8 @@ var createChildStream = function(model, stream, user, name) {
         url: jsRoutes.controllers.StreamApiController.apiCreateStream().url,
         contentType: 'application/json',
         data: JSON.stringify({
-          name: name,
-          uri: stream.uri() + "/" + name
+            name: name,
+            uri: stream.uri() + "/" + name
         }),
         error: function(e) {
             $('.create-child .error')
@@ -227,7 +230,7 @@ var createChildStream = function(model, stream, user, name) {
 };
 
 /**
-*/
+ */
 var addFavorite = function(model, targetStreamId, childId) {
     disableFavoriteButton();
     $.ajax({
@@ -276,19 +279,23 @@ var updateSearchResultsForQuery = function(model, query) {
     });
 };
 
-var updateSearchResults = function(model) {
-    var query = $('#stream-search-form input').val();
+const updateSearchResults = function(model) {
+    const query = $('#stream-search-form input').val();
     return updateSearchResultsForQuery(model, query);
 };
 
 /**
-*/
+ */
 var updateStreamTags = function(model, tags) {
     $.ajax({
         type: "POST",
         url: jsRoutes.controllers.StreamApiController.setTags(model.stream().id()).url,
         contentType: 'application/json',
-        data: JSON.stringify(tags.map(function(x) { return { "tag": x.value() }; })),
+        data: JSON.stringify(tags.map(function(x) {
+            return {
+                "tag": x.value()
+            };
+        })),
         headers: {
             accept: "application/json"
         },
@@ -307,7 +314,9 @@ var updateStreamTags = function(model, tags) {
     Convert a list of tags to a editable string representation.
 */
 var tagsToString = function(tags) {
-    return Array.prototype.map.call(tags, function(x) { return x.value(); })
+    return Array.prototype.map.call(tags, function(x) {
+            return x.value();
+        })
         .join(', ');
 };
 
@@ -349,8 +358,8 @@ var saveTags = function(model) {
 };
 
 /**
-*/
-$(function(){
+ */
+$(function() {
     var model = new AppViewModel(
         application_model.initialUser(),
         initialStream());
@@ -449,7 +458,7 @@ $(function(){
     });
 
     $('#tag-input input').keypress(function(e) {
-        if (e.keyCode === 13 /*enter*/) {
+        if (e.keyCode === 13 /*enter*/ ) {
             saveTags(model);
         }
     });
@@ -461,7 +470,7 @@ $(function(){
     });
 
     $('#stream-search-form input').keypress(function(e) {
-        if (e.keyCode === 13 /*enter*/) {
+        if (e.keyCode === 13 /*enter*/ ) {
             updateSearchResults(model);
             e.preventDefault();
         }
@@ -501,12 +510,12 @@ $(function(){
 
     model.favorite.subscribe(function(status) {
         switch (status) {
-        case FavoriteStatus.Yes:
-            return enableFavoriteButton(true);
-        case FavoriteStatus.No:
-            return enableFavoriteButton(false);
-        default:
-            return disableFavoriteButton();
+            case FavoriteStatus.Yes:
+                return enableFavoriteButton(true);
+            case FavoriteStatus.No:
+                return enableFavoriteButton(false);
+            default:
+                return disableFavoriteButton();
         }
     });
 
@@ -515,10 +524,10 @@ $(function(){
 
     $('button.stream-favorite').click(function(e) {
         switch (model.favorite()) {
-        case FavoriteStatus.Yes:
-            return removeFavorite(model, model.user().rootStream(), model.stream().id());
-        case FavoriteStatus.No:
-            return addFavorite(model, model.user().rootStream(), model.stream().id());
+            case FavoriteStatus.Yes:
+                return removeFavorite(model, model.user().rootStream(), model.stream().id());
+            case FavoriteStatus.No:
+                return addFavorite(model, model.user().rootStream(), model.stream().id());
         }
     });
 

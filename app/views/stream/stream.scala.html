@@ -58,11 +58,9 @@
     <div class="stream-header">
         <div class="stream-data">
             <h1 class="stream-title">
-                <a data-bind="text: stream().name" href="@routes.Stream.getStream(stream.uri)">@stream.name</a>
+                <a data-bind="text: stream().name, attr: { href: stream().uri }"></a>
             </h1>
-            <span class="stream-updated" data-bind="text: stream().displayUpdated">
-                 @stream.updated.format("MMM dd, yyyy - hh:mm.ssSSS")
-            </span>
+            <time class="stream-updated" data-bind="text: stream().displayUpdated"></time>
             <div class="tags">
                 <div id="tag-editor" class="@("hidden".when(!stream.isOwner(Application.getLocalUser(request))))">
                     <div id="tag-input" class="input-group hidden">
