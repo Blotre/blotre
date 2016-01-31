@@ -13,7 +13,7 @@
 @extraScripts = {
     @_streamSearchResultTemplate { }
 
-    <script data-main="@routes.Assets.at("js/stream_index.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+    <script data-main="@routes.Assets.versioned("js/stream_index.js")" type="text/javascript" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
 }
 
 @main(Messages("blotre.stream.index.title"), "stream-index", articleHeader = articleHeader, extraScripts = extraScripts) {

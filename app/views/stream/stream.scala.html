@@ -50,7 +50,7 @@
         </li>
     </script>
 
-    <script data-main="@routes.Assets.at("js/stream_main.js")" type="text/javascript" src="@routes.Assets.at("lib/requirejs/require.js")"></script>
+    <script data-main="@routes.Assets.versioned("js/stream_main.js")" type="text/javascript" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
 }
 
 @main(stream.name, "stream", extraHead = extraHead, articleHeader = articleHeader, navHeader = navHeader, extraScripts = extraScripts) {

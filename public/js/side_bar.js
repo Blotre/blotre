@@ -339,9 +339,12 @@
 	Object.defineProperty(exports, '__esModule', {
 	    value: true
 	});
-	exports['default'] = StreamManager;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	var _models = __webpack_require__(1);
 
@@ -353,122 +356,139 @@
 	};
 
 	/**
+	    Manages a websocket connection
 	 */
 
-	function StreamManager() {
-	    var self = this;
-	    self.streams = {};
-	    self.collections = {};
+	var StreamManager = (function () {
+	    function StreamManager() {
+	        _classCallCheck(this, StreamManager);
 
-	    var processMessage = function processMessage(msg) {
-	        if (!msg || !msg.type) return;
+	        var self = this;
+	        self.streams = {};
+	        self.collections = {};
+	        self.ready = false;
 
-	        var type = msg.type;
-	        var target = msg.source ? self.collections[msg.source] : self.streams[msg.from];
-	        (target ? target.listeners : []).forEach(function (x) {
-	            if (x[type]) x[type](msg);
-	        });
-	    };
+	        var processMessage = function processMessage(msg) {
+	            if (!msg || !msg.type) return;
 
-	    self.ready = false;
+	            var type = msg.type;
+	            var target = msg.source ? self.collections[msg.source] : self.streams[msg.from];
+	            (target ? target.listeners : []).forEach(function (x) {
+	                return x[type] && x[type](msg);
+	            });
+	        };
 
-	    var openWebsocket = function openWebsocket() {
-	        var socket = new WebSocket(socketPath());
+	        var openWebsocket = function openWebsocket() {
+	            var socket = new WebSocket(socketPath());
 
-	        socket.onopen = function (e) {
-	            self.ready = true;
-	            var targetStreams = Object.keys(self.streams);
-	            if (targetStreams.length) {
-	                socket.send(JSON.stringify({
-	                    "type": "Subscribe",
-	                    "to": targetStreams
-	                }));
-	            }
-
-	            var targetCollections = Object.keys(self.collections);
-	            if (targetCollections.length) {
-	                targetCollections.forEach(function (x) {
+	            socket.onopen = function (e) {
+	                self.ready = true;
+	                var targetStreams = Object.keys(self.streams);
+	                if (targetStreams.length) {
 	                    socket.send(JSON.stringify({
-	                        "type": "SubscribeCollection",
-	                        "to": x
+	                        "type": "Subscribe",
+	                        "to": targetStreams
 	                    }));
-	                });
-	            }
-	        };
+	                }
 
-	        socket.onmessage = function (event) {
-	            var data = JSON.parse(event.data);
-	            if (data) processMessage(data);
-	        };
-
-	        socket.onclose = function () {
-	            console.log('reopen');
-	            if (self.ready) {
-	                self.ready = false;
-	                self.socket = openWebsocket();
-	            }
-	        };
-	    };
-
-	    self.socket = openWebsocket();
-	}
-
-	StreamManager.prototype.subscribe = function (path, callback) {
-	    this.subscribeAll([path], callback);
-	};
-
-	StreamManager.prototype.subscribeAll = function (paths, callback) {
-	    var self = this;
-
-	    var newSubscriptions = [];
-	    paths.map(models.normalizeUri).forEach(function (path) {
-	        var current = self.streams[path];
-	        if (current) {
-	            current.listeners.push(callback);
-	        } else {
-	            self.streams[path] = {
-	                listeners: [callback]
+	                var targetCollections = Object.keys(self.collections);
+	                if (targetCollections.length) {
+	                    targetCollections.forEach(function (x) {
+	                        socket.send(JSON.stringify({
+	                            "type": "SubscribeCollection",
+	                            "to": x
+	                        }));
+	                    });
+	                }
 	            };
-	            newSubscriptions.push(path);
-	        }
-	    });
 
-	    if (newSubscriptions.length) {
-	        if (self.ready) {
-	            self.socket.send(JSON.stringify({
-	                "type": "Subscribe",
-	                "to": newSubscriptions
-	            }));
-	        }
-	    }
-	};
+	            socket.onmessage = function (event) {
+	                var data = JSON.parse(event.data);
+	                if (data) processMessage(data);
+	            };
 
-	StreamManager.prototype.subscribeCollection = function (path, callback) {
-	    var self = this;
-	    path = models.normalizeUri(path);
-
-	    var current = self.collections[path];
-	    if (current) {
-	        current.listeners.push(callback);
-	    } else {
-	        self.collections[path] = {
-	            listeners: [callback]
+	            socket.onclose = function () {
+	                console.log('reopen');
+	                if (self.ready) {
+	                    self.ready = false;
+	                    self.socket = openWebsocket();
+	                }
+	            };
 	        };
-	        if (self.ready) {
-	            self.socket.send(JSON.stringify({
-	                "type": "SubscribeCollection",
-	                "to": path
-	            }));
-	        }
+
+	        self.socket = openWebsocket();
 	    }
-	};
 
-	var instance = undefined;
+	    /**
+	        Get the stream_manager singleton.
+	    */
 
-	StreamManager.getInstance = function () {
-	    if (!instance) instance = new StreamManager();
-	    return instance;
-	};
+	    _createClass(StreamManager, [{
+	        key: 'subscribe',
+	        value: function subscribe(path, callback) {
+	            this.subscribeAll([path], callback);
+	        }
+	    }, {
+	        key: 'subscribeAll',
+	        value: function subscribeAll(paths, callback) {
+	            var self = this;
+
+	            var newSubscriptions = [];
+	            paths.map(models.normalizeUri).forEach(function (path) {
+	                var current = self.streams[path];
+	                if (current) {
+	                    current.listeners.push(callback);
+	                } else {
+	                    self.streams[path] = {
+	                        listeners: [callback]
+	                    };
+	                    newSubscriptions.push(path);
+	                }
+	            });
+
+	            if (newSubscriptions.length) {
+	                if (self.ready) {
+	                    self.socket.send(JSON.stringify({
+	                        "type": "Subscribe",
+	                        "to": newSubscriptions
+	                    }));
+	                }
+	            }
+	        }
+	    }, {
+	        key: 'subscribeCollection',
+	        value: function subscribeCollection(path, callback) {
+	            var self = this;
+	            path = models.normalizeUri(path);
+
+	            var current = self.collections[path];
+	            if (current) {
+	                current.listeners.push(callback);
+	            } else {
+	                self.collections[path] = {
+	                    listeners: [callback]
+	                };
+	                if (self.ready) {
+	                    self.socket.send(JSON.stringify({
+	                        "type": "SubscribeCollection",
+	                        "to": path
+	                    }));
+	                }
+	            }
+	        }
+	    }]);
+
+	    return StreamManager;
+	})();
+
+	exports['default'] = StreamManager;
+	StreamManager.getInstance = (function () {
+	    var instance = undefined;
+	    return function () {
+	        if (!instance) instance = new StreamManager();
+	        return instance;
+	    };
+	})();
 	module.exports = exports['default'];
 
 /***/ },
