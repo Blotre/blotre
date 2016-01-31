@@ -4,7 +4,7 @@ export const showLoadingScreen = () => {
     $('#loading-overlay').removeClass('hidden');
 };
 
-export const hideLoadingScreen = () {
+export const hideLoadingScreen = () => {
     $('#loading-overlay').addClass('hidden');
 };
 

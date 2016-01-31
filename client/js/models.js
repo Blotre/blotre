@@ -1,10 +1,11 @@
-var slice = Function.prototype.call.bind(Array.prototype.slice);
+"use strict";
+const slice = Function.prototype.call.bind(Array.prototype.slice);
 
-var DEFAULT_COLOR = '#777777';
+export const  DEFAULT_COLOR = '#777777';
 
 /**
 */
-var normalizeUri = function(uri) {
+export const normalizeUri = function(uri) {
     return decodeURI(uri)
         .trim()
         .toLowerCase()
@@ -14,7 +15,7 @@ var normalizeUri = function(uri) {
 /**
     Pretty prints a data.
 */
-var dateToDisplay = (function(){
+export const dateToDisplay = (function(){
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     var pad = function(min, input) {
@@ -36,7 +37,7 @@ var dateToDisplay = (function(){
 
 /**
 */
-var StatusModel = function(color) {
+export const StatusModel = function(color) {
    var self = this;
    self.color = ko.observable(color);
 };
@@ -51,7 +52,7 @@ StatusModel.fromJson = function(data) {
 
 /**
 */
-var TagModel = function(value) {
+export const TagModel = function(value) {
    var self = this;
    self.value = ko.observable(value);
 
@@ -62,7 +63,7 @@ var TagModel = function(value) {
 
 /**
 */
-var StreamModel = function(id, name, uri, status, updated, tags) {
+export const StreamModel = function(id, name, uri, status, updated, tags) {
     var self = this;
     self.id = ko.observable(id);
     self.name = ko.observable(name || '');
@@ -108,7 +109,7 @@ StreamModel.fromJson = function(data) {
 
 /**
 */
-var UserModel = function(userName, status, rootStream) {
+export const UserModel = function(userName, status, rootStream) {
     var self = this;
     self.userName = ko.observable(userName || '');
     self.status = ko.observable(status || StatusModel.empty());
@@ -129,7 +130,7 @@ UserModel.fromJson = function(data) {
 
 /**
 */
-var Collection = function(uri) {
+export const Collection = function(uri) {
     var self = this;
     self.uri = ko.observable(uri);
     self.children = ko.observableArray();
@@ -140,17 +141,4 @@ var Collection = function(uri) {
         });
         self.children.unshift(child);
     };
-};
-
-module.exports = {
-    DEFAULT_COLOR: DEFAULT_COLOR,
-
-    normalizeUri: normalizeUri,
-
-    StatusModel: StatusModel,
-    StreamModel: StreamModel,
-    TagModel: TagModel,
-
-    UserModel: UserModel,
-    Collection: Collection
 };

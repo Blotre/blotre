@@ -35,10 +35,21 @@ gulp.task('js:compile', () => {
 });
 
 gulp.task('js:lint', () =>
-  gulp.src(path.js)
-    .pipe(jshint())
+  gulp.src('./client/js/*.js')
+    .pipe(jshint({
+        esnext: true,
+        node: true,
+        globals: {
+            '$': false,
+            'ko': false,
+            'window': false,
+            'document': false,
+            'WebSocket': false,
+            'jsRoutes': false
+        }
+    }))
     .pipe(jshint.reporter('default')));
 
-gulp.task("default", ['js:compile'], () => {
-    gulp.watch(path.watch, ['js:compile']);
+gulp.task("default", ['js:lint', 'js:compile'], () => {
+    gulp.watch(path.watch, ['js:lint', 'js:compile']);
 });

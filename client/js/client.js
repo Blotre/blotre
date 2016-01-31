@@ -1,7 +1,7 @@
 "use-strict";
 const models = require('./models');
 const ui = require('./ui');
-const application_model = require('./application_model')
+const application_model = require('./application_model');
 
 /**
 */
@@ -93,6 +93,4 @@ $(function() {
     $('#delete-client-button').on('click', function(e) {
         askDeleteClient(model.clientId());
     });
-});
-
 });
