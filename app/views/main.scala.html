@@ -117,11 +117,9 @@
             </footer>
         </div>
 
-        @_userOr { user =>
-            <ul id="blotre-bar">
-                <!-- ko template: { name: 'blotre-bar-template', foreach: favorites().children } --><!-- /ko -->
-            </ul>
-        } { }
+        <ul id="blotre-bar">
+            <!-- ko template: { name: 'blotre-bar-template', foreach: favorites().children } --><!-- /ko -->
+        </ul>
 
         <div id="loading-overlay" class="hidden">
             <div class="centered">
@@ -172,15 +170,7 @@
         <script src="@routes.WebJarAssets.at(WebJarAssets.locate("knockout.js"))"></script>
         <script src="@routes.Assets.at("js/external/spectrum.js")"></script>
         <script src="@routes.Assets.at("js/external/bootbox.min.js")"></script>
-
-         <script type="text/html" id="blotre-bar-template">
-            <li class="blotre-bar-stream">
-                <a class="stream" data-bind="attr: { href: url }">
-                    <span class="status"  data-bind="style: { 'background': color }"></span>
-                    <span class="stream-name" data-bind="text: name"></span>
-                </a>
-            </li>
-        </script>
+        <script src="@routes.Assets.at("js/side_bar.js")"></script>
 
         @extraScripts
     </body>

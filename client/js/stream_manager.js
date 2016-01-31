@@ -8,7 +8,7 @@ var socketPath = function() {
 
 /**
  */
-export const StreamManager = function() {
+export default function StreamManager() {
     var self = this;
     self.streams = {};
     self.collections = {};
@@ -67,7 +67,7 @@ export const StreamManager = function() {
     };
 
     self.socket = openWebsocket();
-};
+}
 
 StreamManager.prototype.subscribe = function(path, callback) {
     this.subscribeAll([path], callback);
@@ -117,4 +117,13 @@ StreamManager.prototype.subscribeCollection = function(path, callback) {
             }));
         }
     }
+};
+
+
+let instance;
+
+StreamManager.getInstance = function() {
+    if (!instance)
+        instance = new StreamManager();
+    return instance;
 };

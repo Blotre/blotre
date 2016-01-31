@@ -17,7 +17,9 @@ $(function() {
     ko.applyBindings(model);
 });
 
-
+/**
+    An authorized application.
+*/
 var Authorization = React.createClass({
     render() {
         const self = this;
@@ -37,7 +39,10 @@ var Authorization = React.createClass({
     }
 });
 
-var Authorizations = React.createClass({
+/**
+    List of authorizations.
+*/
+var AuthorizationList = React.createClass({
     getInitialState() {
         return { authorizations: [] }
     },
@@ -48,8 +53,7 @@ var Authorizations = React.createClass({
             headers: {
                 Accept: "application/json"
             }
-        })
-        .then(result => {
+        }).then(result => {
             this.setState({
                 authorizations: result.map(x => ({
                     clientId: x.clientId,
@@ -93,5 +97,5 @@ var Authorizations = React.createClass({
 });
 
 ReactDOM.render(
-    <Authorizations data={authorizations} />,
+    <AuthorizationList data={authorizations} />,
     document.getElementById('authorizations'));

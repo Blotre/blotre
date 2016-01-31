@@ -56,7 +56,7 @@
 
 	var _stream_manager = __webpack_require__(2);
 
-	var stream_manager = _interopRequireWildcard(_stream_manager);
+	var _stream_manager2 = _interopRequireDefault(_stream_manager);
 
 	var _application_model = __webpack_require__(3);
 
@@ -70,138 +70,100 @@
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var AppViewModel = function AppViewModel(user) {
-	    var self = this;
-	    application_model.AppViewModel.call(this, user);
-	};
-
-	$(function () {
-	    var model = new AppViewModel(application_model.initialUser());
-
-	    ko.applyBindings(model);
-	});
-
 	/**
-	    An authorized application.
+	    List of favorites displayed on the side of webpage.
 	*/
-	var Authorization = _react2['default'].createClass({
-	    displayName: 'Authorization',
-
-	    render: function render() {
-	        var self = this;
-	        return _react2['default'].createElement(
-	            'tr',
-	            null,
-	            _react2['default'].createElement(
-	                'td',
-	                null,
-	                this.props.data.clientName
-	            ),
-	            _react2['default'].createElement(
-	                'td',
-	                null,
-	                this.props.data.issued
-	            ),
-	            _react2['default'].createElement(
-	                'td',
-	                null,
-	                _react2['default'].createElement(
-	                    'button',
-	                    { onClick: function () {
-	                            self.props.onRevoke(self.props.data.clientId);
-	                        } },
-	                    _react2['default'].createElement('span', { className: 'glyphicon glyphicon-remove' })
-	                )
-	            )
-	        );
-	    }
-	});
-
-	/**
-	    List of authorizations.
-	*/
-	var AuthorizationList = _react2['default'].createClass({
-	    displayName: 'AuthorizationList',
+	var SideBar = _react2['default'].createClass({
+	    displayName: 'SideBar',
 
 	    getInitialState: function getInitialState() {
-	        return { authorizations: [] };
+	        return { favorites: [] };
 	    },
 	    componentDidMount: function componentDidMount() {
 	        var _this = this;
 
+	        if (!this.props.rootStreamId) return;
+
+	        var self = this;
+
+	        // Request initial state
 	        $.ajax({
 	            type: "GET",
-	            url: jsRoutes.controllers.Account.authorizations().url,
+	            url: jsRoutes.controllers.StreamApiController.apiGetChildren(this.props.rootStreamId).url,
 	            headers: {
-	                Accept: "application/json"
+	                accept: "application/json"
+	            },
+	            error: function error(e) {
+	                console.error(e);
 	            }
-	        }).then(function (result) {
-	            _this.setState({
-	                authorizations: result.map(function (x) {
-	                    return {
-	                        clientId: x.clientId,
-	                        clientName: x.clientName,
-	                        issued: x.issued
-	                    };
-	                })
-	            });
+	        }).done(function (result) {
+	            _this.setState({ favorites: result.map(models.StreamModel.fromJson) });
 	        });
-	    },
-	    revokeAuthorization: function revokeAuthorization(id) {
-	        var _this2 = this;
 
-	        $.ajax({
-	            type: "DELETE",
-	            url: jsRoutes.controllers.Account.revokeAuthorization(id).url
-	        }).then(function () {
-	            _this2.removeAuthorization(id);
+	        // subscribe to updates
+	        this.props.manager.subscribeCollection(this.props.rootStreamUrl, {
+	            'StatusUpdated': function StatusUpdated(msg) {
+	                var existingChild = self.removeFavorite(msg.from);
+	                if (existingChild.length) {
+	                    existingChild[0].status(models.StatusModel.fromJson(msg.status));
+	                    self.addFavorite(existingChild[0]);
+	                }
+	            },
+	            'ChildAdded': function ChildAdded(msg) {
+	                self.addFavorite(models.StreamModel.fromJson(msg.child));
+	            },
+	            'ChildRemoved': function ChildRemoved(msg) {
+	                self.removeFavorite(msg.child);
+	            }
 	        });
 	    },
-	    removeAuthorization: function removeAuthorization(id) {
-	        return this.setState({
-	            'authorizations': this.state.authorizations.filter(function (x) {
-	                return x.clientId !== id;
+	    addFavorite: function addFavorite(child) {
+	        this.setState({
+	            favorites: this.state.favorites.unshift(child)
+	        });
+	    },
+	    removeFavorite: function removeFavorite(childUri) {
+	        this.setState({
+	            favorites: this.state.favorites.filter(function (x) {
+	                return x.uri === childUri;
 	            })
 	        });
 	    },
 	    render: function render() {
-	        var _this3 = this;
-
-	        var authorizationCells = this.state.authorizations.map(function (authorization) {
-	            return _react2['default'].createElement(Authorization, { key: authorization.clientId, data: authorization, onRevoke: _this3.revokeAuthorization });
-	        });
-	        return _react2['default'].createElement(
-	            'table',
-	            null,
-	            _react2['default'].createElement(
-	                'thead',
-	                null,
+	        var childNodes = this.state.favorites.map(function (stream) {
+	            var style = { background: stream.color() };
+	            return _react2['default'].createElement(
+	                'li',
+	                { key: stream.url(), className: 'blotre-bar-stream' },
 	                _react2['default'].createElement(
-	                    'tr',
-	                    null,
+	                    'a',
+	                    { className: 'stream', href: stream.url() },
+	                    _react2['default'].createElement('span', { className: 'status', style: style }),
 	                    _react2['default'].createElement(
-	                        'th',
-	                        null,
-	                        'Name'
-	                    ),
-	                    _react2['default'].createElement(
-	                        'th',
-	                        null,
-	                        'Issued'
-	                    ),
-	                    _react2['default'].createElement('th', null)
+	                        'span',
+	                        { className: 'stream-name' },
+	                        stream.name()
+	                    )
 	                )
-	            ),
-	            _react2['default'].createElement(
-	                'tbody',
-	                null,
-	                authorizationCells
-	            )
+	            );
+	        });
+
+	        return _react2['default'].createElement(
+	            'ul',
+	            null,
+	            childNodes
 	        );
 	    }
 	});
 
-	_reactDom2['default'].render(_react2['default'].createElement(AuthorizationList, { data: authorizations }), document.getElementById('authorizations'));
+	$(function () {
+	    var user = application_model.initialUser();
+	    var manager = _stream_manager2['default'].getInstance();
+
+	    if (user && user.rootStream()) {
+	        _reactDom2['default'].render(_react2['default'].createElement(SideBar, { rootStreamId: user.rootStream(), rootStreamUrl: user.userName(), manager: manager }), document.getElementById('blotre-bar'));
+	    }
+	});
 
 /***/ },
 /* 1 */

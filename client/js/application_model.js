@@ -1,6 +1,6 @@
 "use strict";
 import * as models from './models';
-import * as stream_manager from './stream_manager';
+import StreamManager from './stream_manager';
 
 /**
  */
@@ -10,7 +10,7 @@ export const AppViewModel = function(user, page) {
     self.page = ko.observable(page);
     self.favorites = ko.observable(new models.Collection(user.userName()));
 
-    self.manager = new stream_manager.StreamManager();
+    self.manager = StreamManager.getInstance();
 
     self.addFavorite = function(child) {
         self.favorites().addChild(child);

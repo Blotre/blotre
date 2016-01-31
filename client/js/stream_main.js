@@ -102,7 +102,7 @@ var AppViewModel = function(user, stream) {
     };
 
     self.onChildSelected = (child) => {
-        self.stream(child);
+        window.location = child.url();
     };
 };
 

@@ -10,7 +10,6 @@ var jshint = require('gulp-jshint');
 
 const path = {
     js: [
-        'account_authorizations.js',
         'client.js',
         'stream_create_child.js',
         'stream_main.js',
