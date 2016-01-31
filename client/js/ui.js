@@ -1,7 +1,4 @@
-define([],
-function() {
 "use-strict";
-
 var showLoadingScreen = function() {
     $('#loading-overlay').removeClass('hidden');
 };
@@ -37,7 +34,7 @@ var setAlert = function(type, content) {
     addAlert(type, content);
 };
 
-return {
+module.exports = {
     'showLoadingScreen': showLoadingScreen,
     'hideLoadingScreen': hideLoadingScreen,
 
@@ -46,4 +43,3 @@ return {
     'setAlert': setAlert
 };
 
-});

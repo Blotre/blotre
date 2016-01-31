@@ -1,7 +1,6 @@
-define(['./models'],
-function(models)
-{
-"use-strict";
+"use strict";
+const models = require('./models');
+
 
 var socketPath = function() {
     var secure = window.location.protocol === 'https:';
@@ -118,8 +117,6 @@ StreamManager.prototype.subscribeCollection = function(path, callback) {
 };
 
 
-return {
+module.exports = {
     StreamManager: StreamManager
 };
-
-});

@@ -1,13 +1,7 @@
-require([
-    './models',
-    './application_model',
-    './ui'],
-function(
-    models,
-    application_model,
-    ui)
-{
 "use-strict";
+const models = require('./models');
+const ui = require('./ui');
+const application_model = require('./application_model')
 
 /**
 */

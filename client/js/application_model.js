@@ -1,11 +1,6 @@
-define([
-    './models',
-    './stream_manager'],
-function(
-    models,
-    stream_manager)
-{
 "use-strict";
+const models = require('./models');
+const stream_manager = require('./stream_manager');
 
 /**
 */
@@ -70,9 +65,7 @@ var initialUser = function() {
     return models.UserModel.fromJson(window.initialUserData);
 };
 
-return {
+module.exports = {
     AppViewModel: AppViewModel,
     initialUser: initialUser
 };
-
-});

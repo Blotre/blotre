@@ -1,5 +1,3 @@
-define([],
-function() {
 "use-strict";
 
 var parseQueryString = function(queryString) {
@@ -31,12 +29,10 @@ var unlockButton = function(sel) {
            .removeClass('glyphicon-refresh  glyphicon-refresh-animate');
 };
 
-return {
+module.exports = {
     'getQueryString': getQueryString,
     'parseQueryString': parseQueryString,
 
     'lockButton': lockButton,
     'unlockButton': unlockButton
 };
-
-});

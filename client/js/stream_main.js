@@ -1,15 +1,8 @@
-require([
-    './models',
-    './stream_manager',
-    './application_model',
-    './shared'],
-function(
-    models,
-    stream_manager,
-    application_model,
-    shared)
-{
 "use-strict";
+const models = require('./models');
+const stream_manager = require('./stream_manager');
+const application_model = require('./application_model')
+const shared = require('./shared');
 
 var FavoriteStatus = Object.freeze({
     Unknown: 0,
@@ -548,6 +541,4 @@ $(function(){
     });
 
     ko.applyBindings(model);
-});
-
 });

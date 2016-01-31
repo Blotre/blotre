@@ -1,45 +1,43 @@
 "use strict";
-const babel = require("gulp-babel");
-const gulp = require("gulp");
-const sourcemaps = require("gulp-sourcemaps");
-const plumber = require('gulp-plumber');
-const jshint = require('gulp-jshint');
-const webpack = require('gulp-webpack');
+var gulp = require('gulp');
+var sourcemaps = require('gulp-sourcemaps');
+var source = require('vinyl-source-stream');
+var buffer = require('vinyl-buffer');
+var browserify = require('browserify');
+var watchify = require('watchify');
+var babel = require('babelify');
+var jshint = require('gulp-jshint');
 
 const path = {
-    js: ['./client/js/*.js'],
+    js: [
+        'account_authorizations.js',
+        'stream_create_child.js',
+        'stream_main.js',
+        'stream_index.js',
+        'tag.js'],
     watch: ['client/**/*.*']
 };
 
-gulp.task('js:compile', () =>
-    gulp.src(path.js)
-        .pipe(plumber())
-        .pipe(sourcemaps.init())
-        .pipe(babel({
-            presets: ['es2015']
-        }))
-        .pipe(webpack({
-            entry: {
-                account_authorizations: './client/js/account_authorizations.js',
-                client: './client/js/client.js',
-                stream_create_child: './client/js/stream_create_child.js',
-                stream_main: './client/js/stream_main.js',
-                stream_index: './client/js/stream_index.js',
-                tag: './client/js/tag.js'
-            },
-            output: {
-                filename: "[name].js",
-                publicPath: '/assets/js/'
-            }
-        }))
-        .pipe(sourcemaps.write("."))
-        .pipe(gulp.dest('./public/js/')));
+gulp.task('js:compile', () => {
+    const bundle = file => {
+        var bundler = watchify(browserify('./client/js/' + file, { debug: true })
+            .transform("babelify", { presets: ['es2015'] }));
+
+        bundler.bundle()
+          .on('error', function(err) { console.error(err); this.emit('end'); })
+          .pipe(source(file))
+          .pipe(buffer())
+
+          .pipe(gulp.dest('./public/js/'));
+    };
+    path.js.forEach(bundle);
+});
 
 gulp.task('js:lint', () =>
   gulp.src(path.js)
     .pipe(jshint())
     .pipe(jshint.reporter('default')));
 
-gulp.task("default", ['js:lint', 'js:compile'], () => {
-    gulp.watch(path.watch, ['js:lint', 'js:compile']);
+gulp.task("default", ['js:compile'], () => {
+    gulp.watch(path.watch, ['js:compile']);
 });

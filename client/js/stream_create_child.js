@@ -1,15 +1,8 @@
-require([
-    './models',
-    './shared',
-    './stream_manager',
-    './application_model'],
-function(
-    models,
-    shared,
-    stream_manager,
-    application_model)
-{
-"use-strict";
+"use strict";
+const models = require('./models');
+const stream_manager = require('./stream_manager');
+const application_model = require('./application_model')
+const shared = require('./shared');
 
 var AppViewModel = function(user, stream) {
     var self = this;
@@ -56,6 +49,4 @@ $(function(){
     });
 
     ko.applyBindings(model);
-});
-
 });

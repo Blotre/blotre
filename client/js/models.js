@@ -1,5 +1,3 @@
-define([], function() {
-
 var slice = Function.prototype.call.bind(Array.prototype.slice);
 
 var DEFAULT_COLOR = '#777777';
@@ -144,7 +142,7 @@ var Collection = function(uri) {
     };
 };
 
-return {
+module.exports = {
     DEFAULT_COLOR: DEFAULT_COLOR,
 
     normalizeUri: normalizeUri,
@@ -156,5 +154,3 @@ return {
     UserModel: UserModel,
     Collection: Collection
 };
-
-});
