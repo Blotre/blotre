@@ -103,10 +103,10 @@
 	        // subscribe to updates
 	        this.props.manager.subscribeCollection(this.props.rootStreamUrl, {
 	            'StatusUpdated': function StatusUpdated(msg) {
-	                var existingChild = self.removeFavorite(msg.from);
-	                if (existingChild.length) {
-	                    existingChild[0].status(models.StatusModel.fromJson(msg.status));
-	                    self.addFavorite(existingChild[0]);
+	                var removed = self.removeFavorite(msg.from);
+	                if (removed) {
+	                    removed.status(models.StatusModel.fromJson(msg.status));
+	                    self.addFavorite(removed);
 	                }
 	            },
 	            'ChildAdded': function ChildAdded(msg) {
@@ -119,15 +119,17 @@
 	    },
 	    addFavorite: function addFavorite(child) {
 	        this.setState({
-	            favorites: this.state.favorites.unshift(child)
+	            favorites: [child].concat(this.state.favorites)
 	        });
 	    },
 	    removeFavorite: function removeFavorite(childUri) {
-	        this.setState({
-	            favorites: this.state.favorites.filter(function (x) {
-	                return x.uri === childUri;
-	            })
+	        var removed = this.state.favorites.filter(function (x) {
+	            return x.uri() === childUri;
 	        });
+	        this.setState({ favorites: this.state.favorites.filter(function (x) {
+	                return x.uri() !== childUri;
+	            }) });
+	        return removed[0];
 	    },
 	    render: function render() {
 	        var childNodes = this.state.favorites.map(function (stream) {

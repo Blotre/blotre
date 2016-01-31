@@ -34,11 +34,11 @@ var SideBar = React.createClass({
 
         // subscribe to updates
         this.props.manager.subscribeCollection(this.props.rootStreamUrl, {
-            'StatusUpdated': function(msg) {
-                var existingChild = self.removeFavorite(msg.from);
-                if (existingChild.length) {
-                    existingChild[0].status(models.StatusModel.fromJson(msg.status));
-                    self.addFavorite(existingChild[0]);
+            'StatusUpdated': msg => {
+                var removed = self.removeFavorite(msg.from);
+                if (removed) {
+                    removed.status(models.StatusModel.fromJson(msg.status));
+                    self.addFavorite(removed);
                 }
             },
             'ChildAdded': msg => {
@@ -51,13 +51,13 @@ var SideBar = React.createClass({
     },
     addFavorite(child) {
         this.setState({
-            favorites: this.state.favorites.unshift(child)
+            favorites: [child].concat(this.state.favorites)
         });
     },
     removeFavorite(childUri) {
-        this.setState({
-            favorites: this.state.favorites.filter(x => x.uri === childUri)
-        });
+        const removed = this.state.favorites.filter(x => x.uri() === childUri);
+        this.setState({ favorites: this.state.favorites.filter(x => x.uri() !== childUri) });
+        return removed[0];
     },
     render() {
         const childNodes = this.state.favorites.map(stream => {
