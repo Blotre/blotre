@@ -1,23 +1,24 @@
 "use-strict";
-var showLoadingScreen = function() {
+
+export const showLoadingScreen = () => {
     $('#loading-overlay').removeClass('hidden');
 };
 
-var hideLoadingScreen = function() {
+export const hideLoadingScreen = () {
     $('#loading-overlay').addClass('hidden');
 };
 
 /**
     Remove all alerts.
 */
-var clearAlerts = function() {
+export const clearAlerts = () => {
     $('#alerts').empty();
 };
 
 /**
     Append a new alert
 */
-var addAlert = function(type, content) {
+export const addAlert = (type, content) => {
     $('#alerts').append(
         $('<li class="alert" role="alert">')
             .addClass(type)
@@ -27,19 +28,9 @@ var addAlert = function(type, content) {
 };
 
 /**
-    Set the current alert, removing all existing one.
+    Set the current alert, removing all existing ones.
 */
-var setAlert = function(type, content) {
+export const setAlert = (type, content) => {
     clearAlerts();
     addAlert(type, content);
 };
-
-module.exports = {
-    'showLoadingScreen': showLoadingScreen,
-    'hideLoadingScreen': hideLoadingScreen,
-
-    'clearAlerts': clearAlerts,
-    'addAlert': addAlert,
-    'setAlert': setAlert
-};
-
