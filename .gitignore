@@ -24,7 +24,6 @@ Thumbs.db
 # Node Files #
 node_modules
 
-
 # Play! files #
 bin/
 /db
@@ -42,3 +41,7 @@ server.pid
 *.eml
 /dist/
 .cache
+
+
+# Ignore generated javascript
+public/js/

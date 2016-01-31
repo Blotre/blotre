@@ -4,6 +4,8 @@ import * as stream_manager from './stream_manager';
 import * as application_model from './application_model';
 import * as shared from './shared';
 
+require('../external/spectrum.js');
+
 var FavoriteStatus = Object.freeze({
     Unknown: 0,
     No: 1,

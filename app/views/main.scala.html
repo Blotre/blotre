@@ -19,7 +19,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
         <meta name="description" content="@Messages("blotre.meta.description")">
 
-        <link rel="stylesheet" href="@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.min.css"))">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
         <link rel="stylesheet" href="@routes.Assets.versioned("css/spectrum.css")">
         <link rel="stylesheet" href="@routes.Assets.versioned("css/main.css")">
 
@@ -165,11 +165,10 @@
             </script>
         } { }
 
-        <script src="@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))"></script>
-        <script src="@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))"></script>
-        <script src="@routes.WebJarAssets.at(WebJarAssets.locate("knockout.js"))"></script>
-        <script src="@routes.Assets.versioned("js/external/spectrum.js")"></script>
-        <script src="@routes.Assets.versioned("js/external/bootbox.min.js")"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+        <script src="@routes.Assets.versioned("js/common.bundle.js")"></script>
         <script src="@routes.Assets.versioned("js/side_bar.js")"></script>
 
         @extraScripts

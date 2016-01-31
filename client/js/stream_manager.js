@@ -63,6 +63,7 @@ export default class StreamManager {
                     self.socket = openWebsocket();
                 }
             };
+            return socket;
         };
 
         self.socket = openWebsocket();
