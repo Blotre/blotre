@@ -28,7 +28,11 @@ module.exports = {
             'react-dom'],
         account_authorizations: "./client/js/account_authorizations.jsx",
         side_bar: "./client/js/side_bar.jsx",
-        stream_main: "./client/js/stream_main.js"
+        stream_main: "./client/js/stream_main.js",
+        client: './client/js/client.js',
+        stream_create_child: './client/js/stream_create_child.js',
+        stream_index: './client/js/stream_index.js',
+        tag: './client/js/tag.js'
     },
     devtool: "source-map",
 
