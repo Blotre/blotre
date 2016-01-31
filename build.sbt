@@ -15,13 +15,7 @@ val appDependencies = Seq(
   javaJdbc,
   cache,
   filters,
-  javaWs,
-  "org.webjars" %% "webjars-play" % "2.4.0-1",
-  "org.webjars" % "requirejs" % "2.1.14-1",
-  "org.webjars" % "bootstrap" % "3.3.6",
-  "org.webjars" % "knockout" % "3.3.0",
-  "org.webjars" % "jquery" % "1.11.1",
-  "org.webjars" % "bootstrap" % "3.3.5" exclude("org.webjars", "jquery")
+  javaWs
 )
 
 resolvers += Resolver.sonatypeRepo("snapshots")
@@ -54,6 +48,16 @@ scalacOptions in ThisBuild ++= Seq(
   "-Ywarn-dead-code"
 )
 
-//pipelineStages := Seq(rjs, digest, gzip)
-//RjsKeys.paths += ("jsRoutes" -> ("/jsroutes" -> "empty:"))
+// Run `make build` before `activator dist`
+lazy val webpackBuild = taskKey[Unit]("Build production js bundle.")
 
+webpackBuild := {
+  "webpack" !
+}
+
+(packageBin in Universal) <<= (packageBin in Universal) dependsOn webpackBuild
+
+// Disable documentation
+sources in (Compile, doc) := Seq.empty
+
+publishArtifact in (Compile, packageDoc) := false
