@@ -23,8 +23,6 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 resolvers ++= Seq(
   "Apache" at "http://repo1.maven.org/maven2/",
   "jBCrypt Repository" at "http://repo1.maven.org/maven2/org/",
-  "play-easymail (release)" at "http://joscha.github.io/play-easymail/repo/releases/",
-  "play-easymail (snapshot)" at "http://joscha.github.io/play-easymail/repo/snapshots/",
   Resolver.url("Objectify Play Repository", url("http://schaloner.github.io/releases/"))(Resolver.ivyStylePatterns)
 )
 
@@ -48,14 +46,16 @@ scalacOptions in ThisBuild ++= Seq(
   "-Ywarn-dead-code"
 )
 
-// Run `make build` before `activator dist`
-lazy val webpackBuild = taskKey[Unit]("Build production js bundle.")
+// Run webpack to generate production js.
+lazy val webpack = taskKey[Unit]("Build production js.")
 
-webpackBuild := {
-  "webpack" !
+webpack := {
+  "webpack --config webpack.prod.config.js" !
 }
 
-(packageBin in Universal) <<= (packageBin in Universal) dependsOn webpackBuild
+dist <<= dist dependsOn webpack
+
+stage <<= stage dependsOn webpack
 
 // Disable documentation
 sources in (Compile, doc) := Seq.empty
