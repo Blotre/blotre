@@ -1,6 +1,6 @@
 "use-strict";
 
-var parseQueryString = function(queryString) {
+export const parseQueryString = (queryString) => {
     return queryString.substr(1).split("&")
         .reduce(function(dict, item) {
             var kv = item.split("=");
@@ -11,28 +11,20 @@ var parseQueryString = function(queryString) {
         }, {});
 };
 
-var getQueryString = function() {
+export const getQueryString = () => {
     return parseQueryString(window.location.search);
 };
 
-var lockButton = function(sel) {
+export const lockButton = (sel) => {
      sel
         .prop("disabled", true)
         .children('.glyphicon')
             .addClass('glyphicon-refresh glyphicon-refresh-animate');
 };
 
-var unlockButton = function(sel) {
+export const unlockButton = (sel) => {
     sel
        .prop("disabled", false)
        .children('.glyphicon')
            .removeClass('glyphicon-refresh  glyphicon-refresh-animate');
-};
-
-module.exports = {
-    'getQueryString': getQueryString,
-    'parseQueryString': parseQueryString,
-
-    'lockButton': lockButton,
-    'unlockButton': unlockButton
 };
