@@ -5,8 +5,8 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 /**
- *
- */
+  *
+  */
 case class ApiSetStatusData(color: models.Color)
 
 object ApiSetStatusData {
@@ -17,8 +17,8 @@ object ApiSetStatusData {
 }
 
 /**
- *
- */
+  *
+  */
 case class ApiSetTagsData(tags: Seq[models.StreamTag])
 
 object ApiSetTagsData {
@@ -30,8 +30,8 @@ object ApiSetTagsData {
 }
 
 /**
- *
- */
+  *
+  */
 case class ApiCreateStreamData(name: String, uri: String, status: Option[ApiSetStatusData], tags: Option[ApiSetTagsData])
 
 object ApiCreateStreamData {
@@ -40,5 +40,5 @@ object ApiCreateStreamData {
       (JsPath \ "uri").read[String] and
       (JsPath \ "status").readNullable[ApiSetStatusData] and
       (JsPath \ "tags").readNullable[ApiSetTagsData]
-    )(ApiCreateStreamData.apply _)
+    ) (ApiCreateStreamData.apply _)
 }

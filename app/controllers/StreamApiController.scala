@@ -165,4 +165,3 @@ object StreamApiController extends Controller {
     TagApi.getTagChildren(tag, query, 20, 0).map(toResponse(_))
   }
 }
-
