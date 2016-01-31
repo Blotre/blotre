@@ -1,23 +1,7 @@
+/**
+    Webpack base/development configuration.
+*/
 var webpack = require("webpack");
-
-var MINIFY = false;
-
-var plugins = [
-    new webpack.optimize.CommonsChunkPlugin({
-        name:"common",
-        filename: "common.bundle.js",
-        minChunks: Infinity
-    }),
-
-    new webpack.ProvidePlugin({
-       $: "jquery",
-       jquery: "jQuery"
-    }),
-];
-
-if (MINIFY) {
-    plugins.push(new webpack.optimize.UglifyJsPlugin({minimize: true}));
-}
 
 module.exports = {
     entry: {
@@ -48,5 +32,16 @@ module.exports = {
             exclude: /node_modules/
         }]
     },
-    plugins: plugins
+    plugins: [
+        new webpack.optimize.CommonsChunkPlugin({
+            name:"common",
+            filename: "common.bundle.js",
+            minChunks: Infinity
+        }),
+
+        new webpack.ProvidePlugin({
+           $: "jquery",
+           jquery: "jQuery"
+        }),
+    ]
 };
