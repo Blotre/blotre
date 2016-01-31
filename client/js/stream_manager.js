@@ -1,6 +1,5 @@
 "use strict";
-const models = require('./models');
-
+import * as models from './models';
 
 var socketPath = function() {
     var secure = window.location.protocol === 'https:';
@@ -9,7 +8,7 @@ var socketPath = function() {
 
 /**
 */
-var StreamManager = function() {
+export const StreamManager = function() {
     var self = this;
     self.streams = { };
     self.collections = { };
@@ -114,9 +113,4 @@ StreamManager.prototype.subscribeCollection = function(path, callback) {
             }));
         }
     }
-};
-
-
-module.exports = {
-    StreamManager: StreamManager
 };

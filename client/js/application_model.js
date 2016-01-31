@@ -1,6 +1,6 @@
-"use-strict";
-const models = require('./models');
-const stream_manager = require('./stream_manager');
+"use strict";
+import * as models from './models';
+import * as stream_manager from './stream_manager';
 
 /**
 */

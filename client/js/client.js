@@ -1,7 +1,7 @@
 "use-strict";
-const models = require('./models');
-const ui = require('./ui');
-const application_model = require('./application_model');
+import * as models from './models';
+import * as ui from './ui';
+import * as application_model from './application_model';
 
 /**
 */

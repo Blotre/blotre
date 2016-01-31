@@ -1,8 +1,8 @@
 "use strict";
-const models = require('./models');
-const stream_manager = require('./stream_manager');
-const application_model = require('./application_model');
-const shared = require('./shared');
+import * as models from './models';
+import * as stream_manager from './stream_manager';
+import * as application_model from './application_model';
+import * as shared from './shared';
 
 /**
 */

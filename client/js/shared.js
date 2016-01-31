@@ -1,4 +1,4 @@
-"use-strict";
+"use strict";
 
 export const parseQueryString = (queryString) => {
     return queryString.substr(1).split("&")

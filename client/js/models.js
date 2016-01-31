@@ -1,7 +1,7 @@
 "use strict";
 const slice = Function.prototype.call.bind(Array.prototype.slice);
 
-export const DEFAULT_COLOR = '#777777';
+export const DEFAULT_COLOR = "#777777";
 
 /**
  */

@@ -1,4 +1,4 @@
-"use-strict";
+"use strict";
 
 export const showLoadingScreen = () => {
     $('#loading-overlay').removeClass('hidden');

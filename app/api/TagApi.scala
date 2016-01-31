@@ -9,7 +9,8 @@ import scala.concurrent.Future
   * Api for interacting with stream tags.
   */
 object TagApi {
-  /** Get a list of all streams with a given tag.
+  /**
+    * Get a list of all streams with a given tag.
     *
     * @param tag Tag value.
     * @param query O
