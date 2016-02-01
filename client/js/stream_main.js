@@ -3,6 +3,9 @@ import * as models from './models';
 import * as stream_manager from './stream_manager';
 import * as application_model from './application_model';
 import * as shared from './shared';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import ColorPicker from './components/color_picker.jsx'
 
 require('../external/spectrum.js');
 
@@ -552,4 +555,10 @@ $(function() {
     });
 
     ko.applyBindings(model);
+
+    const pickerContainer = $('.status-picker-control').get(0);
+    if (pickerContainer)
+        ReactDOM.render(
+            <ColorPicker color={model.stream().color()}/>,
+            pickerContainer);
 });
