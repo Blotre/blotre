@@ -1,8 +1,8 @@
 "use strict";
-import * as models from './models';
-import * as stream_manager from './stream_manager';
-import * as application_model from './application_model';
-import * as shared from './shared';
+import * as models from './models.js';
+import * as stream_manager from './stream_manager.js';
+import * as application_model from './application_model.js';
+import * as shared from './shared.js';
 
 var AppViewModel = function(user, stream) {
     var self = this;

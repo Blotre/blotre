@@ -6,10 +6,12 @@ var webpack = require("webpack");
 module.exports = {
     entry: {
         common: [
-            './client/external/spectrum.js',
             './client/external/bootbox.min.js',
             'react',
-            'react-dom'],
+            'reactcss',
+            'react-color',
+            'react-dom'
+        ],
         account_authorizations: "./client/js/account_authorizations.jsx",
         side_bar: "./client/js/side_bar.jsx",
         stream_main: "./client/js/stream_main.js",
@@ -27,21 +29,25 @@ module.exports = {
 
     module: {
         loaders: [{
-            test: /\.jsx?$/,
-            loader: 'babel',
-            exclude: /node_modules/
+            test: /\.js$/,
+            exclude: [/node_modules/],
+            loaders: ['babel-loader', 'react-map-styles'],
+        }, {
+            test: /\.jsx$/,
+            exclude: [/node_modules/],
+            loaders: ['jsx-loader', 'babel-loader', 'react-map-styles'],
         }]
     },
     plugins: [
         new webpack.optimize.CommonsChunkPlugin({
-            name:"common",
+            name: "common",
             filename: "common.bundle.js",
             minChunks: Infinity
         }),
 
         new webpack.ProvidePlugin({
-           $: "jquery",
-           jquery: "jQuery"
+            $: "jquery",
+            jquery: "jQuery"
         }),
     ]
 };

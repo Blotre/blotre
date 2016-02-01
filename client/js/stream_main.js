@@ -5,9 +5,7 @@ import * as application_model from './application_model';
 import * as shared from './shared';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import ColorPicker from './components/color_picker.jsx'
-
-require('../external/spectrum.js');
+import StatusPicker from './components/status_picker.jsx'
 
 var FavoriteStatus = Object.freeze({
     Unknown: 0,
@@ -387,51 +385,6 @@ $(function() {
         model.setColor(color);
     };
 
-    var statusPicker = (function() {
-        var currentColor = models.DEFAULT_COLOR;
-        var pickedColor = models.DEFAULT_COLOR;
-        model.manager.subscribe(model.stream().uri(), {
-            'StatusUpdated': function(msg) {
-                if (msg.from === model.stream().uri()) {
-                    currentColor = msg.status.color;
-                }
-            }
-        });
-
-        var statusPicker = $('.status-picker')
-            .spectrum({
-                showInput: true,
-                showPalette: true,
-                showSelectionPalette: true,
-                preferredFormat: "hex",
-                localStorageKey: "blotre.stream.statusPicker"
-            })
-            .on('show.spectrum', function(e, color) {
-                pickedColor = currentColor = color + '';
-            })
-            .on('move.spectrum change.spectrum', function(e, color) {
-                model.setColor(color + '');
-            })
-            .on('hide.spectrum', function(e, color) {
-                pickedColor = color + '';
-                model.setColor(currentColor);
-            });
-
-        $('.sp-choose')
-            .on('click', function() {
-                updateStatus(pickedColor + '');
-            });
-
-        return statusPicker;
-    }());
-
-    $('.status-picker-form')
-        .on('submit', function(e) {
-            e.preventDefault();
-            var color = $(this).children('.status-picker').val();
-            updateStatus(color);
-        });
-
     // Create child form
     $('#create-child-expand-button')
         .on('click', function(e) {
@@ -541,7 +494,7 @@ $(function() {
             if (msg.from === model.stream().uri()) {
                 model.setColor(msg.status.color);
                 model.stream().updated(new Date(msg.status.created));
-                statusPicker.spectrum("set", msg.status.color);
+                //statusPicker.spectrum("set", msg.status.color);
             }
         },
         'ParentAdded': function(msg) {
@@ -556,9 +509,24 @@ $(function() {
 
     ko.applyBindings(model);
 
+    const onColorPickerChange = hex => {
+        model.setColor(hex);
+    };
+
+    const onColorPicked = hex => {
+        updateStatus(hex);
+    };
+
+    const onColorPickerCancel = previous_hex => {
+        model.setColor(previous_hex);
+    };
+
     const pickerContainer = $('.status-picker-control').get(0);
     if (pickerContainer)
         ReactDOM.render(
-            <ColorPicker color={model.stream().color()}/>,
+            <StatusPicker color={model.stream().color()}
+                onChange={onColorPickerChange}
+                onSelect={onColorPicked}
+                onCancel={onColorPickerCancel}/>,
             pickerContainer);
 });
