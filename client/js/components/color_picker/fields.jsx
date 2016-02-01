@@ -1,13 +1,18 @@
-'use strict'; /* @flow */
-
+'use strict';
 import React from 'react';
 import ReactCSS from 'reactcss';
 import color from 'react-color/lib/helpers/color.js';
 import EditableInput from 'react-color/lib/components/common/EditableInput.js';
 
+/**
+    Convert `text` to only hex characters.
+*/
 const cleanHex = text =>
-    text.replace(/[^\da-f]/ig, '').slice(0, 6);
+    text.trim().replace(/[^\da-f]/ig, '').slice(0, 6);
 
+/**
+    Hex value input field.
+*/
 const HexInput = React.createClass({
     componentWillMount() {
         this.setState({

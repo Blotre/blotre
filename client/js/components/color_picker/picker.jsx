@@ -40,9 +40,6 @@ export class Chrome extends ReactCSS.Component {
         body: {
           padding: '16px 16px 12px',
         },
-        controls: {
-          display: 'flex',
-        },
         color: {
           width: '32px',
         },
@@ -60,9 +57,6 @@ export class Chrome extends ReactCSS.Component {
           borderRadius: '8px',
           boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.1)',
           background: 'rgba(' + this.props.rgb.r + ', ' + this.props.rgb.g + ', ' + this.props.rgb.b + ', ' + this.props.rgb.a + ')',
-        },
-        toggles: {
-          flex: '1',
         },
         hue: {
           height: '10px',
@@ -98,15 +92,13 @@ export class Chrome extends ReactCSS.Component {
           <Saturation is="Saturation" {...this.props} pointer={ ChromePointerCircle } onChange={ this.handleChange }/>
         </div>
         <div is="body">
-          <div is="controls" className="flexbox-fix">
             <div is="toggles">
               <div is="hue">
                 <Hue is="Hue" {...this.props} pointer={ ChromePointer } onChange={ this.handleChange } />
               </div>
             </div>
-          </div>
-          <ChromeFields {...this.props} onChange={ this.handleChange } />
-          <button onClick={this.handleCancel.bind(this)}>Cancel</button>
+            <ChromeFields {...this.props} onChange={ this.handleChange } />
+            <button type="button" className="btn btn-danger" onClick={this.handleCancel.bind(this)}>Cancel</button>
         </div>
       </div>
     );

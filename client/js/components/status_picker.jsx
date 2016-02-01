@@ -48,7 +48,7 @@ export const ColorPicker = React.createClass({
 
     onSelect(color) {
         const hex = rgbToHex(color.rgb.r, color.rgb.g, color.rgb.b);
-        //this.setState({ color: hex, selectedColor: hex });
+        this.setState({ selectedColor: hex, color: hex, displayColorPicker: false });
         this.props.onSelect && this.props.onSelect(hex);
     },
 

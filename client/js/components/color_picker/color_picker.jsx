@@ -32,7 +32,8 @@ class ColorPicker extends ReactCSS.Component {
                 wrap: {
                     zIndex: '999',
                     position: 'absolute',
-                    display: 'block'
+                    display: 'block',
+                    marginLeft: '-91.5px'
                 },
                 picker: {
                     zIndex: '2',
