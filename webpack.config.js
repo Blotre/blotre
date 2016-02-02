@@ -10,10 +10,12 @@ module.exports = {
             'react',
             'reactcss',
             'react-color',
-            'react-dom'
+            'react-dom',
+
+            "./client/js/header_bar.jsx",
+            "./client/js/side_bar.jsx",
         ],
         account_authorizations: "./client/js/account_authorizations.jsx",
-        side_bar: "./client/js/side_bar.jsx",
         stream_main: "./client/js/stream_main.js",
         client: './client/js/client.js',
         stream_create_child: './client/js/stream_create_child.js',

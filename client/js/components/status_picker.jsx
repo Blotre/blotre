@@ -12,15 +12,6 @@ const rgbToHex = function(r, g, b) {
     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 };
 
-const CustomStat = React.createClass({
-    render() {
-        return (
-            <Saturation
-                {...this.props} />
-        );
-    }
-});
-
 /**
     Stream status color picker component.
 */
@@ -58,7 +49,7 @@ export const ColorPicker = React.createClass({
     },
 
     render() {
-        var  buttonStyle = {
+        var buttonStyle = {
             background: this.state.color,
             width: '100%',
             height: '100%',
