@@ -56,7 +56,7 @@ export const ColorPicker = React.createClass({
         return (
             <div style={{position: 'relative', width: '100%', height: '100%'}}>
                 <button
-                    className="status-picker"
+                    className="stream-control-button status-picker"
                     style={buttonStyle}
                     onClick={this.handleClick} />
 

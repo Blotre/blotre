@@ -80,7 +80,7 @@
         <nav class="stream-controls @("hidden".when(Application.getLocalUser(request) == null))"">
             <div id="favorite-button-component"></div>
             <div class="status-picker-control @("hidden".when(!stream.isOwner(Application.getLocalUser(request))))"></div>
-            <button class="stream-share btn-lg" disabled>
+            <button class="stream-control-button stream-share btn-lg" disabled>
                 <span class="glyphicon glyphicon-share-alt"></span>
             </button>
         </nav>

@@ -59,7 +59,7 @@ var AppViewModel = function(user, stream) {
     });
 
     self.removeChildButtonClick = function(child, event) {
-        if (isHierarchical(self.stream().uri(), child.uri())) {
+        if (models.isHierarchical(self.stream().uri(), child.uri())) {
             bootbox.confirm({
                 title: "Are you sure?",
                 animate: false,

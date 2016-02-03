@@ -131,7 +131,7 @@ export const FavoriteButton = React.createClass({
 
     render() {
         return (
-            <button className={"stream-favorite btn-lg " +
+            <button className={"stream-control-button stream-favorite btn-lg " +
                     (this.state.favorite === FavoriteStatus.Yes || this.state.favorite == FavoriteStatus.Hierarchical ? 'active' : '')}
                 title={this.getTitle()}
                 disabled={!this.isEnabled()}

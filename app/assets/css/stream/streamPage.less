@@ -109,39 +109,39 @@
 .stream-controls {
     padding-bottom: 4rem;
     display: inline-block;
+
+    & > * {
+        display: inline-block;
+        width: 5rem;
+        height: 5rem;
+        margin: 0 0.5em;
+        vertical-align: top;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+        border-radius: 100px;
+    }
+
+    & > *:first-child,
+    & > *:last-child {
+        vertical-align: bottom;
+        margin-top: 2rem;
+    }
 }
 
-.stream-controls > * {
-    display: inline-block;
-    width: 5rem;
-    height: 5rem;
-    margin: 0 0.5em;
-    vertical-align: top;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
-    border-radius: 100px;
-}
-
-.stream-controls button {
+.stream-control-button {
     width: 5rem;
     height: 5rem;
     border: 4px solid white;
     border-radius: 100px;
     background: none;
     padding: 0;
-}
 
-.stream-controls button:disabled {
-    color: #aaa;
-}
+    &:disabled {
+        color: #aaa;
+    }
 
-.stream-controls button:active:not([disabled]) {
-    border-color: #eee;
-}
-
-.stream-controls > *:first-child,
-.stream-controls > *:last-child {
-    vertical-align: bottom;
-    margin-top: 2rem;
+    &:active:not([disabled]) {
+        border-color: #eee;
+    }
 }
 
 .stream-favorite span:before {
@@ -160,9 +160,6 @@
     background: none;
 }
 
-
-
-
 /**
     Stream body
 */
@@ -174,7 +171,6 @@
 .stream-search {
     margin-bottom: 0.4rem;
 }
-
 
 /**
     Create Child
@@ -194,7 +190,6 @@
     background: none;
     text-decoration: underline;
 }
-
 
 #create-child-expand-button {
     position: absolute;
