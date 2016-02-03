@@ -22,10 +22,9 @@ export class Chrome extends ReactCSS.Component {
                 picker: {
                     background: '#fff',
                     borderRadius: '2px',
-                    boxShadow: '0 0 2px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.3)',
                     boxSizing: 'initial',
                     width: '225px',
-                    fontFamily: 'Menlo'
+                    boxShadow: '0 0 2px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.3)',
                 },
                 saturation: {
                     width: '100%',
@@ -50,13 +49,6 @@ export class Chrome extends ReactCSS.Component {
                     borderRadius: '8px',
                     position: 'relative',
                     overflow: 'hidden'
-                },
-                active: {
-                    Absolute: '0 0 0 0',
-                    zIndex: 2,
-                    borderRadius: '8px',
-                    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.1)',
-                    background: 'rgba(' + this.props.rgb.r + ', ' + this.props.rgb.g + ', ' + this.props.rgb.b + ', ' + this.props.rgb.a + ')'
                 },
                 hue: {
                     height: '10px',

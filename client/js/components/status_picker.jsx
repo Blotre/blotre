@@ -39,8 +39,7 @@ export const ColorPicker = React.createClass({
                     display: 'block',
                     marginLeft: '-91.5px',
                     left: '0',
-                    top: '100%',
-                    marginTop: '20px'
+                    top: '100%'
                 },
                 picker: {
                     zIndex: '2',
@@ -107,7 +106,9 @@ export const ColorPicker = React.createClass({
 
     render() {
         var buttonStyle = {
-            background: '#' + this.state.hex
+            background: '#' + this.state.hex,
+            position: 'relative',
+            zIndex: '998'
         };
 
         return (
@@ -123,8 +124,8 @@ export const ColorPicker = React.createClass({
                             onChange={this.handleChange}
                             onCancel={this.handleCancel} />
                     </div>
-                    <div is="cover" onClick={this.handleAccept}/>
                 </div>
+                <div is="cover" onClick={this.handleAccept}/>
             </div>
         );
     },
