@@ -7,6 +7,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import FavoriteButton from './components/favorite_button.jsx'
 import StatusPicker from './components/status_picker.jsx'
+import TagEditor from './components/tag_editor.jsx'
 
 /**
  */
@@ -197,78 +198,8 @@ const updateSearchResults = function(model) {
     return updateSearchResultsForQuery(model, query);
 };
 
-/**
- */
-var updateStreamTags = function(model, tags) {
-    $.ajax({
-        type: "POST",
-        url: jsRoutes.controllers.StreamApiController.setTags(model.stream().id()).url,
-        contentType: 'application/json',
-        data: JSON.stringify(tags.map(function(x) {
-            return {
-                "tag": x.value()
-            };
-        })),
-        headers: {
-            accept: "application/json"
-        },
-        error: function(e) {
 
-        }
-    }).done(function(result) {
-        model.stream().tags(
-            result.map(function(tag) {
-                return new models.TagModel(tag.tag);
-            }));
-    });
-};
 
-/**
-    Convert a list of tags to a editable string representation.
-*/
-var tagsToString = function(tags) {
-    return Array.prototype.map.call(tags, function(x) {
-            return x.value();
-        })
-        .join(', ');
-};
-
-/**
-    Convert a string to a list of tags.
-*/
-var stringToTags = function(tags) {
-    return (tags.match(/([a-zA-Z0-9_\-$])+/ig) || []).map(function(tag) {
-        return new models.TagModel(tag.trim());
-    });
-};
-
-/**
-    Edit the stream's tags.
-*/
-var editTags = function(model) {
-    $('#save-tags-button').removeClass('hidden');
-    $('#edit-tags-button').addClass('hidden');
-    $('.tag-list').addClass('hidden');
-
-    $('#tag-input')
-        .removeClass('hidden');
-
-    $('#tag-input input')
-        .val(tagsToString(model.stream().tags()));
-};
-
-/**
-    Save the edited tags.
-*/
-var saveTags = function(model) {
-    $('#save-tags-button').addClass('hidden');
-    $('#edit-tags-button').removeClass('hidden');
-    $('#tag-input').addClass('hidden');
-    $('.tag-list').removeClass('hidden');
-
-    var tags = stringToTags($('#tag-input input').val());
-    updateStreamTags(model, tags);
-};
 
 /**
  */
@@ -317,18 +248,9 @@ $(function() {
         .on('click', hideChildForm);
 
     // Tag editor
-    $('#edit-tags-button').on('click', function(e) {
-        editTags(model);
-    });
 
     $('#save-tags-button').on('click', function(e) {
         saveTags(model);
-    });
-
-    $('#tag-input input').keypress(function(e) {
-        if (e.keyCode === 13 /*enter*/ ) {
-            saveTags(model);
-        }
     });
 
     // Child Search
@@ -414,5 +336,14 @@ $(function() {
                 user={model.user()}
                 manager={model.manager} />,
             favoriteContainer);
+    }
+
+    const tagsContainer = document.getElementById('tags-component');
+    if (tagsContainer) {
+        ReactDOM.render(
+            <TagEditor
+                stream={model.stream()}
+                user={model.user()} />,
+            tagsContainer);
     }
 });

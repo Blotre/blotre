@@ -24,6 +24,10 @@ var TagViewModel = function(tag, user, results) {
             return x.uri() === childUri;
         });
     };
+
+    self.onChildSelected = (child) => {
+        window.location = child.url();
+    };
 };
 
 var normalizeQuery = function(query) {

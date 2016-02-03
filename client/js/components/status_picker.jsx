@@ -62,7 +62,6 @@ export const ColorPicker = React.createClass({
 
                 <Picker
                     color={this.state.color}
-                    position="bottom"
                     onChange={this.onChange}
                     onAccept={this.onSelect}
                     onCancel={this.onCancel}

@@ -13,6 +13,10 @@ var StreamIndexViewModel = function(user, results) {
     self.user = ko.observable(user);
     self.results = ko.observableArray(results);
     self.query = ko.observable(undefined);
+
+    self.onChildSelected = (child) => {
+        window.location = child.url();
+    };
 };
 
 var normalizeQuery = function(query) {

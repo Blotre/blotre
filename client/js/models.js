@@ -99,9 +99,8 @@ export const StreamModel = function(id, name, uri, status, updated, tags) {
         return dateToDisplay(self.updated());
     });
 
-    self.isOwner = function(user) {
-        var ownerUri = normalizeUri(user.userName());
-        return (ownerUri === self.uri() || self.uri().indexOf(ownerUri + '/') === 0);
+    self.isOwner = (user) => {
+        isOwner(user, self.uri());
     };
 
     self.pathComponents = ko.computed(function() {
@@ -162,16 +161,33 @@ export const Collection = function(uri) {
     };
 };
 
-
-export const isHierarchical = (parentName, uri) => {
-    parentName = normalizeUri(parentName);
-    if (parentName === uri)
+/**
+    Is `parentUri` the root of `uri`?
+*/
+export const isHierarchical = (parentUri, uri) => {
+    parentUri = normalizeUri(parentUri);
+    if (parentUri === uri)
         return true;
 
     const index = uri.lastIndexOf('/');
-    return (index >= 0 && parentName === uri.slice(0, index));
+    return (index >= 0 && parentUri === uri.slice(0, index));
 };
 
+/**
+    Is `uri` the uri of a root stream?
+*/
 export const isRootStream = uri => {
     return (uri.indexOf('/') === -1);
+};
+
+/**
+    Simple check to see if `user` owns `streamUri`. Just used for UI stuff,
+    not security.
+*/
+export const isOwner = (user, streamUri) => {
+    if (!user || !user.userName())
+        return false;
+
+    const ownerUri = normalizeUri(user.userName());
+    return (ownerUri === streamUri || streamUri.indexOf(ownerUri + '/') === 0);
 };

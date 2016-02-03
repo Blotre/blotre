@@ -44,12 +44,6 @@
         </div>
     }
 
-    <script type="text/html" id="stream-tag-template">
-        <li class="tag">
-            <a data-bind="attr: { href: url }, text: value"></a>
-        </li>
-    </script>
-
     <script data-main="@routes.Assets.versioned("js/stream_main.js")" type="text/javascript" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
 }
 
@@ -61,20 +55,7 @@
                 <a data-bind="text: stream().name, attr: { href: stream().uri }"></a>
             </h1>
             <time class="stream-updated" data-bind="text: stream().displayUpdated"></time>
-            <div class="tags">
-                <div id="tag-editor" class="@("hidden".when(!stream.isOwner(Application.getLocalUser(request))))">
-                    <div id="tag-input" class="input-group hidden">
-                        <span class="input-group-btn">
-                            <button id="save-tags-button" class="btn btn-default" type="button">Save</button>
-                        </span>
-                        <input type="text" class="form-control" />
-                    </div>
-                    <button id="edit-tags-button" title="Edit Tags">
-                        <span class="glyphicon glyphicon-tag"></span>
-                    </button>
-                </div>
-                <ul class="tag-list" data-bind="template: { name: 'stream-tag-template', foreach: stream().tags }"></ul>
-            </div>
+            <div id="tags-component"></div>
         </div>
 
         <nav class="stream-controls @("hidden".when(Application.getLocalUser(request) == null))"">
