@@ -1,7 +1,6 @@
 "use strict";
 import React from 'react';
 import ReactFavoriteButton from 'react-color';
-import Picker from './color_picker/color_picker.jsx';
 import * as models from '../models.js'
 
 const FavoriteStatus = Object.freeze({

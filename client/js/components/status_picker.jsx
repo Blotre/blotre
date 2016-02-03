@@ -1,56 +1,113 @@
 "use strict";
 import React from 'react';
-import ReactColorPicker from 'react-color';
-import Picker from './color_picker/color_picker.jsx';
-
-const componentToHex = c => {
-    const hex = c.toString(16);
-    return hex.length == 1 ? '0' + hex : hex;
-};
-
-const rgbToHex = function(r, g, b) {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-};
+import ReactCSS from 'reactcss';
+import Chrome from './color_picker/picker.jsx';
+import merge from 'merge';
+import color from 'react-color/lib/helpers/color.js';
 
 /**
     Stream status color picker component.
 */
 export const ColorPicker = React.createClass({
+    mixins: [ ReactCSS.mixin ],
+
     componentWillMount() {
+        const c = color.toState(this.props.color, 0);
         this.setState({
-            displayColorPicker: false,
-            color: this.props.color,
-            selectedColor: this.props.color
+            visible: false,
+            selectedColor: c
         });
+        this.setColor(c);
+    },
+
+    setColor(color) {
+        this.setState(color);
     },
 
     handleClick() {
         this.setState({
-            displayColorPicker: !this.state.displayColorPicker
+            visible: !this.state.visible
         });
     },
 
-    onChange(color) {
-        const hex = rgbToHex(color.rgb.r, color.rgb.g, color.rgb.b);
-        this.setState({ color: hex });
-        this.props.onChange(hex);
-        this.setState({});
+    classes() {
+        return {
+            'show': {
+                wrap: {
+                    zIndex: '999',
+                    position: 'absolute',
+                    display: 'block',
+                    marginLeft: '-91.5px',
+                    left: '0',
+                    top: '100%',
+                    marginTop: '20px'
+                },
+                picker: {
+                    zIndex: '2',
+                    position: 'relative'
+                },
+                cover: {
+                    position: 'fixed',
+                    top: '0',
+                    bottom: '0',
+                    left: '0',
+                    right: '0'
+                }
+            },
+            'hide': {
+                wrap: {
+                    zIndex: '999',
+                    position: 'absolute',
+                    display: 'none'
+                }
+            }
+        };
     },
 
-    onSelect(color) {
-        const hex = rgbToHex(color.rgb.r, color.rgb.g, color.rgb.b);
-        this.setState({ selectedColor: hex, color: hex, displayColorPicker: false });
+    styles() {
+        return this.css({
+            'show': this.state.visible === true,
+            'hide': this.state.visible === false
+        });
+    },
+
+    handleHide() {
+        if (this.state.visible) {
+            this.setState({visible: false});
+            this.props.onClose && this.props.onClose({hex: this.state.hex, hsl: this.state.hsl, rgb: this.state.rgb});
+        }
+    },
+
+    handleAccept() {
+        this.handleHide();
+
+        const c = color.toState(this.state.hex, this.state.oldHue);
+
+        this.setState({ selectedColor: c, visible: false });
+        const hex = '#' + this.state.hex;
         this.props.onSelect && this.props.onSelect(hex);
     },
 
-    onCancel() {
-        this.setState({ color: this.state.selectedColor, displayColorPicker: false });
-        this.props.onCancel(this.state.selectedColor);
+    handleCancel() {
+        if (this.state.visible) {
+            this.setState({ visible: false });
+            this.setColor(this.state.selectedColor);
+            this.props.onCancel('#' + this.state.selectedColor.hex);
+        }
+    },
+
+    handleChange(data) {
+        data = color.simpleCheckForValidColor(data);
+        if (data) {
+            var colors = color.toState(data, data.h || this.state.oldHue);
+            this.setColor(colors);
+            this.props.onChange && this.props.onChange('#' + colors.hex);
+        }
     },
 
     render() {
         var buttonStyle = {
-            background: this.state.color
+            background: '#' + this.state.hex
         };
 
         return (
@@ -60,12 +117,14 @@ export const ColorPicker = React.createClass({
                     style={buttonStyle}
                     onClick={this.handleClick} />
 
-                <Picker
-                    color={this.state.color}
-                    onChange={this.onChange}
-                    onAccept={this.onSelect}
-                    onCancel={this.onCancel}
-                    display={this.state.displayColorPicker} />
+                <div is="wrap">
+                    <div is="picker">
+                        <Chrome hex={this.state.hex} rgb={this.state.rgb} hsv={this.state.hsv} hsl={this.state.hsl}
+                            onChange={this.handleChange}
+                            onCancel={this.handleCancel} />
+                    </div>
+                    <div is="cover" onClick={this.handleAccept}/>
+                </div>
             </div>
         );
     },
