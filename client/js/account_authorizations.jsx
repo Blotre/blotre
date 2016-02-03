@@ -1,21 +1,7 @@
 "use strict";
 import * as models from './models';
-import * as stream_manager from './stream_manager';
-import * as application_model from './application_model';
 import React from 'react';
 import ReactDOM from 'react-dom';
-
-var AppViewModel = function(user) {
-    var self = this;
-    application_model.AppViewModel.call(this, user);
-};
-
-$(function() {
-    var model = new AppViewModel(
-        application_model.initialUser());
-
-    ko.applyBindings(model);
-});
 
 /**
     An authorized application.
