@@ -5,27 +5,8 @@ import * as application_model from './application_model';
 import * as shared from './shared';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import FavoriteButton from './components/favorite_button.jsx'
 import StatusPicker from './components/status_picker.jsx'
-
-var FavoriteStatus = Object.freeze({
-    Unknown: 0,
-    No: 1,
-    Yes: 2,
-    Hierarchical: 3
-});
-
-var isHierarchical = function(parentName, uri) {
-    parentName = models.normalizeUri(parentName);
-    if (parentName === uri)
-        return true;
-
-    var index = uri.lastIndexOf('/');
-    return (index >= 0 && parentName === uri.slice(0, index));
-};
-
-var isRootStream = function(uri) {
-    return (uri.indexOf('/') === -1);
-};
 
 /**
  */
@@ -35,7 +16,6 @@ var AppViewModel = function(user, stream) {
 
     self.stream = ko.observable(stream);
     self.query = ko.observable();
-    self.favorite = ko.observable(FavoriteStatus.Unknown);
 
     self.children = ko.computed(() => {
         return new models.Collection(self.stream().uri());
@@ -109,29 +89,6 @@ var AppViewModel = function(user, stream) {
     };
 };
 
-AppViewModel.prototype.checkFavorite = function() {
-    var self = this;
-    if (!self.user().userName())
-        return;
-
-    // If the current stream is the user's root stream of a direct child, it cannot be favorited.
-    if (self.stream().id() === self.user().rootStream() || isHierarchical(self.user().userName(), self.stream().uri())) {
-        self.favorite(FavoriteStatus.Hierarchical);
-    } else {
-        $.ajax({
-            type: "GET",
-            url: jsRoutes.controllers.StreamApiController.apiGetChild(self.user().rootStream(), self.stream().id()).url,
-            error: function(e) {
-                if (e.status === 404) {
-                    self.favorite(FavoriteStatus.No);
-                }
-            }
-        }).then(function() {
-            self.favorite(FavoriteStatus.Yes);
-        });
-    }
-};
-
 var initialStream = function() {
     return models.StreamModel.fromJson(window.initialStreamData);
 };
@@ -148,25 +105,6 @@ var updateFavicon = function(color) {
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     link.href = canvas.toDataURL('image/png');
-};
-
-/**
- */
-var enableFavoriteButton = function(existing) {
-    $('.stream-favorite')
-        .prop('disabled', false)
-        .prop('title', existing ? "Remove Favorite" : "Add Favorite");
-
-    if (existing)
-        $('.stream-favorite').addClass('active');
-    else
-        $('.stream-favorite').removeClass('active');
-
-};
-
-var disableFavoriteButton = function() {
-    $('.stream-favorite')
-        .prop("disabled", true);
 };
 
 /**
@@ -229,34 +167,6 @@ var createChildStream = function(model, stream, user, name) {
         model.addChild(models.StreamModel.fromJson(result));
         onComplete();
         hideChildForm();
-    });
-};
-
-/**
- */
-var addFavorite = function(model, targetStreamId, childId) {
-    disableFavoriteButton();
-    $.ajax({
-        type: "PUT",
-        url: jsRoutes.controllers.StreamApiController.apiCreateChild(targetStreamId, childId).url,
-        error: function(error) {
-            model.favorite(FavoriteStatus.Unknown);
-        }
-    }).then(function(result) {
-        model.favorite(FavoriteStatus.Yes);
-    });
-};
-
-var removeFavorite = function(model, targetStreamId, childId) {
-    disableFavoriteButton();
-    $.ajax({
-        type: "DELETE",
-        url: jsRoutes.controllers.StreamApiController.apiDeleteChild(targetStreamId, childId).url,
-        error: function(error) {
-            model.favorite(FavoriteStatus.Unknown);
-        }
-    }).then(function(result) {
-        model.favorite(FavoriteStatus.No);
     });
 };
 
@@ -463,32 +373,6 @@ $(function() {
             $('.no-results').removeClass('hidden');
     });
 
-    // Favorite Button
-    disableFavoriteButton();
-
-    model.favorite.subscribe(function(status) {
-        switch (status) {
-            case FavoriteStatus.Yes:
-                return enableFavoriteButton(true);
-            case FavoriteStatus.No:
-                return enableFavoriteButton(false);
-            default:
-                return disableFavoriteButton();
-        }
-    });
-
-    model.checkFavorite();
-
-
-    $('button.stream-favorite').click(function(e) {
-        switch (model.favorite()) {
-            case FavoriteStatus.Yes:
-                return removeFavorite(model, model.user().rootStream(), model.stream().id());
-            case FavoriteStatus.No:
-                return addFavorite(model, model.user().rootStream(), model.stream().id());
-        }
-    });
-
     model.manager.subscribe(model.stream().uri(), {
         'StatusUpdated': function(msg) {
             if (msg.from === model.stream().uri()) {
@@ -496,15 +380,7 @@ $(function() {
                 model.stream().updated(new Date(msg.status.created));
                 //statusPicker.spectrum("set", msg.status.color);
             }
-        },
-        'ParentAdded': function(msg) {
-            if (msg.from === model.stream().uri() && msg.parent.uri === model.user().userName())
-                model.favorite(FavoriteStatus.Yes);
-        },
-        'ParentRemoved': function(msg) {
-            if (msg.from === model.stream().uri() && msg.parent === model.user().userName())
-                model.favorite(FavoriteStatus.No);
-        },
+        }
     });
 
     ko.applyBindings(model);
@@ -529,4 +405,14 @@ $(function() {
                 onSelect={onColorPicked}
                 onCancel={onColorPickerCancel}/>,
             pickerContainer);
+
+    const favoriteContainer = document.getElementById('favorite-button-component');
+    if (favoriteContainer) {
+        ReactDOM.render(
+            <FavoriteButton
+                stream={model.stream()}
+                user={model.user()}
+                manager={model.manager} />,
+            favoriteContainer);
+    }
 });

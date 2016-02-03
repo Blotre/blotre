@@ -33,7 +33,10 @@ class ColorPicker extends ReactCSS.Component {
                     zIndex: '999',
                     position: 'absolute',
                     display: 'block',
-                    marginLeft: '-91.5px'
+                    marginLeft: '-91.5px',
+                    left: '0',
+                    top: '100%',
+                    marginTop: '20px'
                 },
                 picker: {
                     zIndex: '2',
@@ -53,43 +56,14 @@ class ColorPicker extends ReactCSS.Component {
                     position: 'absolute',
                     display: 'none'
                 }
-            },
-            'right': {
-                wrap: {
-                    left: '100%',
-                    marginLeft: '20px',
-                    top: '0'
-                }
-            },
-            'left': {
-                wrap: {
-                    right: '100%',
-                    marginRight: '20px',
-                    top: '0'
-                }
-            },
-            'below': {
-                wrap: {
-                    left: '0',
-                    marginLeft: '0',
-                    top: '100%',
-                    marginTop: '20px'
-                }
-            },
-            'override': {
-                wrap: this.props.positionCSS
             }
         };
     }
 
     styles() {
         return this.css({
-            'below': this.props.position === 'below' && this.props.display !== null,
-            'right': this.props.position === 'right' && this.props.display !== null,
-            'left': this.props.position === 'left' && this.props.display !== null,
             'show': this.state.visible === true,
-            'hide': this.state.visible === false,
-            'override': isPlainObject(this.props.positionCSS)
+            'hide': this.state.visible === false
         });
     }
 
@@ -137,18 +111,5 @@ class ColorPicker extends ReactCSS.Component {
         );
     }
 }
-
-ColorPicker.defaultProps = {
-    color: {
-        h: 250,
-        s: .50,
-        l: .20,
-        a: 1
-    },
-    display: null,
-    type: 'sketch',
-    position: 'right',
-    positionCSS: {}
-};
 
 export default ColorPicker;

@@ -161,3 +161,17 @@ export const Collection = function(uri) {
         self.children.unshift(child);
     };
 };
+
+
+export const isHierarchical = (parentName, uri) => {
+    parentName = normalizeUri(parentName);
+    if (parentName === uri)
+        return true;
+
+    const index = uri.lastIndexOf('/');
+    return (index >= 0 && parentName === uri.slice(0, index));
+};
+
+export const isRootStream = uri => {
+    return (uri.indexOf('/') === -1);
+};

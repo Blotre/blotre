@@ -50,12 +50,7 @@ export const ColorPicker = React.createClass({
 
     render() {
         var buttonStyle = {
-            background: this.state.color,
-            width: '100%',
-            height: '100%',
-            padding: '0',
-            borderRadius: '100px',
-            border: 'none',
+            background: this.state.color
         };
 
         return (

@@ -6,7 +6,6 @@ var webpack = require("webpack");
 module.exports = {
     entry: {
         common: [
-            './client/external/bootbox.min.js',
             'react',
             'reactcss',
             'react-color',

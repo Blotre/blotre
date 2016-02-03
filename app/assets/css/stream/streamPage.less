@@ -112,24 +112,29 @@
 }
 
 .stream-controls > * {
+    display: inline-block;
     width: 5rem;
     height: 5rem;
-    border: 4px solid rgba(255, 255, 255, 0.85);
+    margin: 0 0.5em;
+    vertical-align: top;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
     border-radius: 100px;
-    background: none;
-    display: inline-block;
-    margin: 0 0.5em;
-    padding: 0;
-    vertical-align: top;
-
 }
 
-.stream-controls > *:disabled {
+.stream-controls button {
+    width: 5rem;
+    height: 5rem;
+    border: 4px solid white;
+    border-radius: 100px;
+    background: none;
+    padding: 0;
+}
+
+.stream-controls button:disabled {
     color: #aaa;
 }
 
-.stream-controls > *:active:not([disabled]) {
+.stream-controls button:active:not([disabled]) {
     border-color: #eee;
 }
 
@@ -143,21 +148,20 @@
     content: "\e007"; /* empty star */
 }
 
-.stream-favorite:hover span:before {
-    content: "\e006"; /* star */
-}
-
 .stream-favorite.active span:before {
     content: "\e006"; /* star */
 }
 
-.stream-favorite.active:hover span:before {
-    content: "\e007"; /* empty star */
+.stream-favorite:hover {
+    background: #eee;
 }
 
-.stream-favorite[disabled] span:before {
-    content: "\e006"; /* star */
+.stream-favorite[disabled]:hover {
+    background: none;
 }
+
+
+
 
 /**
     Stream body
