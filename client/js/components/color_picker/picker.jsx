@@ -26,6 +26,9 @@ export class Chrome extends ReactCSS.Component {
                     width: '225px',
                     boxShadow: '0 0 2px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.3)',
                 },
+                triangle: {
+                    borderBottomColor: this.props ? '#' + this.props.hex : 'transparent'
+                },
                 saturation: {
                     width: '100%',
                     paddingBottom: '55%',
@@ -79,14 +82,15 @@ export class Chrome extends ReactCSS.Component {
 
     render() {
         return (
-            <div is="picker">
+            <div is="picker" className="color-picker">
+                <div className="triangle" is="triangle" />
                 <div is="saturation">
-                    <Saturation is="Saturation" {...this.props} pointer={ChromePointerCircle} onChange={this.handleChange}/>
+                    <Saturation is="Saturation" {...this.props} pointer={ChromePointerCircle} onChange={this.handleChange} />
                 </div>
                 <div is="body">
                     <div is="toggles">
                         <div is="hue">
-                            <Hue is="Hue" {...this.props} pointer={ChromePointer} onChange={this.handleChange}/>
+                            <Hue is="Hue" {...this.props} pointer={ChromePointer} onChange={this.handleChange} />
                         </div>
                     </div>
                     <ChromeFields {...this.props} onChange={this.handleChange}/>

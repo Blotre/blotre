@@ -37,7 +37,7 @@ export const ColorPicker = React.createClass({
                     zIndex: '999',
                     position: 'absolute',
                     display: 'block',
-                    marginLeft: '-91.5px',
+                    marginLeft: '-88px',
                     left: '0',
                     top: '100%'
                 },
