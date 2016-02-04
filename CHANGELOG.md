@@ -1,5 +1,12 @@
 # ChangeLog
 
+# 0.2.4 - Feb 3, 2016
+* Transitioning some components to use React.
+* Moves all client scripts to Webpack and be minified in production.
+* Hooked up webpack to production builds.
+* Added `deploy.sh` script for pushing stage to production.
+* Replaced Spectrum color picker with `react-color`.
+
 # 0.2.2 - September 6, 2015
 * Allow setting or updating tags with StreamCreate APIs.
 
@@ -34,4 +41,3 @@
 ## 0.1.1 - July 13, 2015
 * Added `acknowledge` field to send/receive api.
 ** Gives caller control over acking success messages.
-
