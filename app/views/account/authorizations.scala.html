@@ -4,10 +4,8 @@
 @import play.api.i18n.Messages.Implicits._
 
 @extraScripts = {
-
-<script data-main="@routes.Assets.versioned("js/account_authorizations.js")" type="text/javascript" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
+    <script data-main="@routes.Assets.versioned("js/account_authorizations.js")" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
 }
-
 
 @main(Messages("blotre.account.authorizations.title"), "accountAuthorizations", extraScripts = extraScripts) {
     <h1>@Messages("blotre.account.authorizations.pageTitle")</h1>

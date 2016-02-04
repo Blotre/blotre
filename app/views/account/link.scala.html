@@ -1,12 +1,10 @@
-@(
-    user: models.User)(implicit request: Request[AnyContent])
+@(user: models.User)(implicit request: Request[AnyContent])
 
 @import com.feth.play.module.pa.views.html._
 @import play.api.Play.current
 @import play.api.i18n.Messages.Implicits._
 
 @main(Messages("blotre.account.link.title"), "link-account") {
-    
     <h1>@Messages("blotre.account.link.title")</h1>
     <p>@Messages("blotre.account.link.description")<p>
 

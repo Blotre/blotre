@@ -1,17 +1,15 @@
 @(parent: models.Stream, childName: models.StreamName)(implicit request: play.api.mvc.RequestHeader)
 
-@import play.api.libs.json._
 @import helper._
 @import play.api.Play.current
 @import play.api.i18n.Messages.Implicits._
 
 @articleHeader = {
-<div class="status status-header status-small-header"
-     style="background: #EB4D86;"></div>
+    <div class="status status-header status-small-header" style="background: #EB4D86;"></div>
 }
 
 @extraScripts = {
-    <script data-main="@routes.Assets.versioned("js/stream_create_child.js")" type="text/javascript" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
+    <script data-main="@routes.Assets.versioned("js/stream_create_child.js")" src="@routes.Assets.versioned("lib/requirejs/require.js")"></script>
 }
 
 @main(Messages("blotre.stream.tryCreate.title"), "createChild", articleHeader = articleHeader, extraScripts = extraScripts) {

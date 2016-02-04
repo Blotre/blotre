@@ -1,21 +1,19 @@
 "use strict";
-import * as models from './models';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
 /**
     An authorized application.
 */
-var Authorization = React.createClass({
+const Authorization = React.createClass({
     render() {
-        const self = this;
         return (
             <tr>
                 <td>{this.props.data.clientName}</td>
                 <td>{this.props.data.issued}</td>
                 <td>
-                    <button onClick={function() {
-                        self.props.onRevoke(self.props.data.clientId);
+                    <button onClick={() => {
+                        this.props.onRevoke(this.props.data.clientId);
                     }}>
                         <span className="glyphicon glyphicon-remove"></span>
                     </button>
@@ -28,7 +26,7 @@ var Authorization = React.createClass({
 /**
     List of authorizations.
 */
-var AuthorizationList = React.createClass({
+const AuthorizationList = React.createClass({
     getInitialState() {
         return { authorizations: [] }
     },
