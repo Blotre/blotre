@@ -15,7 +15,10 @@ export const ColorPicker = React.createClass({
         const c = color.toState(this.props.color, 0);
         this.setState({
             visible: false,
-            selectedColor: c
+            selectedColor: c,
+
+            // Track to make sure the user changes the state before submitting
+            hasChanged: false
         });
         this.setColor(c);
     },
@@ -26,7 +29,8 @@ export const ColorPicker = React.createClass({
 
     handleClick() {
         this.setState({
-            visible: !this.state.visible
+            visible: !this.state.visible,
+            hasChanged: this.state.hasChanged && !this.state.visible
         });
     },
 
@@ -34,7 +38,7 @@ export const ColorPicker = React.createClass({
         return {
             'show': {
                 wrap: {
-                    zIndex: '999',
+                    zIndex: '1500',
                     position: 'absolute',
                     display: 'block',
                     marginLeft: '-88px',
@@ -44,19 +48,15 @@ export const ColorPicker = React.createClass({
                 picker: {
                     zIndex: '2',
                     position: 'relative'
-                },
-                cover: {
-                    position: 'fixed',
-                    top: '0',
-                    bottom: '0',
-                    left: '0',
-                    right: '0'
                 }
             },
             'hide': {
                 wrap: {
                     zIndex: '999',
                     position: 'absolute',
+                    display: 'none'
+                },
+                cover: {
                     display: 'none'
                 }
             }
@@ -65,8 +65,8 @@ export const ColorPicker = React.createClass({
 
     styles() {
         return this.css({
-            'show': this.state.visible === true,
-            'hide': this.state.visible === false
+            'show': this.state.visible,
+            'hide': !this.state.visible
         });
     },
 
@@ -100,7 +100,10 @@ export const ColorPicker = React.createClass({
         if (data) {
             var colors = color.toState(data, data.h || this.state.oldHue);
             this.setColor(colors);
-            this.props.onChange && this.props.onChange('#' + colors.hex);
+            if (this.state.hasChanged)
+                this.props.onChange && this.props.onChange('#' + colors.hex);
+            else
+                this.setState({ hasChanged: true });
         }
     },
 
@@ -112,12 +115,12 @@ export const ColorPicker = React.createClass({
         };
 
         return (
-            <div style={{position: 'relative', width: '100%', height: '100%'}}>
+            <div class-name="status-picker-control" style={{position: 'relative', width: '100%', height: '100%'}}>
                 <button
                     className="stream-control-button status-picker"
                     style={buttonStyle}
                     onClick={this.handleClick} />
-
+                <div className="cover" is="cover" onClick={this.handleAccept}/>
                 <div is="wrap">
                     <div is="picker">
                         <Chrome hex={this.state.hex} rgb={this.state.rgb} hsv={this.state.hsv} hsl={this.state.hsl}
@@ -125,7 +128,6 @@ export const ColorPicker = React.createClass({
                             onCancel={this.handleCancel} />
                     </div>
                 </div>
-                <div is="cover" onClick={this.handleAccept}/>
             </div>
         );
     },

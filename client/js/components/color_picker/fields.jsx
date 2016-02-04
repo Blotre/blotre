@@ -16,7 +16,8 @@ const HexInput = React.createClass({
     componentWillMount() {
         this.setState({
             value: this.props.value,
-            hex: '#' + this.props.value
+            hex: '#' + this.props.value,
+            editing: false
         });
     },
 
@@ -35,14 +36,27 @@ const HexInput = React.createClass({
     },
 
     componentWillReceiveProps(nextProps) {
-        this.setState({ value: nextProps.value });
+        if (!this.state.editing) {
+            this.setState({ value: nextProps.value });
+        }
+    },
+
+    onFocus() {
+        this.setState({ editing: true });
+    },
+
+    onBlur() {
+        this.setState({ editing: false });
     },
 
     render() {
         return (
             <div className="input-group">
                 <div className="input-group-addon">{'#'}</div>
-                <input type="text" className="form-control" value={this.state.value} onChange={this.onChange} />
+                <input type="text" className="form-control" value={this.state.value}
+                    onChange={this.onChange}
+                    onBlur={this.onBlur}
+                    onFocus={this.onFocus} />
             </div>
         );
     }
