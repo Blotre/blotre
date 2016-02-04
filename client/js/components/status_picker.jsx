@@ -21,6 +21,17 @@ export const ColorPicker = React.createClass({
             hasChanged: false
         });
         this.setColor(c);
+
+        this.props.manager.subscribe(this.props.stream.uri(), {
+            StatusUpdated: msg => {
+                if (msg.from === this.props.stream.uri()) {
+                    const c = color.toState(msg.status.color, 0);
+                    this.setState({ selectedColor: c });
+                    if (!this.state.visible)
+                        this.setColor(c);
+                }
+            }
+        });
     },
 
     setColor(color) {

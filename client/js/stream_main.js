@@ -322,7 +322,11 @@ $(function() {
     const pickerContainer = $('.status-picker-control').get(0);
     if (pickerContainer)
         ReactDOM.render(
-            <StatusPicker color={model.stream().color()}
+            <StatusPicker
+                color={model.stream().color()}
+                stream={model.stream()}
+                user={model.user()}
+                manager={model.manager}
                 onChange={onColorPickerChange}
                 onSelect={onColorPicked}
                 onCancel={onColorPickerCancel}/>,
