@@ -1,5 +1,5 @@
 "use strict";
-import * as shared from '../shared.js';
+import * as shared from './shared.js';
 
 const getTarget = () => {
     const path = decodeURIComponent(window.location.pathname).match('/s/(.+)');
