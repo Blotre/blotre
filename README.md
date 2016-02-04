@@ -4,9 +4,11 @@
     </a>
 </div>
 
-Blot’re is a status oriented, IoT ready, social communications platform.
+* [Developer and API documentation](https://github.com/Blotre/blotre/wiki)
+* [Report an issue](https://github.com/Blotre/blotre/issues)
+* [Development and Contributing](#development-and-contributing)
 
-Long story short, Blot’re is what’s happening now. The past is dead. Nobody’s got time for text. Blot’re is communication reimagined for today’s hyperconnected, always on millennials. And their toasters.
+Blot’re is what’s happening now. The past is dead. Nobody’s got time for text. Blot’re is communication reimagined for today’s hyperconnected always on millennials, and their toasters.
 
 #### I still don't understand
 An analogy perhaps:
